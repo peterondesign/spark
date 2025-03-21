@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HeartIcon } from "../components/icons";
+import Header from "../components/Header";
 
 type Question = {
   id: string;
@@ -120,7 +121,7 @@ export default function Preferences() {
     if (savedAnswers) {
       setAnswers(JSON.parse(savedAnswers));
     }
-    
+
     // Check if all questions are answered
     const savedComplete = localStorage.getItem("preferencesComplete");
     if (savedComplete === "true") {
@@ -139,13 +140,13 @@ export default function Preferences() {
   const handleCheckboxChange = (questionId: string, option: string) => {
     const currentSelections = answers[questionId] || [];
     let updatedSelections;
-    
+
     if (currentSelections.includes(option)) {
       updatedSelections = currentSelections.filter((item: string) => item !== option);
     } else {
       updatedSelections = [...currentSelections, option];
     }
-    
+
     handleAnswerChange(questionId, updatedSelections);
   };
 
@@ -189,7 +190,7 @@ export default function Preferences() {
             placeholder="Type your answer here..."
           />
         );
-      
+
       case "select":
         return (
           <div className="space-y-2">
@@ -210,7 +211,7 @@ export default function Preferences() {
             ))}
           </div>
         );
-      
+
       case "multiselect":
         return (
           <div className="space-y-2">
@@ -230,7 +231,7 @@ export default function Preferences() {
             ))}
           </div>
         );
-      
+
       case "range":
         return (
           <div className="w-full">
@@ -251,7 +252,7 @@ export default function Preferences() {
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
@@ -262,14 +263,7 @@ export default function Preferences() {
     return (
       <div className="min-h-screen bg-white">
         {/* Navigation - Made Sticky */}
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center">
-              <HeartIcon className="h-8 w-8 text-rose-500" />
-              <span className="ml-2 text-xl font-bold text-gray-800">Spark</span>
-            </Link>
-          </div>
-        </header>
+        <Header />
 
         <div className="max-w-3xl mx-auto py-12 px-4">
           <div className="text-center mb-8">
@@ -286,13 +280,13 @@ export default function Preferences() {
 
           <div className="bg-white shadow-md rounded-lg p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Your Preferences Summary</h2>
-            
+
             <div className="space-y-4">
               {questions.map((question) => (
                 <div key={question.id} className="border-b border-gray-200 pb-4 last:border-0">
                   <p className="text-sm font-medium text-gray-500">{question.text}</p>
                   <p className="text-gray-800 mt-1">
-                    {question.type === "multiselect" 
+                    {question.type === "multiselect"
                       ? (answers[question.id] || []).join(", ") || "Not specified"
                       : answers[question.id] || "Not specified"}
                   </p>
@@ -343,7 +337,7 @@ export default function Preferences() {
 
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
-          <div 
+          <div
             className="bg-rose-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}
           ></div>
@@ -357,7 +351,7 @@ export default function Preferences() {
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             {questions[currentStep].text}
           </h2>
-          
+
           {renderQuestionInput(questions[currentStep])}
         </div>
 
@@ -366,15 +360,14 @@ export default function Preferences() {
           <button
             onClick={handlePrevious}
             disabled={currentStep === 0}
-            className={`px-6 py-3 rounded-full font-medium transition-colors ${
-              currentStep === 0
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${currentStep === 0
                 ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                 : "border border-gray-300 text-gray-600 hover:bg-gray-100"
-            }`}
+              }`}
           >
             Previous
           </button>
-          
+
           <div className="flex gap-4">
             <button
               onClick={clearPreferences}

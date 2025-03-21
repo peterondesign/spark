@@ -105,7 +105,7 @@ export default function TikTokFeedView({
           data-index={index}
           className="snap-center w-full max-w-3xl mx-auto bg-white rounded-xl overflow-hidden shadow-md"
         >
-          <div className="relative aspect-[9/16] sm:aspect-video">
+          <div className="relative aspect-[9/16] sm:aspect-[16/16]">
             {dateIdeaImages[idea.slug] ? (
               <Image
                 src={dateIdeaImages[idea.slug]}

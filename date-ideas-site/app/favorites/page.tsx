@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HeartIcon, MapPinIcon, StarIcon } from "../components/icons";
 import { getImage, getPlaceholderImage, getImageUrl } from "../utils/imageService";
+import Header from "../components/Header";
 
 // Type definition for date ideas
 type DateIdea = {
@@ -81,44 +82,7 @@ export default function Favorites() {
   if (!isLoading && savedIdeas.length === 0) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Navigation - Made Sticky */}
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center">
-              <HeartIcon className="h-8 w-8 text-rose-500" />
-              <span className="ml-2 text-xl font-bold text-gray-800">Spark</span>
-            </Link>
-
-            <div className="flex items-center space-x-4">
-              <Link href="/discover" className="text-gray-600 hover:text-gray-900">
-                Discover
-              </Link>
-              <Link href="/categories" className="text-gray-600 hover:text-gray-900">
-                Categories
-              </Link>
-              <Link href="/favorites" className="text-rose-500 font-medium">
-                Favorites
-              </Link>
-              <Link href="/about" className="text-gray-600 hover:text-gray-900">
-                About
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <button className="text-gray-600 hover:text-gray-900">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <Link
-                href="/login"
-                className="px-4 py-2 rounded-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"
-              >
-                Sign In
-              </Link>
-            </div>
-          </div>
-        </header>
+       <Header/>
 
         {/* Empty State */}
         <div className="max-w-4xl mx-auto py-16 px-4 text-center">
@@ -182,43 +146,7 @@ export default function Favorites() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation - Made Sticky */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <HeartIcon className="h-8 w-8 text-rose-500" />
-            <span className="ml-2 text-xl font-bold text-gray-800">Spark</span>
-          </Link>
-
-          <div className="flex items-center space-x-4">
-            <Link href="/discover" className="text-gray-600 hover:text-gray-900">
-              Discover
-            </Link>
-            <Link href="/categories" className="text-gray-600 hover:text-gray-900">
-              Categories
-            </Link>
-            <Link href="/favorites" className="text-rose-500 font-medium">
-              Favorites
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-gray-900">
-              About
-            </Link>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <button className="text-gray-600 hover:text-gray-900">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-full border border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"
-            >
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </header>
+     <Header/>
 
       {/* Favorites Content */}
       <div className="container mx-auto py-12 px-4">
