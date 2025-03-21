@@ -1,0 +1,33 @@
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2);
+  }
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.heart-saved {
+  animation: heartbeat 1s ease-in-out;
+}
+
+.heart-button {
+  transition: all 0.3s ease;
+}
+
+.heart-button:hover {
+  transform: scale(1.1);
+}
+
+.heart-button:active {
+  transform: scale(0.95);
+}
