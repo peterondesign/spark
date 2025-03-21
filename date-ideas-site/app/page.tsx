@@ -7,6 +7,7 @@ import { HeartIcon, MapPinIcon, SearchIcon, StarIcon } from "./components/icons"
 import SaveButton from "./components/SaveButton";
 import { getImageUrl } from "./utils/imageService";
 import { supabase } from "../utils/supabaseClient";
+import AdvancedSearchModal from "./components/AdvancedSearchModal"; // Import the new component
 
 
 // Define DateIdea type
@@ -23,7 +24,7 @@ interface DateIdea {
   image: string;
   priceLevel?: number;
   bestForStage?: string;
-  tips?: string;
+  tips?: string | null;
   idealFor?: string;
   relatedDateIdeas?: string[];
   longDescription?: string;
@@ -38,6 +39,7 @@ export default function Home() {
   const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
   const [visibleIdeas, setVisibleIdeas] = useState<number>(20);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // State to control modal visibility
 
   useEffect(() => {
 
@@ -48,13 +50,11 @@ export default function Home() {
           .select('*');
 
         if (error) {
-          alert(`Error fetching date ideas: ${error.message} - ${error.details}`); // Display detailed error message
           console.error("Supabase Error:", error); // Log the full error object
           throw error;
         }
 
         setAllDateIdeas(data || []);
-        alert(`Fetched data: ${JSON.stringify(data)}`); // Display fetched data
 
         // Load images for all date ideas
         if (data) {
@@ -76,20 +76,6 @@ export default function Home() {
       // Load hero image
       const heroImg = await getImageUrl("/", "romantic couple date", 1920, 500);
       setHeroImageUrl(heroImg);
-
-      // Load category images
-      const categoryImagesPromises = categories.map(async (category) => ({
-        [category.slug]: await getImageUrl(category.image, category.name + " date", 400, 300),
-      }));
-      const categoryImagesResolved = Object.assign({}, ...(await Promise.all(categoryImagesPromises)));
-      setCategoryImages(categoryImagesResolved);
-
-      // Load top date idea images
-      const topDateIdeaImagesPromises = topDateIdeas.map(async (idea) => ({
-        [idea.slug]: await getImageUrl(idea.image, `${idea.title} ${idea.category}`, 400, 300),
-      }));
-      const topDateIdeaImagesResolved = Object.assign({}, ...(await Promise.all(topDateIdeaImagesPromises)));
-      setTopDateIdeaImages(topDateIdeaImagesResolved);
     };
 
     loadImages();
@@ -99,6 +85,69 @@ export default function Home() {
 
   const loadMoreIdeas = () => {
     setVisibleIdeas(prev => prev + 20);
+  };
+
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSearch = (filters: any) => {
+    setLoading(true);
+
+    // Filter date ideas based on the provided filters
+    const filteredIdeas = allDateIdeas.filter((idea) => {
+      let matches = true;
+
+      // Filter by category if specified
+      if (filters.category && filters.category !== "all") {
+        matches = matches && idea.category === filters.category;
+      }
+
+      // Filter by price level if specified
+      if (filters.priceLevel && filters.priceLevel !== "all") {
+        // Convert string price level to number for comparison
+        const priceLevelNum = parseInt(filters.priceLevel);
+        matches = matches && idea.priceLevel === priceLevelNum;
+      }
+
+      // Filter by location if specified
+      if (filters.location && filters.location.trim() !== "") {
+        matches = matches && idea.location.toLowerCase().includes(filters.location.toLowerCase());
+      }
+
+      // Filter by search term (in title or description)
+      if (filters.searchTerm && filters.searchTerm.trim() !== "") {
+        const term = filters.searchTerm.toLowerCase();
+        const titleMatch = idea.title.toLowerCase().includes(term);
+        const descMatch = idea.description.toLowerCase().includes(term);
+        matches = matches && (titleMatch || descMatch);
+      }
+
+      // Filter by idealFor if specified
+      if (filters.idealFor && filters.idealFor !== "all") {
+        matches = matches && idea.idealFor === filters.idealFor;
+      }
+
+      // Filter by duration if specified
+      if (filters.duration && filters.duration !== "all") {
+        matches = matches && idea.duration === filters.duration;
+      }
+
+      return matches;
+    });
+
+    // Update state with filtered ideas
+    setAllDateIdeas(filteredIdeas);
+    // Reset the number of visible ideas
+    setVisibleIdeas(20);
+    setLoading(false);
+
+    // Close the modal after search
+    closeModal();
   };
 
 
@@ -176,9 +225,9 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold text-gray-800">Browse All Date Ideas</h2>
-            <Link href="/ideas" className="text-rose-500 hover:text-rose-600 font-medium">
+            <button onClick={openModal} className="text-rose-500 hover:text-rose-600 font-medium">
               Advanced Search
-            </Link>
+            </button>
           </div>
 
           {loading ? (
@@ -232,7 +281,6 @@ export default function Home() {
                         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{idea.description}</p>
 
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-gray-900">{idea.price}</span>
                           <span className="text-gray-500">{idea.duration}</span>
                         </div>
                       </div>
@@ -253,67 +301,6 @@ export default function Home() {
               )}
             </>
           )}
-        </div>
-      </section>
-
-      {/* Top Date Ideas Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-gray-800">Top-rated date ideas</h2>
-            <Link href="/top-ideas" className="text-rose-500 hover:text-rose-600 font-medium">
-              View all
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {topDateIdeas.map((idea, index) => (
-              <Link href={`/date-idea/${idea.slug}`} key={index} className="group">
-                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    {topDateIdeaImages[idea.slug] && (
-                      <Image
-                        src={topDateIdeaImages[idea.slug]!}
-                        alt={idea.title}
-                        width={400}
-                        height={300}
-                        className="w-full h-48 object-cover"
-                      />
-                    )}
-                    <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3" />
-                  </div>
-
-                  <div className="p-4">
-                    <div className="flex items-center mb-2">
-                      <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        {idea.category}
-                      </span>
-                      <div className="ml-auto flex items-center">
-                        <StarIcon className="h-4 w-4 text-yellow-400" />
-                        <span className="ml-1 text-sm text-gray-600">{idea.rating}</span>
-                      </div>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors">
-                      {idea.title}
-                    </h3>
-
-                    <div className="flex items-center text-sm text-gray-500 mb-2">
-                      <MapPinIcon className="h-4 w-4 mr-1" />
-                      <span>{idea.location}</span>
-                    </div>
-
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{idea.description}</p>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-gray-900">{idea.price}</span>
-                      <span className="text-gray-500">{idea.duration}</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -491,89 +478,14 @@ export default function Home() {
 
           <div className="mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-4 md:mb-0">
-              <HeartIcon className="h-8 w-8 text-rose-500" />
-              <span className="ml-2 text-xl font-bold text-gray-800">Spark</span>
+              {/* Render the AdvancedSearchModal component */}
+              <AdvancedSearchModal isOpen={isModalOpen} onClose={closeModal} onSearch={handleSearch} />
             </div>
             <div className="text-sm text-gray-500">© {new Date().getFullYear()} Spark. All rights reserved.</div>
           </div>
         </div>
       </footer>
+      {/* This AdvancedSearchModal is already rendered above */}
     </div>
   );
 }
-
-// Sample data
-const categories = [
-  { name: "Romantic", count: 124, slug: "romantic", image: "/placeholder.svg?height=300&width=400" },
-  { name: "Adventure", count: 86, slug: "adventure", image: "/placeholder.svg?height=300&width=400" },
-  { name: "Food & Drink", count: 152, slug: "food-drink", image: "/placeholder.svg?height=300&width=400" },
-  { name: "Arts & Culture", count: 78, slug: "arts-culture", image: "/placeholder.svg?height=300&width=400" },
-]
-
-const topDateIdeas = [
-  {
-    title: "Sunset Kayaking Tour",
-    category: "Adventure",
-    rating: 4.9,
-    location: "Multiple locations",
-    description: "Experience the magic of sunset from the water with this guided kayaking tour for couples.",
-    price: "From $49 per person",
-    duration: "2 hours",
-    slug: "sunset-kayaking",
-    image: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    title: "Couples Cooking Class",
-    category: "Food & Drink",
-    rating: 4.8,
-    location: "Downtown",
-    description: "Learn to cook a gourmet meal together with expert chefs in this hands-on cooking class.",
-    price: "From $75 per person",
-    duration: "3 hours",
-    slug: "couples-cooking",
-    image: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    title: "Rooftop Movie Night",
-    category: "Entertainment",
-    rating: 4.7,
-    location: "City Center",
-    description: "Enjoy classic romantic films under the stars with comfortable seating and gourmet snacks.",
-    price: "From $35 per person",
-    duration: "3 hours",
-    slug: "rooftop-movie",
-    image: "/placeholder.svg?height=300&width=400",
-  },
-  {
-    title: "Wine Tasting Tour",
-    category: "Food & Drink",
-    rating: 4.9,
-    location: "Wine Country",
-    description: "Sample premium wines at three boutique wineries with transportation included.",
-    price: "From $89 per person",
-    duration: "5 hours",
-    slug: "wine-tasting",
-    image: "/placeholder.svg?height=300&width=400",
-  },
-]
-
-const seasonalIdeas = [
-  {
-    title: "10 Cozy Winter Date Ideas",
-    description: "Stay warm and connected with these romantic winter activities",
-    slug: "winter-dates",
-    image: "/placeholder.svg?height=400&width=600",
-  },
-  {
-    title: "Perfect Picnic Dates",
-    description: "Outdoor dining experiences for the perfect spring or summer day",
-    slug: "picnic-dates",
-    image: "/placeholder.svg?height=400&width=600",
-  },
-  {
-    title: "Fall in Love: Autumn Date Ideas",
-    description: "Celebrate the season with these autumn-inspired romantic outings",
-    slug: "fall-dates",
-    image: "/placeholder.svg?height=400&width=600",
-  },
-]

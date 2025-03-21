@@ -6,212 +6,141 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { HeartIcon, MapPinIcon, StarIcon } from "../../components/icons";
 import SaveButton from "../../components/SaveButton";
-import { getImageUrl, updateDateIdeaImages } from "../../utils/imageService";
+import { getImageUrl } from "../../utils/imageService";
+import { supabase } from "@/utils/supabaseClient";
 
-// Sample data - In a real app, this would be fetched from an API
-const dateIdeasData = {
-  "sunset-kayaking": {
-    title: "Sunset Kayaking Tour",
-    category: "Adventure",
-    rating: 4.9,
-    reviewCount: 128,
-    location: "Multiple locations",
-    description: "Experience the magic of sunset from the water with this guided kayaking tour for couples. Paddle together through calm waters as the sky transforms with vibrant colors, creating a romantic and peaceful atmosphere. Perfect for both beginners and experienced kayakers, this tour provides all necessary equipment and safety instructions before embarking on this memorable water adventure.",
-    longDescription: `
-      <p>This magical evening experience begins approximately 1 hour before sunset, allowing you to get comfortable with your kayak before the main event. Your experienced guide will provide a brief orientation and safety instructions before you and your partner set off on the water.</p>
-      <p>As you paddle through calm waters, watch as the sky transforms with spectacular colors reflected on the water's surface. The peaceful atmosphere and shared experience create the perfect opportunity for connection and conversation.</p>
-      <p>Along the way, your guide will point out local wildlife and share interesting facts about the ecosystem. Many couples spot herons, eagles, and sometimes even dolphins or seals, depending on the location.</p>
-      <p>The tour concludes shortly after sunset, giving you the chance to paddle under the early evening sky. Upon return, enjoy complimentary hot chocolate or wine (depending on the location) to complete your romantic evening on the water.</p>
-    `,
-    price: "From $49 per person",
-    priceLevel: "$$",
-    duration: "2 hours",
-    difficultyLevel: "Moderate",
-    bestTimeToVisit: "Summer and early fall",
-    reservationRequired: true,
-    bestForStage: "Any relationship stage",
-    amenities: ["Equipment provided", "Professional guide", "Photo opportunities", "Refreshments"],
-    tips: [
-      "Wear clothes that can get wet",
-      "Bring a waterproof case for your phone",
-      "Apply sunscreen even for sunset tours",
-      "Arrive 15 minutes early for orientation"
-    ],
-    idealFor: ["Adventure lovers", "Nature enthusiasts", "Active couples"],
-    slug: "sunset-kayaking",
-    images: [
-      "/placeholder.svg?height=600&width=800",
-      "/placeholder.svg?height=600&width=800&text=Kayaking+2",
-      "/placeholder.svg?height=600&width=800&text=Kayaking+3"
-    ],
-    mapLocation: "https://maps.google.com/?q=Kayak+Rental",
-    contactInfo: {
-      website: "https://example.com/sunset-kayaking",
-      phone: "555-123-4567",
-      email: "info@sunsetkayaking.example.com"
-    },
-    relatedDateIdeas: ["couples-cooking", "wine-tasting", "rooftop-movie"]
-  },
-  "couples-cooking": {
-    title: "Couples Cooking Class",
-    category: "Food & Drink",
-    rating: 4.8,
-    reviewCount: 94,
-    location: "Downtown",
-    description: "Learn to cook a gourmet meal together with expert chefs in this hands-on cooking class.",
-    longDescription: `
-      <p>Discover the joy of cooking together in this intimate hands-on class designed specifically for couples. Led by experienced chefs, you'll work as a team to create a delicious multi-course meal from scratch.</p>
-      <p>The class begins with a welcome drink and introduction to the menu. Your chef will demonstrate key techniques before guiding you through each step of preparing your gourmet meal. Learn professional cooking tips, knife skills, and plating techniques that you can use at home.</p>
-      <p>After cooking, sit down to enjoy the fruits of your labor in a romantic setting, complete with wine pairings selected to complement each course. This is more than just a cooking class—it's a shared experience that creates lasting memories.</p>
-      <p>At the end of the class, you'll receive recipe cards to recreate your meal at home, continuing the experience long after the date ends.</p>
-    `,
-    price: "From $75 per person",
-    priceLevel: "$$$",
-    duration: "3 hours",
-    difficultyLevel: "Easy to Moderate",
-    bestTimeToVisit: "Year-round, evening classes available",
-    reservationRequired: true,
-    bestForStage: "Any relationship stage, especially early dating",
-    amenities: ["Ingredients provided", "Complimentary wine", "Take-home recipes", "Professional instruction"],
-    tips: [
-      "Wear comfortable shoes and clothes you don't mind getting messy",
-      "Let them know about dietary restrictions in advance",
-      "Arrive hungry - you'll be eating what you cook!",
-      "Book at least 1 week in advance for popular classes"
-    ],
-    idealFor: ["Foodies", "Home cooks", "People who enjoy hands-on activities"],
-    slug: "couples-cooking",
-    images: [
-      "/placeholder.svg?height=600&width=800",
-      "/placeholder.svg?height=600&width=800&text=Cooking+2",
-      "/placeholder.svg?height=600&width=800&text=Cooking+3"
-    ],
-    mapLocation: "https://maps.google.com/?q=Cooking+School+Downtown",
-    contactInfo: {
-      website: "https://example.com/cooking-class",
-      phone: "555-789-1234",
-      email: "classes@cookingschool.example.com"
-    },
-    relatedDateIdeas: ["wine-tasting", "sunset-kayaking", "rooftop-movie"]
-  },
-  "rooftop-movie": {
-    title: "Rooftop Movie Night",
-    category: "Entertainment",
-    rating: 4.7,
-    reviewCount: 112,
-    location: "City Center",
-    description: "Enjoy classic romantic films under the stars with comfortable seating and gourmet snacks.",
-    longDescription: `
-      <p>Experience cinema like never before with this elevated outdoor movie screening on one of the city's most scenic rooftops. Snuggle up under the stars as you enjoy carefully curated films on a giant screen with state-of-the-art sound systems.</p>
-      <p>Arrive early to secure the best spots and enjoy pre-show entertainment and spectacular city views. Each couple gets a comfortable double lounger or love seat with blankets and pillows to ensure maximum comfort throughout the screening.</p>
-      <p>Your ticket includes a gourmet snack box with artisanal popcorn, charcuterie selections, chocolate-covered treats, and other movie snacks elevated to a whole new level. A full bar service is available throughout the evening, featuring themed cocktails inspired by the night's feature film.</p>
-      <p>The venue is equipped with heaters for cooler evenings, and the intimate setting creates a magical atmosphere that transforms movie-watching into a premium romantic experience.</p>
-    `,
-    price: "From $35 per person",
-    priceLevel: "$$",
-    duration: "3 hours",
-    difficultyLevel: "Easy",
-    bestTimeToVisit: "Summer and early fall",
-    reservationRequired: true,
-    bestForStage: "Any relationship stage",
-    amenities: ["Comfortable seating", "Blankets provided", "Gourmet snacks", "Full bar service"],
-    tips: [
-      "Arrive at least 30 minutes early for the best seating",
-      "Bring an extra layer as it can get cool after sunset",
-      "Check the movie schedule in advance - they rotate classics and new releases",
-      "Consider the Premium Ticket for reserved front-row loungers"
-    ],
-    idealFor: ["Movie buffs", "Romantic souls", "Night owls"],
-    slug: "rooftop-movie",
-    images: [
-      "/placeholder.svg?height=600&width=800",
-      "/placeholder.svg?height=600&width=800&text=Movie+2",
-      "/placeholder.svg?height=600&width=800&text=Movie+3"
-    ],
-    mapLocation: "https://maps.google.com/?q=Rooftop+Cinema",
-    contactInfo: {
-      website: "https://example.com/rooftop-cinema",
-      phone: "555-456-7890",
-      email: "tickets@rooftopcinema.example.com"
-    },
-    relatedDateIdeas: ["couples-cooking", "wine-tasting", "sunset-kayaking"]
-  },
-  "wine-tasting": {
-    title: "Wine Tasting Tour",
-    category: "Food & Drink",
-    rating: 4.9,
-    reviewCount: 156,
-    location: "Wine Country",
-    description: "Sample premium wines at three boutique wineries with transportation included.",
-    longDescription: `
-      <p>Embark on a sophisticated journey through wine country with this expertly guided tour visiting three distinctive boutique wineries. Your experience includes comfortable transportation, allowing both of you to fully enjoy the wine tastings without worrying about driving.</p>
-      <p>At each winery, you'll be guided through a tasting of 4-6 premium wines by knowledgeable sommeliers who will explain the unique characteristics of each varietal and the winemaking process. Learn about proper tasting techniques, food pairings, and what makes each vineyard special.</p>
-      <p>Between tastings, enjoy the spectacular vineyard views and take a behind-the-scenes tour of at least one production facility to see how grapes are transformed into fine wine. Your tour includes a gourmet picnic lunch served in a scenic vineyard setting.</p>
-      <p>This tour offers the perfect balance of education and enjoyment, creating opportunities for meaningful conversation and shared discovery in a romantic setting.</p>
-    `,
-    price: "From $89 per person",
-    priceLevel: "$$$",
-    duration: "5 hours",
-    difficultyLevel: "Easy",
-    bestTimeToVisit: "Spring through fall, especially harvest season",
-    reservationRequired: true,
-    bestForStage: "Any relationship stage, especially anniversaries",
-    amenities: ["Transportation included", "Tasting fees covered", "Light food pairings", "Gourmet picnic lunch"],
-    tips: [
-      "Eat a substantial breakfast before the tour",
-      "Stay hydrated between tastings",
-      "Don't wear perfume or cologne that can interfere with tasting",
-      "Many wineries offer shipping if you find bottles you love"
-    ],
-    idealFor: ["Wine enthusiasts", "Foodies", "Couples seeking relaxation"],
-    slug: "wine-tasting",
-    images: [
-      "/placeholder.svg?height=600&width=800",
-      "/placeholder.svg?height=600&width=800&text=Wine+2",
-      "/placeholder.svg?height=600&width=800&text=Wine+3"
-    ],
-    mapLocation: "https://maps.google.com/?q=Wine+Country+Tours",
-    contactInfo: {
-      website: "https://example.com/wine-tours",
-      phone: "555-987-6543",
-      email: "reservations@winetours.example.com"
-    },
-    relatedDateIdeas: ["couples-cooking", "sunset-kayaking", "rooftop-movie"]
-  }
-};
+// Define DateIdea type
+interface DateIdea {
+  id: number;
+  title: string;
+  category: string;
+  rating: number;
+  location: string;
+  description: string;
+  price: string;
+  duration: string;
+  slug: string;
+  image: string;
+  priceLevel?: number;
+  bestForStage?: string;
+  tips?: string;
+  idealFor?: string;
+  relatedDateIdeas?: string[];
+  longDescription?: string;
+  mapLocation?: string;
+  contactInfo?: {
+    website: string;
+    phone: string;
+    email: string;
+  };
+  amenities?: string[];
+  difficultyLevel?: string;
+  bestTimeToVisit?: string;
+  reservationRequired?: boolean;
+  reviewCount?: number;
+  images: string[];
+}
 
 export default function DateIdeaDetails() {
   const params = useParams();
   const slug = params.slug as string;
-  const [dateIdea, setDateIdea] = useState<any>(null);
+  const [dateIdea, setDateIdea] = useState<DateIdea | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
-  const [relatedIdeas, setRelatedIdeas] = useState<any[]>([]);
+  const [relatedIdeas, setRelatedIdeas] = useState<DateIdea[]>([]);
 
   useEffect(() => {
-    // In a real app, this would be an API call
     const fetchDateIdea = async () => {
       setLoading(true);
-      setTimeout(async () => {
-        const idea = dateIdeasData[slug as keyof typeof dateIdeasData];
-        
-        // Update the date idea with better images
-        const updatedIdea = await updateDateIdeaImages(idea);
-        setDateIdea(updatedIdea);
-        
-        // Get related ideas and update their images too
-        if (updatedIdea && updatedIdea.relatedDateIdeas) {
-          const related = await Promise.all(updatedIdea.relatedDateIdeas
-            .map(async (relatedSlug: string) => {
-              const relatedIdea = dateIdeasData[relatedSlug as keyof typeof dateIdeasData];
-              return await updateDateIdeaImages(relatedIdea);
-            })
-            .filter(Boolean));
-          setRelatedIdeas(related);
+      try {
+        const { data, error } = await supabase
+          .from('date_ideas')
+          .select('*')
+          .eq('slug', slug)
+          .single();
+
+        if (error) {
+          console.error("Error fetching date idea:", error);
+          setLoading(false);
+          return;
         }
-        
+
+        if (data) {
+          // Ensure the fetched data conforms to the DateIdea interface
+          const dateIdeaData: DateIdea = {
+            id: data.id,
+            title: data.title,
+            category: data.category,
+            rating: data.rating,
+            location: data.location,
+            description: data.description,
+            price: data.price,
+            duration: data.duration,
+            slug: data.slug,
+            image: data.image,
+            priceLevel: data.price_level || undefined,
+            bestForStage: data.best_for_stage || undefined,
+            tips: data.tips || undefined,
+            idealFor: data.ideal_for || undefined,
+            relatedDateIdeas: data.related_date_ideas || undefined,
+            longDescription: data.long_description || undefined,
+            mapLocation: data.map_location || undefined,
+            contactInfo: data.contact_info || undefined,
+            amenities: data.amenities || undefined,
+            difficultyLevel: data.difficulty_level || undefined,
+            bestTimeToVisit: data.best_time_to_visit || undefined,
+            reservationRequired: data.reservation_required || undefined,
+            reviewCount: data.review_count || undefined,
+            images: data.images || [data.image] || [], // Ensure images is always an array
+          };
+
+          setDateIdea(dateIdeaData);
+
+          // Fetch related ideas (adjust this part based on how related ideas are stored)
+          if (dateIdeaData.relatedDateIdeas && dateIdeaData.relatedDateIdeas.length > 0) {
+            const { data: relatedData, error: relatedError } = await supabase
+              .from('date_ideas')
+              .select('*')
+              .in('slug', dateIdeaData.relatedDateIdeas);
+
+            if (relatedError) {
+              console.error("Error fetching related date ideas:", relatedError);
+            } else {
+              const relatedIdeasData: DateIdea[] = relatedData ? relatedData.map((relatedIdea: any) => ({
+                id: relatedIdea.id,
+                title: relatedIdea.title,
+                category: relatedIdea.category,
+                rating: relatedIdea.rating,
+                location: relatedIdea.location,
+                description: relatedIdea.description,
+                price: relatedIdea.price,
+                duration: relatedIdea.duration,
+                slug: relatedIdea.slug,
+                image: relatedIdea.image,
+                priceLevel: relatedIdea.price_level || undefined,
+                bestForStage: relatedIdea.best_for_stage || undefined,
+                tips: relatedIdea.tips || undefined,
+                idealFor: relatedIdea.ideal_for || undefined,
+                relatedDateIdeas: relatedIdea.related_date_ideas || undefined,
+                longDescription: relatedIdea.long_description || undefined,
+                mapLocation: relatedIdea.map_location || undefined,
+                contactInfo: relatedIdea.contact_info || undefined,
+                amenities: relatedIdea.amenities || undefined,
+                difficultyLevel: relatedIdea.difficulty_level || undefined,
+                bestTimeToVisit: relatedIdea.best_time_to_visit || undefined,
+                reservationRequired: relatedIdea.reservation_required || undefined,
+                reviewCount: relatedIdea.review_count || undefined,
+                images: relatedIdea.images || [relatedIdea.image] || [],
+              })) : [];
+              setRelatedIdeas(relatedIdeasData);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+      } finally {
         setLoading(false);
-      }, 300);
+      }
     };
 
     if (slug) {
@@ -244,9 +173,15 @@ export default function DateIdeaDetails() {
     );
   }
 
-  const renderPriceLevel = (level: string) => {
+  const renderPriceLevel = (level: number | string | undefined) => {
     const levels = ["$", "$$", "$$$", "$$$$"];
-    const priceIndex = levels.indexOf(level);
+    let priceIndex = -1;
+    
+    if (typeof level === 'string') {
+      priceIndex = levels.indexOf(level);
+    } else if (typeof level === 'number' && level > 0 && level <= levels.length) {
+      priceIndex = level - 1;
+    }
     
     return (
       <div className="flex items-center">
@@ -367,19 +302,21 @@ export default function DateIdeaDetails() {
             <div className="flex items-center mb-6">
               <MapPinIcon className="h-5 w-5 text-rose-500 mr-2" />
               <span className="text-gray-700">{dateIdea.location}</span>
-              <Link 
-                href={dateIdea.mapLocation} 
-                target="_blank" 
-                className="ml-3 text-sm text-rose-500 hover:text-rose-600"
-              >
-                View on map
-              </Link>
+              {dateIdea.mapLocation && (
+                <Link
+                  href={dateIdea.mapLocation}
+                  target="_blank"
+                  className="ml-3 text-sm text-rose-500 hover:text-rose-600"
+                >
+                  View on map
+                </Link>
+              )}
             </div>
 
             {/* Description */}
             <div className="mb-8">
               <h2 className="text-xl font-bold text-gray-800 mb-4">About This Date Idea</h2>
-              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: dateIdea.longDescription }} />
+              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: dateIdea.longDescription || '' }} />
             </div>
 
             {/* What to expect */}
@@ -446,63 +383,57 @@ export default function DateIdeaDetails() {
           <div className="w-full lg:w-1/3">
             {/* Booking/Contact Card */}
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Ready to Try This Date?</h2>
-              <Link 
-                href={dateIdea.contactInfo.website} 
-                target="_blank"
-                className="bg-rose-500 text-white w-full py-3 rounded-lg flex items-center justify-center font-medium hover:bg-rose-600 transition-colors mb-4"
-              >
-                Book Now
-              </Link>
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
-                  <div className="mt-1">
-                    <div className="flex items-center text-gray-800">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      <span>{dateIdea.contactInfo.phone}</span>
-                    </div>
-                    <div className="flex items-center text-gray-800 mt-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <span>{dateIdea.contactInfo.email}</span>
+              {dateIdea.contactInfo && (
+                <>
+                  <h2 className="text-xl font-bold text-gray-800 mb-4">Ready to Try This Date?</h2>
+                  <Link
+                    href={dateIdea.contactInfo.website}
+                    target="_blank"
+                    className="bg-rose-500 text-white w-full py-3 rounded-lg flex items-center justify-center font-medium hover:bg-rose-600 transition-colors mb-4"
+                  >
+                    Book Now
+                  </Link>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
+                      <div className="mt-1">
+                        <div className="flex items-center text-gray-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                          <span>{dateIdea.contactInfo.phone}</span>
+                        </div>
+                        <div className="flex items-center text-gray-800 mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          <span>{dateIdea.contactInfo.email}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-            
-            {/* Amenities */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Included Amenities</h2>
-              <div className="grid grid-cols-1 gap-2">
-                {dateIdea.amenities.map((amenity: string, index: number) => (
-                  <div key={index} className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-gray-700">{amenity}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+
             
             {/* Tips */}
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-lg font-bold text-gray-800 mb-4">Insider Tips</h2>
               <div className="space-y-2">
-                {dateIdea.tips.map((tip: string, index: number) => (
-                  <div key={index} className="flex items-start">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-gray-700">{tip}</span>
-                  </div>
-                ))}
+                {Array.isArray(dateIdea.tips) ? (
+                  dateIdea.tips.map((tip: string, index: number) => (
+                    <div key={index} className="flex items-start">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-700">{tip}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-700">No tips available.</div>
+                )}
               </div>
             </div>
             
@@ -510,14 +441,18 @@ export default function DateIdeaDetails() {
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
               <h2 className="text-lg font-bold text-gray-800 mb-4">Ideal For</h2>
               <div className="flex flex-wrap gap-2">
-                {dateIdea.idealFor.map((ideal: string, index: number) => (
-                  <span 
-                    key={index}
-                    className="bg-gray-100 text-gray-800 text-xs font-medium px-3 py-1.5 rounded"
-                  >
-                    {ideal}
-                  </span>
-                ))}
+                {Array.isArray(dateIdea.idealFor) ? (
+                  dateIdea.idealFor.map((ideal: string, index: number) => (
+                    <span 
+                      key={index}
+                      className="bg-gray-100 text-gray-800 text-xs font-medium px-3 py-1.5 rounded"
+                    >
+                      {ideal}
+                    </span>
+                  ))
+                ) : (
+                  <div className="text-gray-700">Not specified.</div>
+                )}
               </div>
             </div>
           </div>
