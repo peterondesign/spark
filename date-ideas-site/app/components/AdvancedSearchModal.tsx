@@ -138,7 +138,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
           <div className="sm:flex sm:items-start">
             <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
               <h3 className="text-2xl font-bold text-gray-900 mb-6" id="modal-title">
-                Advanced Search
+                Advanced Search (Testing)
               </h3>
               
               <form onSubmit={handleSubmit}>
