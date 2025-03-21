@@ -43,6 +43,26 @@ export function StarIcon({ className }: IconProps) {
   );
 }
 
+/*************  ✨ Codeium Command ⭐  *************/
+export function XIcon({ className }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+/******  60a20ffb-de61-487c-b862-a5809e82d97f  *******/
+
 export function UserIcon({ className = "h-6 w-6" }) {
   return (
     <svg
