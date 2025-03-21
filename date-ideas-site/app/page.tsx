@@ -6,15 +6,72 @@ import Link from "next/link";
 import { HeartIcon, MapPinIcon, SearchIcon, StarIcon } from "./components/icons";
 import SaveButton from "./components/SaveButton";
 import { getImageUrl } from "./utils/imageService";
+import { supabase } from "../utils/supabaseClient";
+
+
+// Define DateIdea type
+interface DateIdea {
+  id: number;
+  title: string;
+  category: string;
+  rating: number;
+  location: string;
+  description: string;
+  price: string;
+  duration: string;
+  slug: string;
+  image: string;
+  priceLevel?: number;
+  bestForStage?: string;
+  tips?: string;
+  idealFor?: string;
+  relatedDateIdeas?: string[];
+  longDescription?: string;
+}
+
 
 export default function Home() {
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [categoryImages, setCategoryImages] = useState<Record<string, string>>({});
   const [topDateIdeaImages, setTopDateIdeaImages] = useState<Record<string, string>>({});
-  const [seasonalIdeaImages, setSeasonalIdeaImages] = useState<Record<string, string>>({});
-  const [popularCityImages, setPopularCityImages] = useState<Record<string, string>>({});
+  const [allDateIdeas, setAllDateIdeas] = useState<DateIdea[]>([]);
+  const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
+  const [visibleIdeas, setVisibleIdeas] = useState<number>(20);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+
+    const fetchDateIdeas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('date_ideas')
+          .select('*');
+
+        if (error) {
+          alert(`Error fetching date ideas: ${error.message} - ${error.details}`); // Display detailed error message
+          console.error("Supabase Error:", error); // Log the full error object
+          throw error;
+        }
+
+        setAllDateIdeas(data || []);
+        alert(`Fetched data: ${JSON.stringify(data)}`); // Display fetched data
+
+        // Load images for all date ideas
+        if (data) {
+          const allIdeaImagesPromises = data.map(async (idea: { slug: any; image: string | { url?: string; } | undefined; title: any; category: any; }) => ({
+            [idea.slug]: await getImageUrl(idea.image, `${idea.title} ${idea.category}`, 400, 300),
+          }));
+
+          const allIdeaImagesResolved = Object.assign({}, ...(await Promise.all(allIdeaImagesPromises)));
+          setAllDateIdeaImages(allIdeaImagesResolved);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching date ideas:', error);
+        setLoading(false);
+      }
+    };
     const loadImages = async () => {
       // Load hero image
       const heroImg = await getImageUrl("/", "romantic couple date", 1920, 500);
@@ -33,24 +90,17 @@ export default function Home() {
       }));
       const topDateIdeaImagesResolved = Object.assign({}, ...(await Promise.all(topDateIdeaImagesPromises)));
       setTopDateIdeaImages(topDateIdeaImagesResolved);
-
-      // Load seasonal idea images
-      const seasonalIdeaImagesPromises = seasonalIdeas.map(async (idea) => ({
-        [idea.slug]: await getImageUrl(idea.image, idea.title, 600, 400),
-      }));
-      const seasonalIdeaImagesResolved = Object.assign({}, ...(await Promise.all(seasonalIdeaImagesPromises)));
-      setSeasonalIdeaImages(seasonalIdeaImagesResolved);
-
-      // Load popular city images
-      const popularCityImagesPromises = popularCities.map(async (city) => ({
-        [city.slug]: await getImageUrl(city.image, `${city.name} city skyline`, 400, 200),
-      }));
-      const popularCityImagesResolved = Object.assign({}, ...(await Promise.all(popularCityImagesPromises)));
-      setPopularCityImages(popularCityImagesResolved);
     };
 
     loadImages();
+    fetchDateIdeas();
   }, []);
+
+
+  const loadMoreIdeas = () => {
+    setVisibleIdeas(prev => prev + 20);
+  };
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -63,17 +113,11 @@ export default function Home() {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <Link href="/discover" className="text-gray-600 hover:text-gray-900">
-              Discover
-            </Link>
-            <Link href="/categories" className="text-gray-600 hover:text-gray-900">
-              Categories
-            </Link>
             <Link href="/favorites" className="text-gray-600 hover:text-gray-900">
               Favorites
             </Link>
-            <Link href="/about" className="text-gray-600 hover:text-gray-900">
-              About
+            <Link href="/calendar" className="text-gray-600 hover:text-gray-900">
+              Shared Date Calendar
             </Link>
           </div>
 
@@ -112,26 +156,10 @@ export default function Home() {
             Discover unique and memorable date ideas tailored just for you
           </p>
 
-          {/* Search Bar */}
-          <div className="w-full max-w-3xl bg-white rounded-full shadow-lg overflow-hidden">
-            <div className="flex items-center p-2">
-              <div className="flex-1 px-4">
-                <input
-                  type="text"
-                  placeholder="Search for date ideas, locations, activities..."
-                  className="w-full py-2 text-gray-800 focus:outline-none"
-                />
-              </div>
-              <button className="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-full font-medium transition-colors">
-                Search
-              </button>
-            </div>
-          </div>
-          
           {/* Personalize Button */}
           <div className="mt-6">
-            <Link 
-              href="/preferences" 
+            <Link
+              href="/preferences"
               className="bg-white text-rose-500 hover:bg-gray-100 px-6 py-3 rounded-full font-medium transition-colors flex items-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -143,33 +171,88 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="py-12 bg-gray-50">
+      {/* All Date Ideas Section */}
+      <section className="py-12">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-gray-800 mb-8">Explore date ideas by category</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((category, index) => (
-              <Link href={`/category/${category.slug}`} key={index} className="group">
-                <div className="relative rounded-lg overflow-hidden h-64">
-                  {categoryImages[category.slug] && (
-                    <Image
-                      src={categoryImages[category.slug]!}
-                      alt={category.name}
-                      width={400}
-                      height={300}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-4 text-white">
-                    <h3 className="text-xl font-bold">{category.name}</h3>
-                    <p className="text-sm opacity-90">{category.count} ideas</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-gray-800">Browse All Date Ideas</h2>
+            <Link href="/ideas" className="text-rose-500 hover:text-rose-600 font-medium">
+              Advanced Search
+            </Link>
           </div>
+
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-rose-500 border-r-transparent"></div>
+              <p className="mt-4 text-gray-600">Loading date ideas...</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {allDateIdeas.slice(0, visibleIdeas).map((idea) => (
+                  <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
+                    <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                      <div className="relative">
+                        {allDateIdeaImages[idea.slug] ? (
+                          <Image
+                            src={allDateIdeaImages[idea.slug]}
+                            alt={idea.title}
+                            width={400}
+                            height={300}
+                            className="w-full h-48 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-500">Image loading...</span>
+                          </div>
+                        )}
+                        <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3" />
+                      </div>
+
+                      <div className="p-4">
+                        <div className="flex items-center mb-2">
+                          <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                            {idea.category}
+                          </span>
+                          <div className="ml-auto flex items-center">
+                            <StarIcon className="h-4 w-4 text-yellow-400" />
+                            <span className="ml-1 text-sm text-gray-600">{idea.rating}</span>
+                          </div>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors">
+                          {idea.title}
+                        </h3>
+
+                        <div className="flex items-center text-sm text-gray-500 mb-2">
+                          <MapPinIcon className="h-4 w-4 mr-1" />
+                          <span>{idea.location}</span>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{idea.description}</p>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-gray-900">{idea.price}</span>
+                          <span className="text-gray-500">{idea.duration}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {allDateIdeas.length > visibleIdeas && (
+                <div className="text-center mt-8">
+                  <button
+                    onClick={loadMoreIdeas}
+                    className="px-6 py-2 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
+                  >
+                    Load More Ideas
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 
@@ -226,68 +309,6 @@ export default function Home() {
                       <span className="font-medium text-gray-900">{idea.price}</span>
                       <span className="text-gray-500">{idea.duration}</span>
                     </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Seasonal Ideas Section */}
-      <section className="py-12 bg-gradient-to-r from-rose-50 to-purple-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-gray-800 mb-8">Seasonal date ideas</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {seasonalIdeas.map((idea, index) => (
-              <Link href={`/collection/${idea.slug}`} key={index} className="group">
-                <div className="relative rounded-lg overflow-hidden h-80">
-                  {seasonalIdeaImages[idea.slug] && (
-                    <Image
-                      src={seasonalIdeaImages[idea.slug]!}
-                      alt={idea.title}
-                      width={600}
-                      height={400}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-6 text-white">
-                    <h3 className="text-2xl font-bold mb-2">{idea.title}</h3>
-                    <p className="text-sm opacity-90 mb-4">{idea.description}</p>
-                    <span className="inline-flex items-center text-sm font-medium text-white">
-                      Explore ideas <span className="ml-1">→</span>
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Cities Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-gray-800 mb-8">Popular cities for dates</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {popularCities.map((city, index) => (
-              <Link href={`/city/${city.slug}`} key={index} className="group">
-                <div className="relative rounded-lg overflow-hidden h-40">
-                  {popularCityImages[city.slug] && (
-                    <Image
-                      src={popularCityImages[city.slug]!}
-                      alt={city.name}
-                      width={400}
-                      height={200}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-4 text-white">
-                    <h3 className="text-xl font-bold">{city.name}</h3>
                   </div>
                 </div>
               </Link>
@@ -555,11 +576,4 @@ const seasonalIdeas = [
     slug: "fall-dates",
     image: "/placeholder.svg?height=400&width=600",
   },
-]
-
-const popularCities = [
-  { name: "New York", slug: "new-york", image: "/placeholder.svg?height=200&width=400" },
-  { name: "Los Angeles", slug: "los-angeles", image: "/placeholder.svg?height=200&width=400" },
-  { name: "Chicago", slug: "chicago", image: "/placeholder.svg?height=200&width=400" },
-  { name: "San Francisco", slug: "san-francisco", image: "/placeholder.svg?height=200&width=400" },
 ]
