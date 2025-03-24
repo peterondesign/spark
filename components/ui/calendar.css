@@ -1,0 +1,45 @@
+/* Custom styles for the shadcn Calendar component */
+
+/* Day cells with events */
+.rdp-day_with_event {
+  position: relative;
+}
+
+.rdp-day_with_event::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #f43f5e;
+}
+
+/* Fix caption height to fit month name */
+.rdp-caption {
+  min-height: 2.5rem;
+}
+
+/* Make days with events stand out */
+.rdp-day_today.rdp-day_with_event:not(.rdp-day_outside) {
+  font-weight: bold;
+  color: #f43f5e;
+  text-decoration: underline;
+  text-decoration-color: #f43f5e;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+/* Improve calendar responsiveness */
+@media (max-width: 640px) {
+  .rdp-months {
+    flex-direction: column;
+  }
+  
+  .rdp-caption {
+    text-align: center;
+    padding: 0 2rem;
+  }
+}
