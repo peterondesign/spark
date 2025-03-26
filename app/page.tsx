@@ -12,6 +12,7 @@ import GridView from "./components/GridView"; // Import the GridView component
 import Header from "./components/Header"; // Import the Header component
 import Footer from "./components/Footer";
 import PageTitle from "./components/PageTitle"; // Import the new PageTitle component
+import HowItWorksCarousel from "./components/HowItWorksCarousel"; // Import the carousel component
 import { PAGE_TITLES } from "./utils/titleUtils";
 import { favoritesService, FavoritesError, DateIdea } from './services/favoritesService';
 
@@ -262,57 +263,17 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative">
         <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[320px] w-full"></div>
-
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 text-white px-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Find your perfect date idea</h1>
           <p className="text-xl md:text-2xl text-center mb-8 max-w-2xl">
-            Discover unique and memorable date ideas made just for you
+            Discover unique and memorable date ideas made just for you and your person
           </p>
         </div>
       </section>
-
-      {/* How It Works Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">How It Works</h2>
-            <div className="grid md:grid-cols-3 gap-12 max-w-4xl mx-auto">
-            {/* Step 1 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="bg-rose-100 p-4 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">Choose a Date Idea</h3>
-              <p className="text-gray-600">No more boring dinner dates—find exciting, unique ideas tailored to your interests!</p>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="bg-purple-100 p-4 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">We Find the Best Spots & Discounts in Your City</h3>
-              <p className="text-gray-600">Get exclusive deals on top-rated experiences near you.</p>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="bg-green-100 p-4 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">Book in Seconds, Make Unforgettable Memories</h3>
-              <p className="text-gray-600">Book your date and enjoy a memorable experience with your person</p>
-            </div>
-            </div>
-        </div>
-      </section>
-
+      
+      {/* How It Works Section - Replaced with Carousel */}
+      <HowItWorksCarousel />
+      
       {/* All Date Ideas Section */}
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
