@@ -173,11 +173,8 @@ def extract_getyourguide_activities(soup, base_url):
                         domain = domain_match.group(1)
                         activity_url = domain + activity_url
                 
-                # Add partner ID to URL
-                if '?' in activity_url:
-                    activity_url += '&partner_id=5QQHAHP&utm_medium=online_publisher'
-                else:
-                    activity_url += '?partner_id=5QQHAHP&utm_medium=online_publisher'
+                # Clean the URL
+                activity_url = clean_getyourguide_url(activity_url)
                 
                 activity['url'] = activity_url
             else:
@@ -204,6 +201,34 @@ def extract_getyourguide_activities(soup, base_url):
             print(f"Error extracting activity card: {str(e)}", file=sys.stderr)
     
     return activities
+
+def clean_getyourguide_url(url):
+    """Clean a GetYourGuide URL to remove any existing parameters and prepare for adding partner ID"""
+    import re
+    
+    # Make sure the URL is absolute
+    if url.startswith('/'):
+        url = f"https://www.getyourguide.com{url}"
+    
+    # Remove any existing parameters we don't want
+    url = re.sub(r'[\?&]partner_id=[^&]+', '', url)
+    url = re.sub(r'[\?&]utm_medium=[^&]+', '', url)
+    url = re.sub(r'[\?&]utm_source=[^&]+', '', url)
+    url = re.sub(r'[\?&]utm_campaign=[^&]+', '', url)
+    url = re.sub(r'[\?&]ranking_uuid=[^&]+', '', url)
+    
+    # Remove trailing '?' if that's all that's left
+    if url.endswith('?'):
+        url = url[:-1]
+    
+    # Add partner ID
+    partner_params = "partner_id=5QQHAHP&utm_medium=online_publisher"
+    if '?' in url:
+        return f"{url}&{partner_params}"
+    else:
+        return f"{url}?{partner_params}"
+    
+    return url
 
 def extract_main_content(soup):
     """Extract the main content from a BeautifulSoup object"""

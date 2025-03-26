@@ -17,6 +17,7 @@ interface Experience {
   reviewCount: string;
   imageUrl: string;
   link: string;
+  isRelevant?: boolean;
 }
 
 // Simplified DateIdea interface
@@ -59,6 +60,7 @@ export default function DateIdeaDetails() {
   const [showUserLocationBadge, setShowUserLocationBadge] = useState(false);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [loadingExperiences, setLoadingExperiences] = useState(false);
+  const [experiencesWarning, setExperiencesWarning] = useState<string>("");
 
   useEffect(() => {
     const detectLocation = async () => {
@@ -170,50 +172,87 @@ export default function DateIdeaDetails() {
       
       setLoadingExperiences(true);
       try {
-        // Use the direct scraping endpoint instead of a proxy
-        const response = await fetch(`/api/scrape?url=${encodeURIComponent(`https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`)}&method=selenium`);
+        // Step 1: Scrape the search results page to get activities
+        const searchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
+        const response = await fetch(`/api/scrape?url=${encodeURIComponent(searchUrl)}&method=selenium`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log("Scraped data:", data);
         
         // Process the activity data from the scraper
         if (data && data.activities && data.activities.length > 0) {
+          // Filter activities to ensure they're relevant to the date idea
+          const relevantActivities = data.activities.filter((activity: any) => {
+            // Check if the activity title is relevant to the date idea
+            const activityTitle = activity.title?.toLowerCase() || '';
+            const dateIdeaTitle = dateIdea.title.toLowerCase();
+            const dateIdeaWords = dateIdeaTitle.split(/\s+/).filter(word => word.length > 3);
+            
+            // Check if any significant words from the date idea appear in the activity title
+            const isRelevant = dateIdeaWords.some(word => activityTitle.includes(word));
+            return isRelevant;
+          });
+          
           // Map the activities to our Experience format
-          const processedExperiences: Experience[] = data.activities.map((activity: any) => ({
-            title: activity.title || `${dateIdea.title} in ${userCity}`,
-            price: activity.price || "See website for prices",
-            rating: activity.rating || "4.5",
-            reviewCount: activity.reviews || "100+",
-            imageUrl: activity.image || dateIdea.image,
-            link: activity.url || `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3&partner_id=5QQHAHP&utm_medium=online_publisher`
-          }));
+          const processedExperiences: Experience[] = (relevantActivities.length > 0 ? relevantActivities : data.activities)
+            .map((activity: any) => {
+              // The URLs should already be properly formatted from the Python scraper
+              return {
+                title: activity.title || `${dateIdea.title} in ${userCity}`,
+                price: activity.price && activity.price !== "Price not available" 
+                  ? activity.price 
+                  : "Check website for prices",
+                rating: activity.rating || "4.5",
+                reviewCount: activity.reviews || "100+",
+                imageUrl: activity.image || dateIdea.image,
+                link: activity.url || `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3?partner_id=5QQHAHP&utm_medium=online_publisher`,
+                isRelevant: relevantActivities.includes(activity)
+              };
+            });
+          
+          console.log("Processed experiences:", processedExperiences);
+          
+          // Add a warning message if we couldn't find relevant activities
+          if (relevantActivities.length === 0 && data.activities.length > 0) {
+            setExperiencesWarning(
+              "We couldn't find activities that exactly match this date idea, but here are some alternatives."
+            );
+          } else {
+            setExperiencesWarning("");
+          }
           
           setExperiences(processedExperiences);
         } else {
           // Fall back to a default experience if no activities were found
           setExperiences([{
             title: `${dateIdea.title} in ${userCity}`,
-            price: "See website for prices",
+            price: "Check website for prices",
             rating: "4.5",
             reviewCount: "100+",
             imageUrl: dateIdea.image,
-            link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3&partner_id=5QQHAHP&utm_medium=online_publisher`
+            link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3?partner_id=5QQHAHP&utm_medium=online_publisher`,
+            isRelevant: true
           }]);
+          setExperiencesWarning("We couldn't find specific activities for this date idea.");
         }
       } catch (error) {
         console.error('Error fetching experiences:', error);
         // Even on error, show a generic experience option
+        const searchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
         setExperiences([{
           title: `${dateIdea.title} in ${userCity}`,
-          price: "See website for prices",
+          price: "Check website for prices",
           rating: "4.5",
           reviewCount: "100+",
           imageUrl: dateIdea.image,
-          link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3&partner_id=5QQHAHP&utm_medium=online_publisher`
+          link: `${searchUrl}?partner_id=5QQHAHP&utm_medium=online_publisher`,
+          isRelevant: true
         }]);
+        setExperiencesWarning("Something went wrong while fetching activities. Here's a general option.");
       } finally {
         setLoadingExperiences(false);
       }
@@ -224,16 +263,7 @@ export default function DateIdeaDetails() {
     }
   }, [userCity, dateIdea]);
 
-  // Close suggestions when clicking outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestionRef.current && inputRef.current &&
-        !suggestionRef.current.contains(event.target as Node) &&
-        !inputRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
