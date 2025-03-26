@@ -409,6 +409,24 @@ export default function Home() {
           </button>
         )}
       </section>
+
+      {/* Newsletter Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Stay Updated</h2>
+            <p className="text-gray-600 mb-6">Get the latest date ideas and relationship tips delivered to your inbox.</p>
+            <iframe 
+              src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true" 
+              data-test-id="beehiiv-embed" 
+              height="52" 
+              frameBorder="0" 
+              scrolling="no" 
+              style={{ margin: 0, borderRadius: 0, backgroundColor: 'transparent', width: '100%' }}
+            />
+          </div>
+        </div>
+      </section>
       
       {/* Favorites Section */}
       <section className="py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">

@@ -321,23 +321,75 @@ export default function Preferences() {
     <div className="min-h-screen bg-white">
       <PageTitle title={PAGE_TITLES.PREFERENCES} />
       {/* Navigation - Made Sticky */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <HeartIcon className="h-8 w-8 text-rose-500" />
-            <span className="ml-2 text-xl font-bold text-gray-800">Spark</span>
-          </Link>
-        </div>
-      </header>
+      <Header />
 
-      <div className="max-w-3xl mx-auto py-12 px-4">
+      <div className="max-w-4xl mx-auto py-12 px-4">
+        {/* Introduction content */}
+        <div className="bg-white shadow-lg rounded-xl p-6 mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Personalize Your Date Recommendations</h1>
+          
+          <div className="prose max-w-none">
+            <p className="text-gray-700 mb-4">
+              Creating a personalized date experience starts with understanding your unique preferences. Our customization 
+              system helps us tailor date recommendations specifically to your relationship needs, interests, and lifestyle. By 
+              answering a few thoughtful questions, you'll unlock a world of date ideas perfectly suited to you and your partner.
+            </p>
+            
+            <h2 className="text-xl font-semibold text-gray-800 mt-6 mb-3">Why Personalization Matters</h2>
+            
+            <p className="text-gray-700 mb-4">
+              Every relationship is different, and what works for one couple may not resonate with another. Research in relationship 
+              psychology shows that couples who engage in activities aligned with their shared interests report higher relationship 
+              satisfaction and stronger emotional bonds. Our preference questionnaire is designed based on relationship science to 
+              identify the types of experiences that will bring you and your partner closer together.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-6">
+              <div className="bg-rose-50 p-4 rounded-lg">
+                <h3 className="font-medium text-rose-800 mb-2">Benefits of Personalized Date Recommendations</h3>
+                <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                  <li>Discover date ideas that match your unique interests</li>
+                  <li>Save time by filtering out activities that don't suit you</li>
+                  <li>Experience dates within your preferred budget range</li>
+                  <li>Find activities appropriate for your relationship stage</li>
+                  <li>Accommodate special needs or considerations automatically</li>
+                </ul>
+              </div>
+              
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h3 className="font-medium text-purple-800 mb-2">How We Use Your Preferences</h3>
+                <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                  <li>Highlight date ideas that align with your interests</li>
+                  <li>Filter recommendations by budget and location</li>
+                  <li>Suggest activities appropriate for your relationship stage</li>
+                  <li>Balance familiar experiences with new adventures</li>
+                  <li>Prioritize dates that meet your relationship goals</li>
+                </ul>
+              </div>
+            </div>
+            
+            <p className="text-gray-700 mb-4">
+              Your preferences are stored securely on your device and used only to enhance your experience on our platform. 
+              You can update your preferences at any time as your relationship evolves or your interests change. We recommend 
+              revisiting your preferences every few months to ensure your date recommendations remain perfectly tailored to your 
+              current situation.
+            </p>
+            
+            <p className="text-gray-700 mb-2">
+              This questionnaire takes approximately 3-5 minutes to complete. Your answers will immediately impact the date ideas 
+              recommended to you throughout our site. The more accurately you answer, the better we can match you with experiences 
+              you'll truly enjoy together.
+            </p>
+          </div>
+        </div>
+
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Personalize Your Date Recommendations</h1>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Date Preference Questionnaire</h2>
           <p className="text-gray-600">
-            Answer a few questions to help us tailor date ideas specifically for you.
+            Answer the following questions to help us tailor date ideas specifically for you and your partner.
           </p>
         </div>
-
+        
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
           <div
@@ -345,19 +397,19 @@ export default function Preferences() {
             style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}
           ></div>
         </div>
+        
         <p className="text-sm text-gray-500 mb-8">
           Question {currentStep + 1} of {questions.length}
         </p>
-
+        
         {/* Current Question */}
         <div className="bg-white shadow-md rounded-lg p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             {questions[currentStep].text}
           </h2>
-
           {renderQuestionInput(questions[currentStep])}
         </div>
-
+        
         {/* Navigation Buttons */}
         <div className="flex justify-between">
           <button
@@ -370,7 +422,7 @@ export default function Preferences() {
           >
             Previous
           </button>
-
+          
           <div className="flex gap-4">
             <button
               onClick={clearPreferences}

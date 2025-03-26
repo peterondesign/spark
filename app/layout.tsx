@@ -5,9 +5,9 @@ import { Plus_Jakarta_Sans } from "next/font/google"
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
+// Default metadata that will be used as fallback when no metadata is defined in page
 export const metadata: Metadata = {
-  title: "Date ideas - Ignite the spark, one date at a time",
-  description: "Discover unique and memorable date ideas tailored just for you",
+  // Remove title and description from here as they'll be set at the page level
   keywords: [
     "stay at home date ideas",
     "ideal first date answer",
