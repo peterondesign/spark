@@ -643,7 +643,7 @@ function handleClickOutside(event: MouseEvent) {
                   {experiences.map((exp, index) => (
                     <a
                       key={index}
-                      href={exp.link}
+                      href={exp.link.startsWith('http') ? exp.link : `https://www.getyourguide.com${exp.link.startsWith('/') ? '' : '/'}${exp.link}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
