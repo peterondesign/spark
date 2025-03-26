@@ -179,26 +179,41 @@ export default function DateIdeaDetails() {
         
         const data = await response.json();
         
-        // Process the scraped data into the required format for experiences
-        if (data && data.title) {
-          // Simple extraction of experiences from the scraped data
-          // In a real app, you would parse this more accurately
-          const processedExperiences: Experience[] = [{
+        // Process the activity data from the scraper
+        if (data && data.activities && data.activities.length > 0) {
+          // Map the activities to our Experience format
+          const processedExperiences: Experience[] = data.activities.map((activity: any) => ({
+            title: activity.title || `${dateIdea.title} in ${userCity}`,
+            price: activity.price || "See website for prices",
+            rating: activity.rating || "4.5",
+            reviewCount: activity.reviews || "100+",
+            imageUrl: activity.image || dateIdea.image,
+            link: activity.url || `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3&partner_id=5QQHAHP&utm_medium=online_publisher`
+          }));
+          
+          setExperiences(processedExperiences);
+        } else {
+          // Fall back to a default experience if no activities were found
+          setExperiences([{
             title: `${dateIdea.title} in ${userCity}`,
             price: "See website for prices",
             rating: "4.5",
             reviewCount: "100+",
             imageUrl: dateIdea.image,
-            link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`
-          }];
-          
-          setExperiences(processedExperiences);
-        } else {
-          setExperiences([]);
+            link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3&partner_id=5QQHAHP&utm_medium=online_publisher`
+          }]);
         }
       } catch (error) {
         console.error('Error fetching experiences:', error);
-        setExperiences([]);
+        // Even on error, show a generic experience option
+        setExperiences([{
+          title: `${dateIdea.title} in ${userCity}`,
+          price: "See website for prices",
+          rating: "4.5",
+          reviewCount: "100+",
+          imageUrl: dateIdea.image,
+          link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3&partner_id=5QQHAHP&utm_medium=online_publisher`
+        }]);
       } finally {
         setLoadingExperiences(false);
       }

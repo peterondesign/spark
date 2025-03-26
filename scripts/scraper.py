@@ -6,6 +6,7 @@ import argparse
 import requests
 from bs4 import BeautifulSoup
 import html2text
+import re
 
 # Try to import selenium, but don't fail if it's not available
 try:
@@ -57,11 +58,16 @@ def scrape_with_selenium(url):
             # Get the page source
             html = driver.page_source
             
-            # Parse with BeautifulSoup instead of readability
+            # Parse with BeautifulSoup
             soup = BeautifulSoup(html, 'html.parser')
             title = soup.title.string if soup.title else "No title found"
             
-            # Extract the main content (simplified version)
+            # Check if this is a GetYourGuide page and extract activities if so
+            activities = []
+            if 'getyourguide' in url.lower():
+                activities = extract_getyourguide_activities(soup, url)
+            
+            # Extract the main content
             main_content = extract_main_content(soup)
             
             # Convert HTML to plain text
@@ -74,7 +80,8 @@ def scrape_with_selenium(url):
                 'title': title,
                 'url': url,
                 'content': text_content,
-                'html': str(main_content)
+                'html': str(main_content),
+                'activities': activities
             }
             
             return metadata
@@ -106,11 +113,16 @@ def scrape_with_requests(url):
         if 'captcha' in response.text.lower() or 'robot' in response.text.lower():
             print("CAPTCHA DETECTED", file=sys.stderr)
         
-        # Parse with BeautifulSoup instead of readability
+        # Parse with BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
         title = soup.title.string if soup.title else "No title found"
         
-        # Extract the main content (simplified version)
+        # Check if this is a GetYourGuide page and extract activities if so
+        activities = []
+        if 'getyourguide' in url.lower():
+            activities = extract_getyourguide_activities(soup, url)
+        
+        # Extract the main content
         main_content = extract_main_content(soup)
         
         # Convert HTML to plain text
@@ -123,12 +135,75 @@ def scrape_with_requests(url):
             'title': title,
             'url': url,
             'content': text_content,
-            'html': str(main_content)
+            'html': str(main_content),
+            'activities': activities
         }
         
         return metadata
     except Exception as e:
         raise Exception(f"Requests scraping error: {str(e)}")
+
+def extract_getyourguide_activities(soup, base_url):
+    """Extract activity cards from GetYourGuide search results"""
+    activities = []
+    
+    # Look for activity card blocks
+    activity_cards = soup.find_all(class_=lambda c: c and 'activity-card-block' in c)
+    
+    # Limit to max 5 activities
+    for card in activity_cards[:5]:
+        try:
+            # Extract activity details
+            activity = {}
+            
+            # Get the title
+            title_elem = card.find('h3') or card.find(class_=lambda c: c and ('title' in c.lower() or 'heading' in c.lower()))
+            activity['title'] = title_elem.get_text().strip() if title_elem else "No title found"
+            
+            # Get the link (URL)
+            link_elem = card.find('a')
+            if link_elem and link_elem.get('href'):
+                activity_url = link_elem.get('href')
+                
+                # Make sure it's a full URL
+                if activity_url.startswith('/'):
+                    # Extract the domain from the base URL
+                    domain_match = re.match(r'(https?://[^/]+)', base_url)
+                    if domain_match:
+                        domain = domain_match.group(1)
+                        activity_url = domain + activity_url
+                
+                # Add partner ID to URL
+                if '?' in activity_url:
+                    activity_url += '&partner_id=5QQHAHP&utm_medium=online_publisher'
+                else:
+                    activity_url += '?partner_id=5QQHAHP&utm_medium=online_publisher'
+                
+                activity['url'] = activity_url
+            else:
+                activity['url'] = ""
+            
+            # Get the image
+            img_elem = card.find('img')
+            activity['image'] = img_elem.get('src') if img_elem and img_elem.get('src') else ""
+            
+            # Get the price
+            price_elem = card.find(class_=lambda c: c and ('price' in c.lower()))
+            activity['price'] = price_elem.get_text().strip() if price_elem else "Price not available"
+            
+            # Get the rating if available
+            rating_elem = card.find(class_=lambda c: c and ('rating' in c.lower() or 'stars' in c.lower()))
+            activity['rating'] = rating_elem.get_text().strip() if rating_elem else ""
+            
+            # Get the number of reviews if available
+            reviews_elem = card.find(class_=lambda c: c and ('reviews' in c.lower()))
+            activity['reviews'] = reviews_elem.get_text().strip() if reviews_elem else ""
+            
+            activities.append(activity)
+        except Exception as e:
+            print(f"Error extracting activity card: {str(e)}", file=sys.stderr)
+    
+    return activities
 
 def extract_main_content(soup):
     """Extract the main content from a BeautifulSoup object"""

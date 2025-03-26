@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
-        domains: ['upload.wikimedia.org', 'wikipedia.org', 'images.pexels.com', 'getyourguide.com'],
+        domains: ['upload.wikimedia.org', 'wikipedia.org', 'cdn.getyourguide.com', 'images.pexels.com', 'getyourguide.com'],
     },
     async rewrites() {
         return [
