@@ -99,7 +99,7 @@ export default function DateIdeaGenerator() {
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">Random Date Idea Generator for Couples</h1>
           <p className="text-xl max-w-2xl mx-auto mb-8">
-            Our AI-powered date night generator helps couples find the perfect date. Swipe right on date ideas you love, left on ones you don't!
+            Our AI-powered date night generator helps couples find the perfect date. Swipe right on date ideas you love, left on ones you don't
           </p>
         </div>
       </section>
