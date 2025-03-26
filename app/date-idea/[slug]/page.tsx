@@ -617,6 +617,11 @@ function handleClickOutside(event: MouseEvent) {
           </div>
         )}
 
+        {/* Affiliate Link Disclosure */}
+        <div className="text-xs text-gray-400 mb-4 italic">
+          This page contains affiliate links
+        </div>
+
         {/* Date Details Card */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
 
@@ -640,6 +645,11 @@ function handleClickOutside(event: MouseEvent) {
                 </div>
               ) : experiences.length > 0 ? (
                 <div className="space-y-4">
+                  {experiencesWarning && (
+                    <div className="text-sm bg-amber-50 text-amber-700 p-3 rounded-md mb-3">
+                      We couldn't find a direct match at this time, but here are similar events you will love
+                    </div>
+                  )}
                   {experiences.map((exp, index) => (
                     <a
                       key={index}
@@ -673,6 +683,11 @@ function handleClickOutside(event: MouseEvent) {
                           </div>
                         </div>
                       </div>
+                      {!exp.isRelevant && (
+                        <div className="mt-2 text-xs text-gray-500 italic">
+                          Similar recommended experience
+                        </div>
+                      )}
                     </a>
                   ))}
                 </div>
