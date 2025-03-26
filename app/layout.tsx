@@ -7,7 +7,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
 // Default metadata that will be used as fallback when no metadata is defined in page
 export const metadata: Metadata = {
-  // Remove title and description from here as they'll be set at the page level
+  title: "Spark - Find Your Perfect Date",
+  description: "Discover unique and memorable date ideas tailored just for you",
   keywords: [
     "stay at home date ideas",
     "ideal first date answer",

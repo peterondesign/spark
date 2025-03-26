@@ -39,10 +39,10 @@ export default function Favorites() {
 
   useEffect(() => {
     // Sync favorites with Supabase when the favorites page loads
-    favoritesService.syncFavorites().catch(error => 
+    favoritesService.syncFavorites().catch(error =>
       console.warn('Failed to sync favorites:', error)
     );
-    
+
     // Fetch saved ideas from localStorage
     const loadSavedIdeas = () => {
       const saved = localStorage.getItem("savedDateIdeas");
@@ -82,7 +82,7 @@ export default function Favorites() {
     if (ideaToRemove && ideaToRemove.id) {
       await favoritesService.removeFavorite(Number(ideaToRemove.id));
     }
-    
+
     const updatedIdeas = savedIdeas.filter(idea => idea.slug !== ideaSlug);
     setSavedIdeas(updatedIdeas);
     localStorage.setItem("savedDateIdeas", JSON.stringify(updatedIdeas));
@@ -96,7 +96,7 @@ export default function Favorites() {
         await favoritesService.removeFavorite(Number(idea.id));
       }
     }
-    
+
     setSavedIdeas([]);
     localStorage.removeItem("savedDateIdeas");
   };
@@ -107,7 +107,7 @@ export default function Favorites() {
       <div className="min-h-screen bg-white">
         <PageTitle title={PAGE_TITLES.FAVORITES} />
         <Header />
-        
+
         <div className="container mx-auto py-12 px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
@@ -116,7 +116,7 @@ export default function Favorites() {
             </div>
             <div className="mt-4 md:mt-0 h-10 w-40 bg-gray-200 rounded-md animate-pulse"></div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md">
@@ -131,7 +131,7 @@ export default function Favorites() {
             ))}
           </div>
         </div>
-        
+
         <Footer />
       </div>
     );
@@ -142,7 +142,7 @@ export default function Favorites() {
     return (
       <div className="min-h-screen bg-white">
         <PageTitle title={PAGE_TITLES.FAVORITES} />
-        <Header/>
+        <Header />
 
         {/* Empty State */}
         <div className="max-w-4xl mx-auto py-16 px-4 text-center">
@@ -154,8 +154,8 @@ export default function Favorites() {
             <p className="text-gray-600 max-w-md mx-auto mb-8">
               When you find date ideas you love, click the heart icon to save them here for easy access later.
             </p>
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="inline-flex items-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
             >
               Discover Date Ideas
@@ -211,60 +211,7 @@ export default function Favorites() {
   return (
     <div className="min-h-screen bg-white">
       <PageTitle title={PAGE_TITLES.FAVORITES} />
-      <Header/>
-      
-      {/* Introduction section with meaningful content */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto py-8 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">Your Favorite Date Ideas Collection</h1>
-            
-            <div className="prose max-w-none">
-              <p className="text-gray-700 mb-4">
-                Welcome to your personalized favorites collection – your curated library of date experiences that caught your attention. 
-                Saving date ideas allows you to create a personalized repository of experiences that match your unique preferences, 
-                making it easier to plan memorable moments with your partner without having to search from scratch each time.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
-                <div className="bg-rose-50 p-5 rounded-lg">
-                  <h3 className="font-medium text-rose-800 mb-3">Why Save Favorite Date Ideas?</h3>
-                  <ul className="list-disc pl-5 text-gray-700 space-y-2">
-                    <li><strong>Simplify planning:</strong> Access your preferred date ideas instantly when scheduling your next date night</li>
-                    <li><strong>Create variety:</strong> Build a diverse collection of experiences to keep your relationship fresh and exciting</li>
-                    <li><strong>Remember inspirations:</strong> Never lose track of that perfect date idea you discovered</li>
-                    <li><strong>Share with your partner:</strong> Create a shared wishlist of experiences to enjoy together</li>
-                    <li><strong>Seasonal planning:</strong> Save ideas for different times of year, occasions, or moods</li>
-                  </ul>
-                </div>
-                
-                <div className="bg-purple-50 p-5 rounded-lg">
-                  <h3 className="font-medium text-purple-800 mb-3">Making the Most of Your Favorites</h3>
-                  <ul className="list-disc pl-5 text-gray-700 space-y-2">
-                    <li><strong>Schedule directly:</strong> Drag favorites to your <a href="/calendar" className="text-purple-600 hover:text-purple-800 font-medium">date calendar</a> for easy planning</li>
-                    <li><strong>Categorize mentally:</strong> Save different types of dates for different occasions</li>
-                    <li><strong>Budget considerations:</strong> Include a mix of free, affordable, and special occasion date ideas</li>
-                    <li><strong>Revisit regularly:</strong> Return to your favorites to keep your date nights fresh and exciting</li>
-                    <li><strong>Seasonal rotation:</strong> Use your collection to find perfect date ideas for any season or weather</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <p className="text-gray-700 mb-4">
-                Research shows that couples who maintain a "relationship bucket list" of experiences they want to share together report 
-                higher relationship satisfaction and feel more connected. Your favorites collection serves as this relationship bucket list, 
-                helping you prioritize quality time together and create meaningful shared experiences that strengthen your bond.
-              </p>
-              
-              <p className="text-gray-700">
-                To add more date ideas to your favorites, simply browse our <a href="/" className="text-rose-600 hover:text-rose-800 font-medium">date ideas collection</a> and 
-                click the heart icon on any date that interests you. You can also try our <a href="/date-idea-generator" className="text-rose-600 hover:text-rose-800 font-medium">date idea generator</a> to 
-                discover new and exciting experiences tailored to your preferences.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Header />
 
       {/* Favorites Content */}
       <div className="container mx-auto py-8 px-4">
@@ -275,7 +222,7 @@ export default function Favorites() {
           </div>
 
           {savedIdeas.length > 0 && (
-            <button 
+            <button
               onClick={clearAllFavorites}
               className="mt-4 md:mt-0 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 flex items-center"
             >
@@ -309,7 +256,7 @@ export default function Favorites() {
                   ) : (
                     <ImageSkeleton />
                   )}
-                  <button 
+                  <button
                     className="absolute top-3 right-3 bg-white p-3 rounded-full shadow-lg hover:bg-gray-100"
                     onClick={(e) => {
                       e.preventDefault();
@@ -340,8 +287,63 @@ export default function Favorites() {
           </div>
         )}
       </div>
-      
-      <Footer/>
+
+      {/* Introduction section with meaningful content */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto py-8 px-4">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">Your Favorite Date Ideas Collection</h1>
+
+            <div className="prose max-w-none">
+              <p className="text-gray-700 mb-4">
+                Welcome to your personalized favorites collection – your curated library of date experiences that caught your attention.
+                Saving date ideas allows you to create a personalized repository of experiences that match your unique preferences,
+                making it easier to plan memorable moments with your partner without having to search from scratch each time.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div className="bg-rose-50 p-5 rounded-lg">
+                  <h3 className="font-medium text-rose-800 mb-3">Why Save Favorite Date Ideas?</h3>
+                  <ul className="list-disc pl-5 text-gray-700 space-y-2">
+                    <li><strong>Simplify planning:</strong> Access your preferred date ideas instantly when scheduling your next date night</li>
+                    <li><strong>Create variety:</strong> Build a diverse collection of experiences to keep your relationship fresh and exciting</li>
+                    <li><strong>Remember inspirations:</strong> Never lose track of that perfect date idea you discovered</li>
+                    <li><strong>Share with your partner:</strong> Create a shared wishlist of experiences to enjoy together</li>
+                    <li><strong>Seasonal planning:</strong> Save ideas for different times of year, occasions, or moods</li>
+                  </ul>
+                </div>
+
+                <div className="bg-purple-50 p-5 rounded-lg">
+                  <h3 className="font-medium text-purple-800 mb-3">Making the Most of Your Favorites</h3>
+                  <ul className="list-disc pl-5 text-gray-700 space-y-2">
+                    <li><strong>Schedule directly:</strong> Drag favorites to your <a href="/calendar" className="text-purple-600 hover:text-purple-800 font-medium">date calendar</a> for easy planning</li>
+                    <li><strong>Categorize mentally:</strong> Save different types of dates for different occasions</li>
+                    <li><strong>Budget considerations:</strong> Include a mix of free, affordable, and special occasion date ideas</li>
+                    <li><strong>Revisit regularly:</strong> Return to your favorites to keep your date nights fresh and exciting</li>
+                    <li><strong>Seasonal rotation:</strong> Use your collection to find perfect date ideas for any season or weather</li>
+                  </ul>
+                </div>
+              </div>
+
+              <p className="text-gray-700 mb-4">
+                Research shows that couples who maintain a "relationship bucket list" of experiences they want to share together report
+                higher relationship satisfaction and feel more connected. Your favorites collection serves as this relationship bucket list,
+                helping you prioritize quality time together and create meaningful shared experiences that strengthen your bond.
+              </p>
+
+              <p className="text-gray-700">
+                To add more date ideas to your favorites, simply browse our <a href="/" className="text-rose-600 hover:text-rose-800 font-medium">date ideas collection</a> and
+                click the heart icon on any date that interests you. You can also try our <a href="/date-idea-generator" className="text-rose-600 hover:text-rose-800 font-medium">date idea generator</a> to
+                discover new and exciting experiences tailored to your preferences.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <Footer />
     </div>
   );
 }

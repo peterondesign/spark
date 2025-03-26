@@ -1,8 +1,8 @@
 "use client";
 
-import Head from "next/head";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { PAGE_TITLES, META_DESCRIPTIONS } from "../utils/titleUtils";
+import { usePathname } from "next/navigation";
 
 interface PageTitleProps {
   title?: string;
@@ -65,22 +65,12 @@ const PageTitle: React.FC<PageTitleProps> = ({
   const pageTitle = title || getDefaultTitle();
   const metaDescription = description || customDescription || getDefaultDescription();
 
-  return (
-    <Head>
-      <title>{pageTitle}</title>
-      <meta name="description" content={metaDescription} />
-      
-      {/* Open Graph tags for social sharing */}
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={metaDescription} />
-      <meta property="og:type" content="website" />
-      
-      {/* Twitter Card tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={pageTitle} />
-      <meta name="twitter:description" content={metaDescription} />
-    </Head>
-  );
+  // Update document title imperatively since we're in a client component
+  useEffect(() => {
+    document.title = pageTitle;
+  }, [pageTitle]);
+
+  return null; // This component no longer renders any HTML
 };
 
 export default PageTitle;

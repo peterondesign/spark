@@ -101,12 +101,31 @@ export default function DateIdeaGenerator() {
           <p className="text-xl max-w-2xl mx-auto mb-8">
             Our AI-powered date night generator helps couples find the perfect date. Swipe right on date ideas you love, left on ones you don't!
           </p>
-          <Link 
-            href="/" 
-            className="inline-block bg-white text-rose-500 hover:bg-gray-100 px-6 py-3 rounded-full font-medium transition-colors"
-          >
-            Back to Home
-          </Link>
+        </div>
+      </section>
+
+      {/* Swipe View Section */}
+      <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-rose-500 border-r-transparent"></div>
+                <p className="mt-4 text-gray-600">Loading date ideas...</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-8 text-center">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Couple Date Generator & Date Night Randomizer</h2>
+                  <p className="text-gray-600">Swipe right on ideas you like, left on those you don't. Our AI date generator helps you discover perfect date night ideas tailored to your preferences.</p>
+                </div>
+                <TinderSwipeView
+                  dateIdeas={allDateIdeas}
+                  dateIdeaImages={allDateIdeaImages}
+                />
+              </>
+            )}
+          </div>
         </div>
       </section>
       
@@ -167,31 +186,7 @@ export default function DateIdeaGenerator() {
           </div>
         </div>
       </section>
-      
-      {/* Swipe View Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-rose-500 border-r-transparent"></div>
-                <p className="mt-4 text-gray-600">Loading date ideas...</p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-8 text-center">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">Couple Date Generator & Date Night Randomizer</h2>
-                  <p className="text-gray-600">Swipe right on ideas you like, left on those you don't. Our AI date generator helps you discover perfect date night ideas tailored to your preferences.</p>
-                </div>
-                <TinderSwipeView
-                  dateIdeas={allDateIdeas}
-                  dateIdeaImages={allDateIdeaImages}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </section>
+    
       
       {/* Additional SEO Content and Benefits */}
       <section className="py-12 bg-white">
