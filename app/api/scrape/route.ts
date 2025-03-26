@@ -133,5 +133,3 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Import the POST handler directly
-import { POST } from './post-handler';

@@ -264,6 +264,14 @@ export default function DateIdeaDetails() {
   }, [userCity, dateIdea]);
 
   useEffect(() => {
+function handleClickOutside(event: MouseEvent) {
+      if (suggestionRef.current && inputRef.current &&
+        !suggestionRef.current.contains(event.target as Node) &&
+        !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -592,47 +600,43 @@ export default function DateIdeaDetails() {
 
         {/* User Location Display */}
         {showUserLocationBadge && userCity && (
-          <div className="mb-4 flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg p-3">
+          <div className="mb-4 flex items-center justify-between rounded-lg">
             <div className="flex items-center">
-              <MapPinIcon className="h-5 w-5 text-blue-500 mr-2" />
-              <span className="text-blue-700 font-medium">Your location: {userCity}</span>
+              <MapPinIcon className="h-4 w-4 text-gray-500 mr-2" />
+              <span className="text-gray-700 text-sm">Location: {userCity}</span>
             </div>
             <button
               onClick={clearUserCity}
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+              className="text-xs text-gray-500 hover:text-gray-700 ml-2 flex items-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <span className="mr-1">Change</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-              Clear
             </button>
           </div>
         )}
 
         {/* Date Details Card */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="flex items-center">
-              <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
-              <span className="text-gray-600">{dateIdea.location || "Any location"}</span>
-            </div>
-            {dateIdea.price && (
-              <div className="flex items-center">
-                <span className="text-gray-400 mr-2">Price:</span>
-                {renderPriceLevel(dateIdea.priceLevel)}
-              </div>
-            )}
-          </div>
 
           {/* GetYourGuide Experiences Section */}
-          {userCity && (
-            <div className="mt-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Related Experiences in {userCity}</h2>
+          {userCity ? (
+            <div>
               {loadingExperiences ? (
-                <div className="animate-pulse space-y-4">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="bg-gray-100 rounded-lg p-4 h-32"></div>
-                  ))}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-center p-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500 mr-3"></div>
+                    <div>
+                      <p className="text-gray-700 font-medium">Looking for relevant activities...</p>
+                      <p className="text-xs text-gray-500">Searching across Google, Eventbrite, Timeout, Meetup, Get Your Guide</p>
+                    </div>
+                  </div>
+                  <div className="animate-pulse space-y-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="bg-gray-100 rounded-lg p-4 h-24"></div>
+                    ))}
+                  </div>
                 </div>
               ) : experiences.length > 0 ? (
                 <div className="space-y-4">
@@ -675,6 +679,23 @@ export default function DateIdeaDetails() {
               ) : (
                 <p className="text-gray-500">No experiences found for this date idea in {userCity}</p>
               )}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <div className="mb-6 mx-auto w-48 h-48 bg-rose-50 rounded-full flex items-center justify-center">
+                <MapPinIcon className="h-24 w-24 text-rose-200" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Your Location</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                Add your city to discover personalized experiences and activities for this date idea in your area.
+              </p>
+              <button
+                onClick={() => setShowLocationPrompt(true)}
+                className="inline-flex items-center px-6 py-3 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
+              >
+                <MapPinIcon className="h-5 w-5 mr-2" />
+                Add Your City
+              </button>
             </div>
           )}
         </div>
