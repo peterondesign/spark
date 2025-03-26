@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -7,6 +6,8 @@ import { HeartIcon, MapPinIcon, StarIcon } from "../components/icons";
 import { getImage, getPlaceholderImage, getImageUrl } from "../utils/imageService";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageTitle from "../components/PageTitle";
+import { PAGE_TITLES } from "../utils/titleUtils";
 import { favoritesService } from '../services/favoritesService';
 
 // Type definition for date ideas
@@ -104,6 +105,7 @@ export default function Favorites() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white">
+        <PageTitle title={PAGE_TITLES.FAVORITES} />
         <Header />
         
         <div className="container mx-auto py-12 px-4">
@@ -139,7 +141,8 @@ export default function Favorites() {
   if (!isLoading && savedIdeas.length === 0) {
     return (
       <div className="min-h-screen bg-white">
-       <Header/>
+        <PageTitle title={PAGE_TITLES.FAVORITES} />
+        <Header/>
 
         {/* Empty State */}
         <div className="max-w-4xl mx-auto py-16 px-4 text-center">
@@ -207,6 +210,7 @@ export default function Favorites() {
   // Favorites list with saved ideas
   return (
     <div className="min-h-screen bg-white">
+      <PageTitle title={PAGE_TITLES.FAVORITES} />
       {/* Navigation - Made Sticky */}
      <Header/>
 

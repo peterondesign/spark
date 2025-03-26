@@ -13,6 +13,8 @@ import { Pricing } from '../date-gift-planning-assistant/page';
 import { favoritesService, DateIdea } from '../services/favoritesService';
 import { X, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import Image from 'next/image';
+import PageTitle from '../components/PageTitle';
+import { PAGE_TITLES } from '../utils/titleUtils';
 
 // Define the custom event type that includes the date idea
 interface CalendarEvent extends Event {
@@ -394,89 +396,92 @@ const CalendarPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-        <div className="w-full mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="justify-center gap-4 mx-auto flex flex-col md:flex-row mb-8 w-full">
-            <div className="w-full md:w-[480px] flex-shrink-0">
-              {/* Favorites Sections */}
-              <div className="space-y-4">
-                <FavoritesAccordion
-                  title="My Favorites"
-                  items={myFavorites}
-                  defaultOpen={true}
-                  isLoading={isLoading}
-                />
+      <PageTitle title={PAGE_TITLES.CALENDAR} />
+      <Header />
+      
+      <div className="w-full mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="justify-center gap-4 mx-auto flex flex-col md:flex-row mb-8 w-full">
+          <div className="w-full md:w-[480px] flex-shrink-0">
+            {/* Favorites Sections */}
+            <div className="space-y-4">
+              <FavoritesAccordion
+                title="My Favorites"
+                items={myFavorites}
+                defaultOpen={true}
+                isLoading={isLoading}
+              />
 
-                <FavoritesAccordion
-                  title="Partner's Favorites"
-                  items={partnerFavorites}
-                  isLoading={isLoading}
-                />
+              <FavoritesAccordion
+                title="Partner's Favorites"
+                items={partnerFavorites}
+                isLoading={isLoading}
+              />
 
-                <FavoritesAccordion
-                  title="Joint Favorites"
-                  items={jointFavorites}
-                  isLoading={isLoading}
-                />
-              </div>
-            </div>
-            <div 
-              ref={calendarRef}
-              className={`calendar-container flex-grow ${dragOverCalendar ? 'drag-over' : ''}`}
-              onDragEnter={handleDragEnter}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleCalendarDrop}
-              onMouseMove={handleMouseMove}
-            >
-              {/* Drop indicator overlay */}
-              {dragOverCalendar && dropTarget && (
-                <div 
-                  className="absolute pointer-events-none z-10 drop-indicator"
-                  style={{ 
-                    left: dropTarget.position.x, 
-                    top: dropTarget.position.y,
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                >
-                  <div className="drop-indicator-inner">
-                    <CalendarIcon size={20} className="drop-indicator-icon" />
-                  </div>
-                </div>
-              )}
-              
-              <Calendar
-                localizer={localizer}
-                events={events}
-                defaultView="month"
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: 500 }}
-                className={`bg-white p-4 rounded-lg shadow flex-grow ${dragOverCalendar ? 'rbc-calendar-drag-over' : ''}`}
-                views={[Views.MONTH, Views.WEEK]} 
-                components={{
-                  event: EventComponent
-                }}
-                dayPropGetter={dayPropGetter}
-                slotPropGetter={slotPropGetter}
-                popup
-                tooltipAccessor={event => {
-                  const idea = (event as CalendarEvent).dateIdea;
-                  return idea ? `${idea.title}: ${idea.description || 'No description provided'}` : '';
-                }}
-                eventPropGetter={(event) => ({
-                  className: `calendar-event ${!event.allDay ? 'calendar-event-timed' : ''}`
-                })}
-                onView={handleViewChange}
-                step={30}
-                timeslots={2}
+              <FavoritesAccordion
+                title="Joint Favorites"
+                items={jointFavorites}
+                isLoading={isLoading}
               />
             </div>
           </div>
-
-          <div className="mt-8">
-            <Pricing />
+          <div 
+            ref={calendarRef}
+            className={`calendar-container flex-grow ${dragOverCalendar ? 'drag-over' : ''}`}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleCalendarDrop}
+            onMouseMove={handleMouseMove}
+          >
+            {/* Drop indicator overlay */}
+            {dragOverCalendar && dropTarget && (
+              <div 
+                className="absolute pointer-events-none z-10 drop-indicator"
+                style={{ 
+                  left: dropTarget.position.x, 
+                  top: dropTarget.position.y,
+                  transform: 'translate(-50%, -50%)'
+                }}
+              >
+                <div className="drop-indicator-inner">
+                  <CalendarIcon size={20} className="drop-indicator-icon" />
+                </div>
+              </div>
+            )}
+            
+            <Calendar
+              localizer={localizer}
+              events={events}
+              defaultView="month"
+              startAccessor="start"
+              endAccessor="end"
+              style={{ height: 500 }}
+              className={`bg-white p-4 rounded-lg shadow flex-grow ${dragOverCalendar ? 'rbc-calendar-drag-over' : ''}`}
+              views={[Views.MONTH, Views.WEEK]} 
+              components={{
+                event: EventComponent
+              }}
+              dayPropGetter={dayPropGetter}
+              slotPropGetter={slotPropGetter}
+              popup
+              tooltipAccessor={event => {
+                const idea = (event as CalendarEvent).dateIdea;
+                return idea ? `${idea.title}: ${idea.description || 'No description provided'}` : '';
+              }}
+              eventPropGetter={(event) => ({
+                className: `calendar-event ${!event.allDay ? 'calendar-event-timed' : ''}`
+              })}
+              onView={handleViewChange}
+              step={30}
+              timeslots={2}
+            />
           </div>
         </div>
+
+        <div className="mt-8">
+          <Pricing />
+        </div>
+      </div>
       <Footer />
     </div>
   );

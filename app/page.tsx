@@ -15,7 +15,7 @@ import PageTitle from "./components/PageTitle"; // Import the new PageTitle comp
 import HowItWorksCarousel from "./components/HowItWorksCarousel"; // Import the carousel component
 import { PAGE_TITLES } from "./utils/titleUtils";
 import { favoritesService, FavoritesError, DateIdea } from './services/favoritesService';
-
+import FilterButtons from "./components/FilterButtons";
 
 export default function Home() {
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
@@ -28,6 +28,12 @@ export default function Home() {
   const [recentFavorites, setRecentFavorites] = useState<DateIdea[]>([]);
   const [favoritesLoading, setFavoritesLoading] = useState<boolean>(true);
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
+  const [userCity, setUserCity] = useState<string | null>(null);
+  const [filteredDateIdeas, setFilteredDateIdeas] = useState<DateIdea[]>([]);
+  const [activeFilters, setActiveFilters] = useState<{
+    city: string | null;
+    price: 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus';
+  }>({ city: null, price: 'all' });
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -148,6 +154,75 @@ export default function Home() {
     };
   }, []);
 
+  // Add location detection effect
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const savedCity = localStorage.getItem("userCity");
+        if (savedCity) {
+          setUserCity(savedCity);
+          setActiveFilters(prev => ({ ...prev, city: savedCity }));
+          return;
+        }
+        
+        const response = await fetch('/api/location');
+        const data = await response.json();
+        if (data.city) {
+          setUserCity(data.city);
+          setActiveFilters(prev => ({ ...prev, city: data.city }));
+          localStorage.setItem("userCity", data.city);
+        }
+      } catch (error) {
+        console.error('Error detecting location:', error);
+      }
+    };
+    
+    detectLocation();
+  }, []);
+
+  // Add effect to filter date ideas when filters or data changes
+  useEffect(() => {
+    if (!allDateIdeas.length) return;
+    
+    const newFilteredIdeas = allDateIdeas.filter((idea) => {
+      let matchesFilter = true;
+      
+      // Filter by city if a city is selected
+      if (activeFilters.city) {
+        matchesFilter = matchesFilter && 
+          idea.location.toLowerCase().includes(activeFilters.city.toLowerCase());
+      }
+      
+      // Filter by price range
+      if (activeFilters.price !== 'all') {
+        const priceLevel = idea.priceLevel || 1; // Default to 1 if not specified
+        
+        switch (activeFilters.price) {
+          case 'free':
+            matchesFilter = matchesFilter && priceLevel === 1;
+            break;
+          case 'under-25':
+            matchesFilter = matchesFilter && priceLevel <= 2;
+            break;
+          case 'under-50':
+            matchesFilter = matchesFilter && priceLevel <= 3;
+            break;
+          case 'under-100':
+            matchesFilter = matchesFilter && priceLevel <= 4;
+            break;
+          case '100-plus':
+            matchesFilter = matchesFilter && priceLevel >= 5;
+            break;
+        }
+      }
+      
+      return matchesFilter;
+    });
+    
+    setFilteredDateIdeas(newFilteredIdeas);
+    setVisibleIdeas(20); // Reset to first page when filters change
+  }, [allDateIdeas, activeFilters]);
+
   // Function to scroll to the top
   const scrollToTop = () => {
     window.scrollTo({
@@ -253,6 +328,18 @@ export default function Home() {
     }
   };
 
+  const clearUserCity = () => {
+    localStorage.removeItem("userCity");
+    setUserCity(null);
+  };
+
+  const handleFilterChange = (filters: { 
+    city: string | null; 
+    price: 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus'
+  }) => {
+    setActiveFilters(filters);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <PageTitle title={PAGE_TITLES.HOME} />
@@ -286,6 +373,13 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Filter Buttons */}
+          <FilterButtons 
+            currentCity={userCity} 
+            clearCity={clearUserCity} 
+            onFilterChange={handleFilterChange} 
+          />
+
           {loading ? (
             <div className="h-96 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {[...Array(8)].map((_, i) => (
@@ -294,7 +388,7 @@ export default function Home() {
             </div>
           ) : (
             <GridView
-              dateIdeas={allDateIdeas}
+              dateIdeas={filteredDateIdeas.length > 0 ? filteredDateIdeas : allDateIdeas}
               dateIdeaImages={allDateIdeaImages}
               visibleIdeas={visibleIdeas}
               onLoadMore={loadMoreIdeas}
@@ -315,7 +409,7 @@ export default function Home() {
           </button>
         )}
       </section>
-
+      
       {/* Favorites Section */}
       <section className="py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">
         <div className="container mx-auto px-6">

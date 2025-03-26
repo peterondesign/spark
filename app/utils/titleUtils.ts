@@ -17,19 +17,19 @@ export const getPageTitle = (pageTitle: string): string => {
 // Title constants for each page
 export const PAGE_TITLES = {
   HOME: getPageTitle("Discover Date Ideas"),
-  GENERATOR: getPageTitle("Date Idea Generator"),
-  FAVORITES: getPageTitle("Your Saved Date Ideas"),
-  PREFERENCES: getPageTitle("Date Preferences"),
-  CALENDAR: getPageTitle("Date Calendar"),
+  GENERATOR: getPageTitle("Create Your Perfect Date - Idea Generator"),
+  FAVORITES: getPageTitle("Your Saved Date Collection"),
+  PREFERENCES: getPageTitle("Personalize Your Date Experience"),
+  CALENDAR: getPageTitle("Plan Your Date Nights - Calendar"),
   DATE_DETAIL: (title: string) => getPageTitle(`${title}`)
 };
 
 // Meta description constants for each page
 export const META_DESCRIPTIONS = {
   HOME: "Discover unique date ideas to spark romance and create memorable experiences with your partner. Browse our curated collection for inspiration.",
-  GENERATOR: "Create personalized date ideas based on your preferences, budget, and location. Our generator helps you plan the perfect date experience.",
-  FAVORITES: "Access your saved date ideas in one place. Review, organize, and plan your favorite date experiences with ease.",
-  PREFERENCES: "Customize your date preferences to get tailored date recommendations that match your interests, budget, and relationship stage.",
-  CALENDAR: "Plan and schedule your date nights with our interactive calendar. Stay organized and never miss a special moment.",
+  GENERATOR: "Our AI-powered date idea generator creates personalized date suggestions based on your interests, budget, and location for the perfect experience.",
+  FAVORITES: "View and manage your saved date ideas in one convenient place. Plan your next romantic outing from your personal collection of favorites.",
+  PREFERENCES: "Set your relationship preferences, interests, and budget to receive perfectly tailored date recommendations just for you and your partner.",
+  CALENDAR: "Organize your romantic schedule with our interactive date planning calendar. Set reminders and share special moments with your significant other.",
   DATE_DETAIL: (title: string) => `Explore "${title}" - Get all the details including tips, location info, and what to expect for this perfect date idea.`
 };

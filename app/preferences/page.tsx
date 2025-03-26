@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HeartIcon } from "../components/icons";
 import Header from "../components/Header";
+import PageTitle from "../components/PageTitle";
+import { PAGE_TITLES } from "../utils/titleUtils";
 
 type Question = {
   id: string;
@@ -262,7 +264,7 @@ export default function Preferences() {
   if (isComplete) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Navigation - Made Sticky */}
+        <PageTitle title={PAGE_TITLES.PREFERENCES} />
         <Header />
 
         <div className="max-w-3xl mx-auto py-12 px-4">
@@ -317,6 +319,7 @@ export default function Preferences() {
   // Render the questionnaire
   return (
     <div className="min-h-screen bg-white">
+      <PageTitle title={PAGE_TITLES.PREFERENCES} />
       {/* Navigation - Made Sticky */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">

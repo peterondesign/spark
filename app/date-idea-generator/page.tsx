@@ -6,6 +6,8 @@ import { getImageUrl } from "../utils/imageService";
 import TinderSwipeView from "../components/TinderSwipeView";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageTitle from "../components/PageTitle";
+import { PAGE_TITLES } from "../utils/titleUtils";
 import Link from "next/link";
 import Head from "next/head";
 
@@ -88,15 +90,7 @@ export default function DateIdeaGenerator() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Head>
-        <title>Date Idea Generator | Random Date Night Generator for Couples</title>
-        <meta name="description" content="Free random date idea generator for couples. Discover unique date night ideas with our AI date generator and couple date randomizer. Perfect for planning your next memorable date." />
-        <meta name="keywords" content="date idea generator, date night generator, random date idea generator, random date generator for couples, ai date generator, couple date generator, date night randomizer" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(generateStructuredData()) }}
-        />
-      </Head>
+      <PageTitle title={PAGE_TITLES.GENERATOR} />
       
       <Header />
 
