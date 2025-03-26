@@ -284,7 +284,7 @@ export default function Home() {
               </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900">Choose a Date Idea</h3>
-              <p className="text-gray-600">We have curated 150+ date ideas, find the ones that match your interest</p>
+              <p className="text-gray-600">No more boring dinner dates—find exciting, unique ideas tailored to your interests!</p>
             </div>
 
             {/* Step 2 */}
@@ -295,8 +295,8 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900">See Recommendations</h3>
-              <p className="text-gray-600">We find the best activities and locations in your city that match your date idea</p>
+              <h3 className="text-xl font-semibold text-gray-900">We Find the Best Spots & Discounts in Your City</h3>
+              <p className="text-gray-600">Get exclusive deals on top-rated experiences near you.</p>
             </div>
 
             {/* Step 3 */}
@@ -306,7 +306,7 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900">Book and Enjoy</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Book in Seconds, Make Unforgettable Memories</h3>
               <p className="text-gray-600">Book your date and enjoy a memorable experience with your person</p>
             </div>
             </div>

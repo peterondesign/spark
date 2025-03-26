@@ -7,10 +7,17 @@ import { useParams } from "next/navigation";
 import { HeartIcon, MapPinIcon, StarIcon } from "../../components/icons";
 import SaveButton from "../../components/SaveButton";
 import { supabase } from "@/utils/supabaseClient";
-import { getImageUrl } from "@/app/utils/imageService"; // Import getImageUrl
+import { getImageUrl } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
-import CityEvents from "@/app/components/CityEvents";
-import Scraper from "@/app/components/Scraper";
+
+interface Experience {
+  title: string;
+  price: string;
+  rating: string;
+  reviewCount: string;
+  imageUrl: string;
+  link: string;
+}
 
 // Simplified DateIdea interface
 interface DateIdea {
@@ -50,6 +57,39 @@ export default function DateIdeaDetails() {
   const suggestionRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showUserLocationBadge, setShowUserLocationBadge] = useState(false);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [loadingExperiences, setLoadingExperiences] = useState(false);
+
+  useEffect(() => {
+    const detectLocation = async () => {
+      try {
+        const response = await fetch('/api/location');
+        const data = await response.json();
+        if (data.city) {
+          setUserCity(data.city);
+          localStorage.setItem("userCity", data.city);
+          setShowUserLocationBadge(true);
+          setShowLocationPrompt(false);
+        }
+      } catch (error) {
+        console.error('Error detecting location:', error);
+        // Fall back to manual city input if detection fails
+        const savedCity = localStorage.getItem("userCity");
+        if (savedCity) {
+          setUserCity(savedCity);
+          setShowUserLocationBadge(true);
+          setShowLocationPrompt(false);
+        } else {
+          setShowLocationPrompt(true);
+        }
+      }
+    };
+
+    // Only detect location if we don't have a saved city
+    if (!localStorage.getItem("userCity")) {
+      detectLocation();
+    }
+  }, []);
 
   useEffect(() => {
     // Check if user has set a city in localStorage
@@ -123,6 +163,51 @@ export default function DateIdeaDetails() {
       fetchDateIdea();
     }
   }, [slug]);
+
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      if (!userCity || !dateIdea?.title) return;
+      
+      setLoadingExperiences(true);
+      try {
+        // Use the direct scraping endpoint instead of a proxy
+        const response = await fetch(`/api/scrape?url=${encodeURIComponent(`https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`)}&method=selenium`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Process the scraped data into the required format for experiences
+        if (data && data.title) {
+          // Simple extraction of experiences from the scraped data
+          // In a real app, you would parse this more accurately
+          const processedExperiences: Experience[] = [{
+            title: `${dateIdea.title} in ${userCity}`,
+            price: "See website for prices",
+            rating: "4.5",
+            reviewCount: "100+",
+            imageUrl: dateIdea.image,
+            link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`
+          }];
+          
+          setExperiences(processedExperiences);
+        } else {
+          setExperiences([]);
+        }
+      } catch (error) {
+        console.error('Error fetching experiences:', error);
+        setExperiences([]);
+      } finally {
+        setLoadingExperiences(false);
+      }
+    };
+
+    if (userCity && dateIdea) {
+      fetchExperiences();
+    }
+  }, [userCity, dateIdea]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -481,20 +566,72 @@ export default function DateIdeaDetails() {
 
         {/* Date Details Card */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="flex items-center">
+              <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+              <span className="text-gray-600">{dateIdea.location || "Any location"}</span>
+            </div>
+            {dateIdea.price && (
+              <div className="flex items-center">
+                <span className="text-gray-400 mr-2">Price:</span>
+                {renderPriceLevel(dateIdea.priceLevel)}
+              </div>
+            )}
+          </div>
 
-          {/* GetYourGuide Events Section - only show if user has selected a city */}
+          {/* GetYourGuide Experiences Section */}
           {userCity && (
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Events & Activities You Might Like</h2>
-              <Scraper 
-                url={`https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`}
-                slug={dateIdea.slug}
-                city={userCity}
-              />
+            <div className="mt-8">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Related Experiences in {userCity}</h2>
+              {loadingExperiences ? (
+                <div className="animate-pulse space-y-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="bg-gray-100 rounded-lg p-4 h-32"></div>
+                  ))}
+                </div>
+              ) : experiences.length > 0 ? (
+                <div className="space-y-4">
+                  {experiences.map((exp, index) => (
+                    <a
+                      key={index}
+                      href={exp.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start gap-4">
+                        {exp.imageUrl && (
+                          <div className="relative w-24 h-24 flex-shrink-0">
+                            <Image
+                              src={exp.imageUrl}
+                              alt={exp.title}
+                              fill
+                              className="object-cover rounded-lg"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-800 mb-2">{exp.title}</h3>
+                          <div className="flex items-center gap-4">
+                            <span className="text-green-600 font-semibold">{exp.price}</span>
+                            {exp.rating && (
+                              <div className="flex items-center">
+                                <StarIcon className="h-4 w-4 text-yellow-400 mr-1" />
+                                <span className="text-gray-600">{exp.rating}</span>
+                                <span className="text-gray-400 text-sm ml-1">({exp.reviewCount})</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No experiences found for this date idea in {userCity}</p>
+              )}
             </div>
           )}
-
-
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">

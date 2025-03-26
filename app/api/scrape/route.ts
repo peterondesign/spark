@@ -1,120 +1,137 @@
-import { NextResponse } from 'next/server';
-import { scrapeGetYourGuide } from '../../../services/llmScraper';
+// This file will handle the communication between our Next.js app and Python scraping script
+import { NextRequest, NextResponse } from 'next/server';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs';
 
-// Simple in-memory rate limiter
-const rateLimits = new Map<string, { count: number, resetTime: number }>();
-const RATE_LIMIT = 5;  // requests per window
-const RATE_WINDOW = 60000;  // 60 seconds in ms
+const execPromise = promisify(exec);
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.searchParams.get('url');
+  let method = req.nextUrl.searchParams.get('method') || 'selenium'; // Default to selenium for Cloudflare sites
   
-  if (!rateLimits.has(ip)) {
-    rateLimits.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
-    return true;
-  }
-  
-  const limit = rateLimits.get(ip)!;
-  
-  if (now > limit.resetTime) {
-    // Reset the window
-    rateLimits.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
-    return true;
-  }
-  
-  if (limit.count >= RATE_LIMIT) {
-    return false;
-  }
-  
-  // Increment count
-  limit.count++;
-  return true;
-}
-
-export async function POST(request: Request) {
-  try {
-    // Apply rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 'anonymous';
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 }
-      );
-    }
-
-    // Parse request body
-    const body = await request.json();
-    const { slug, city, url } = body;
-    
-    // Extract activity and location from the request
-    let activity = slug || '';
-    let location = city || '';
-    
-    // If URL is provided but not slug/city, try to extract from URL
-    if (url && (!activity || !location)) {
-      try {
-        const urlObj = new URL(url);
-        const searchParams = urlObj.searchParams;
-        const q = searchParams.get('q') || '';
-        const parts = q.split('+');
-        
-        if (parts.length >= 2) {
-          activity = activity || parts[0];
-          location = location || parts[1];
-        }
-      } catch (e) {
-        console.error('Failed to parse URL:', e);
-      }
-    }
-    
-    // Ensure we have valid activity and location
-    if (!activity || !location) {
-      return NextResponse.json(
-        { error: 'Activity and location are required' },
-        { status: 400 }
-      );
-    }
-
-    console.log(`Processing scrape request for "${activity}" in "${location}"`);
-    
-    // Run the scraper
-    const result = await scrapeGetYourGuide(activity, location);
-    
-    // Check if the scraper returned any results
-    if (!result || !result.activities || result.activities.length === 0) {
-      console.log('No activities found');
-      return NextResponse.json({ 
-        success: true, 
-        data: { 
-          searchUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(activity)}+${encodeURIComponent(location)}&searchSource=3`,
-          results: [] 
-        }
-      });
-    }
-    
-    // Format the results to match the expected structure
-    const formattedResults = result.activities.map(activity => ({
-      title: activity.title,
-      url: activity.url,
-      image: activity.image,
-      price: activity.price,
-      rating: activity.rating,
-      description: activity.description
-    }));
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: {
-        searchUrl: `https://www.getyourguide.com/s/?q=${encodeURIComponent(activity)}+${encodeURIComponent(location)}&searchSource=3`,
-        results: formattedResults
-      }
-    });
-    
-  } catch (error: any) {
-    console.error('Scrape API error:', error);
+  if (!url) {
     return NextResponse.json(
-      { error: `Failed to fetch data: ${error.message}` },
+      { error: 'URL parameter is required' },
+      { status: 400 }
+    );
+  }
+  
+  try {
+    // Call the Python script with the URL
+    const scriptPath = path.join(process.cwd(), 'scripts', 'scraper.py');
+    
+    // Create a temporary output file
+    const outputFile = path.join(process.cwd(), 'tmp', `scrape_${Date.now()}.json`);
+    
+    // Make sure the directory exists
+    const tmpDir = path.join(process.cwd(), 'tmp');
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    
+    // Run the Python script - use the specified method or default to selenium
+    const command = `python "${scriptPath}" --url "${url}" --output "${outputFile}" --method ${method}`;
+    console.log('Executing command:', command);
+    
+    try {
+      const { stderr } = await execPromise(command);
+      
+      if (stderr && !stderr.includes("CAPTCHA DETECTED") && !stderr.includes("Warning: Selenium not available")) {
+        console.error('Python script error:', stderr);
+        
+        // If there's an error with selenium, try again with requests method
+        if (method === 'selenium' && (stderr.includes("No module named 'selenium'") || stderr.includes("Error using Selenium"))) {
+          console.log('Falling back to requests method');
+          method = 'requests';
+          const requestsCommand = `python "${scriptPath}" --url "${url}" --output "${outputFile}" --method ${method}`;
+          console.log('Executing fallback command:', requestsCommand);
+          
+          const { stderr: requestsStderr } = await execPromise(requestsCommand);
+          if (requestsStderr && !requestsStderr.includes("CAPTCHA DETECTED")) {
+            console.error('Python script error (fallback):', requestsStderr);
+            return NextResponse.json(
+              { error: 'Error running scraper script', details: requestsStderr },
+              { status: 500 }
+            );
+          }
+        } else {
+          return NextResponse.json(
+            { error: 'Error running scraper script', details: stderr },
+            { status: 500 }
+          );
+        }
+      }
+      
+      // Read the output file
+      if (fs.existsSync(outputFile)) {
+        const data = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
+        
+        // Clean up the temp file
+        fs.unlinkSync(outputFile);
+        
+        // Check if there was a CAPTCHA that needed manual intervention
+        if (stderr && stderr.includes("CAPTCHA DETECTED")) {
+          data.captcha_detected = true;
+          data.note = "A CAPTCHA was detected and may have required manual intervention";
+        }
+        
+        return NextResponse.json(data);
+      } else {
+        return NextResponse.json(
+          { error: 'Scraper did not produce output' },
+          { status: 500 }
+        );
+      }
+    } catch (execError) {
+      console.error('Exec error:', execError);
+      
+      // If original method was selenium and it failed, try with requests
+      if (method === 'selenium') {
+        console.log('Falling back to requests method after exec error');
+        method = 'requests';
+        const requestsCommand = `python "${scriptPath}" --url "${url}" --output "${outputFile}" --method ${method}`;
+        
+        try {
+          const { stderr: requestsStderr } = await execPromise(requestsCommand);
+          
+          // Check if the output file was created
+          if (fs.existsSync(outputFile)) {
+            const data = JSON.parse(fs.readFileSync(outputFile, 'utf-8'));
+            
+            // Clean up the temp file
+            fs.unlinkSync(outputFile);
+            
+            if (requestsStderr && requestsStderr.includes("CAPTCHA DETECTED")) {
+              data.captcha_detected = true;
+              data.note = "A CAPTCHA was detected and may have required manual intervention";
+            }
+            
+            return NextResponse.json(data);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback scraper error:', fallbackError);
+          return NextResponse.json(
+            { 
+              error: 'Failed to scrape website with both methods', 
+              details: `Original error: ${execError instanceof Error ? execError.message : String(execError)}. Fallback error: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`
+            },
+            { status: 500 }
+          );
+        }
+      }
+      
+      throw execError; // Re-throw if fallback wasn't attempted or also failed
+    }
+  } catch (error) {
+    console.error('Scraper API Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to scrape website', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
 }
+
+// Import the POST handler directly
+import { POST } from './post-handler';
