@@ -22,6 +22,12 @@ const nextConfig = {
         // Add the resolver for the Skypack CDN URL
         config.resolve.alias['https://cdn.skypack.dev/@mozilla/readability'] = '@mozilla/readability';
         
+        // Add loader for .pcss files
+        config.module.rules.push({
+            test: /\.pcss$/,
+            use: ['style-loader', 'css-loader', 'postcss-loader']
+        });
+        
         return config;
     },
 }

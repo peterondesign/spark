@@ -72,6 +72,7 @@ export default function Header() {
                         <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
                         <Link href="/calendar" className={getLinkStyle('/calendar')}>Shared Date Calendar</Link>
                         <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
+                        <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Date Night Box Subscription</Link>
                         <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link>
                         <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link>
                     </div>
@@ -105,6 +106,7 @@ export default function Header() {
                             <Link href="/favorites" className={getMobileLinkStyle('/favorites')}>Favorites</Link>
                             <Link href="/calendar" className={getMobileLinkStyle('/calendar')}>Shared Date Calendar</Link>
                             <Link href="/date-idea-generator" className={getMobileLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
+                            <Link href="/date-night-box-subscription" className={getMobileLinkStyle('/date-night-box-subscription')}>Date Night Box Subscription</Link>
                             <Link href="/blog" className={getMobileLinkStyle('/blog')}>Blog</Link>
                             <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-800 hover:text-gray-900 text-lg font-medium py-2 border-b border-gray-100">Contact Us</Link>
                         </div>

@@ -290,53 +290,53 @@ export default function Favorites() {
       </div>
 
       {/* Introduction section with meaningful content */}
-      <section className="bg-gradient-to-b from-white to-rose-50/30 border-t border-b border-rose-100/50">
-        <div className="container mx-auto py-16 px-4">
+      <section className="bg-gradient-to-b from-white to-gray-50/30 border-t border-neutral-100/50">
+        <div className="container mx-auto py-24 px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
               <div>
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                  Your Favorite Date Ideas Collection
+                <h1 className="text-5xl md:text-6xl font-light text-gray-900 mb-8 leading-tight tracking-tight">
+                  Your Curated <br/>
+                  <span className="font-medium">Date Collection</span>
                 </h1>
-                <p className="text-lg text-gray-700 leading-relaxed">
-                  Welcome to your personalized favorites collection – your curated library of date experiences that caught your attention.
+                <p className="text-xl text-gray-600 leading-relaxed font-light">
+                  A thoughtfully saved collection of moments waiting to be experienced together.
                 </p>
               </div>
-              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
                 <Image
                   src="/placeholder.jpg"
                   alt="Couple enjoying a date"
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-700 hover:scale-105"
                   priority
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-              {/* Feature Cards */}
-              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mb-4">
-                  <CalendarIcon className="w-6 h-6 text-rose-600" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24">
+              <div className="bg-white rounded-2xl p-10 shadow-sm hover:shadow-lg transition-all duration-300 border border-neutral-100">
+                <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mb-6">
+                  <CalendarIcon className="w-8 h-8 text-rose-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Simplify Planning</h3>
-                <p className="text-gray-600">Access your preferred date ideas instantly when scheduling your next date night.</p>
+                <h3 className="text-2xl font-medium text-gray-900 mb-4">Plan with Ease</h3>
+                <p className="text-gray-600 font-light text-lg leading-relaxed">Schedule your favorite moments for the perfect date night.</p>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                  <SparklesIcon className="w-6 h-6 text-purple-600" />
+              <div className="bg-white rounded-2xl p-10 shadow-sm hover:shadow-lg transition-all duration-300 border border-neutral-100">
+                <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mb-6">
+                  <SparklesIcon className="w-8 h-8 text-violet-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Create Variety</h3>
-                <p className="text-gray-600">Build a diverse collection of experiences to keep your relationship fresh and exciting.</p>
+                <h3 className="text-2xl font-medium text-gray-900 mb-4">Keep it Fresh</h3>
+                <p className="text-gray-600 font-light text-lg leading-relaxed">Discover new experiences to keep your relationship vibrant.</p>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <HeartIcon className="w-6 h-6 text-blue-600" />
+              <div className="bg-white rounded-2xl p-10 shadow-sm hover:shadow-lg transition-all duration-300 border border-neutral-100">
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                  <HeartIcon className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Share Together</h3>
-                <p className="text-gray-600">Create a shared wishlist of experiences to enjoy with your partner.</p>
+                <h3 className="text-2xl font-medium text-gray-900 mb-4">Share Together</h3>
+                <p className="text-gray-600 font-light text-lg leading-relaxed">Create a shared wishlist of experiences to enjoy with your partner.</p>
               </div>
             </div>
 

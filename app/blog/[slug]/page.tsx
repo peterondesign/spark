@@ -80,13 +80,19 @@ export default function BlogPostPage() {
     "keywords": post.categories?.join(", ") || "date ideas, relationships, couples"
   } : null;
 
+  // Loading state
   if (loading) {
     return (
       <>
         <Header />
-        <div className="container mx-auto px-4 py-16">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <div className="animate-pulse">
+          <div className="h-[60vh] bg-gray-200" />
+          <div className="container mx-auto px-4 -mt-32 relative z-10">
+            <div className="max-w-4xl mx-auto">
+              <div className="h-8 w-32 bg-gray-300 mb-4 rounded" />
+              <div className="h-12 w-3/4 bg-gray-300 mb-6 rounded" />
+              <div className="h-6 w-48 bg-gray-300 rounded" />
+            </div>
           </div>
         </div>
         <Footer />
@@ -94,14 +100,26 @@ export default function BlogPostPage() {
     );
   }
 
+  // Not found state
   if (!post) {
     return (
       <>
         <Header />
-        <div className="container mx-auto px-4 py-16">
-          <div className="text-center py-10">
-            <h1 className="text-3xl font-bold mb-4">Post Not Found</h1>
-            <p className="text-xl text-gray-600">The blog post you're looking for doesn't exist or has been removed.</p>
+        <div className="min-h-[60vh] flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-lg mx-auto px-4">
+            <h1 className="text-4xl font-light mb-6">
+              Post Not Found
+              <span className="block font-medium mt-2">We couldn't find what you're looking for</span>
+            </h1>
+            <p className="text-xl text-gray-600 mb-8">
+              The blog post you're looking for doesn't exist or has been removed.
+            </p>
+            <Link 
+              href="/blog"
+              className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+            >
+              Return to Blog
+            </Link>
           </div>
         </div>
         <Footer />
@@ -119,92 +137,132 @@ export default function BlogPostPage() {
         </Head>
       )}
       <Header />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <aside className="col-span-1 hidden md:block">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Latest from the Blog</h2>
-            <ul className="space-y-4">
-              {posts.slice(0, 5).map((post) => (
-                <li key={post._id}>
-                  <Link href={`/blog/${post.slug.current}`} className="text-purple-600 hover:underline">
-                    {post.title}
-                  </Link>
-                </li>
+      
+      {/* Hero Section */}
+      <section className="relative h-[60vh] min-h-[500px] flex items-end pb-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/50 to-transparent" />
+        {post.mainImage?.asset?.url && (
+          <img 
+            src={post.mainImage.asset.url} 
+            alt={post.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl">
+            <div className="flex flex-wrap gap-2 mb-6">
+              {post.categories?.map((category, idx) => (
+                <span key={idx} className="bg-white/10 text-white backdrop-blur-sm text-sm px-4 py-1 rounded-full">
+                  {category}
+                </span>
               ))}
-            </ul>
-          </aside>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 leading-tight">
+              {post.title}
+            </h1>
+            <p className="text-xl text-gray-200 max-w-2xl font-light">
+              {post.excerpt}
+            </p>
+          </div>
+        </div>
+      </section>
 
-          <section className="col-span-1 md:col-span-2">
-            <article>
-              <header className="mb-8">
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {post.categories?.map((category, idx) => (
-                    <span key={idx} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                      {category}
-                    </span>
-                  ))}
-                </div>
-                <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-                <p className="text-gray-600 italic mb-4">{post.excerpt}</p>
-                <div className="flex items-center text-sm text-gray-500 mb-6">
-                  {post.author?.image?.asset?.url && (
-                    <img 
-                      src={post.author.image.asset.url} 
-                      alt={post.author.name} 
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
-                  )}
-                  <div>
-                    <p className="font-medium">{post.author?.name || 'Anonymous'}</p>
-                    <p>
-                      {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </header>
-              
-              {post.mainImage?.asset?.url && (
-                <div className="mb-8">
+      <main className="container mx-auto px-4 -mt-16 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
+            {/* Author Info */}
+            <div className="flex items-center border-b border-gray-100 pb-8 mb-8">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 mr-4">
+                {post.author?.image?.asset?.url ? (
                   <img 
-                    src={post.mainImage.asset.url} 
-                    alt={post.title} 
-                    className="w-full h-auto rounded-lg shadow-md"
+                    src={post.author.image.asset.url} 
+                    alt={post.author.name} 
+                    className="w-full h-full object-cover"
                   />
-                </div>
-              )}
-              
-              <div className="prose prose-lg prose-purple max-w-none">
-                {post.body && <PortableText value={post.body} />}
+                ) : (
+                  <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                    <span className="text-2xl text-purple-600 font-medium">
+                      {post.author?.name?.[0] || 'A'}
+                    </span>
+                  </div>
+                )}
               </div>
-            </article>
+              <div>
+                <p className="font-medium text-lg text-gray-900">{post.author?.name || 'Anonymous'}</p>
+                <p className="text-gray-500">
+                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              </div>
+            </div>
+            
+            {/* Article Content */}
+            <div className="prose prose-lg prose-purple max-w-none">
+              {post.body && <PortableText value={post.body} />}
+            </div>
+          </div>
+
+          {/* Related Posts */}
+          <section className="mb-24">
+            <h2 className="text-2xl font-medium mb-8">More Articles</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {posts.slice(0, 3).map((relatedPost) => (
+                <Link href={`/blog/${relatedPost.slug.current}`} key={relatedPost._id} className="group">
+                  <div className="aspect-[4/3] rounded-xl overflow-hidden mb-4">
+                    {relatedPost.mainImage?.asset?.url && (
+                      <img 
+                        src={relatedPost.mainImage.asset.url}
+                        alt={relatedPost.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {relatedPost.categories?.map((category, idx) => (
+                      <span key={idx} className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+                  <h3 className="text-xl font-medium mb-2 group-hover:text-purple-600 transition-colors">
+                    {relatedPost.title}
+                  </h3>
+                </Link>
+              ))}
+            </div>
           </section>
         </div>
       </main>
 
-      {/* Newsletter Call-to-Action */}
-      <footer className="bg-gray-100 py-12 border-t border-gray-200">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">Subscribe to Our Newsletter</h2>
-          <p className="text-gray-600 mb-6">Get the latest date ideas and blog updates straight to your inbox.</p>
-          <form className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              type="submit"
-              className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition"
-            >
-              Subscribe
-            </button>
-          </form>
+      {/* Newsletter Section */}
+      <section className="bg-gradient-to-br from-purple-50 to-rose-50">
+        <div className="container mx-auto px-4 py-24">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-3xl font-medium mb-4">Stay Inspired</h2>
+            <p className="text-gray-600 mb-8">
+              Get more date ideas and relationship insights delivered to your inbox.
+            </p>
+            <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                type="submit"
+                className="px-8 py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+              >
+                Subscribe
+              </button>
+            </form>
+          </div>
         </div>
-      </footer>
+      </section>
+
+      <Footer />
     </>
   );
 }
