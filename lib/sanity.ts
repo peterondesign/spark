@@ -9,6 +9,15 @@ export const client = createClient({
   token: process.env.SANITY_API_TOKEN, // Add token for authenticated requests
 });
 
+// Create a second Sanity client for the local dataset
+export const localClient = createClient({
+  projectId: 'dyrlcvtu',
+  dataset: 'local',
+  useCdn: false, // Avoid caching for local development
+  apiVersion: '2023-05-03',
+  token: process.env.SANITY_API_TOKEN,
+});
+
 // Helper function to build an image URL
 export const urlFor = (source: any) => {
   return `${source}`;
@@ -17,8 +26,7 @@ export const urlFor = (source: any) => {
 // Helper to fetch blog posts
 export async function getPosts() {
   try {
-    // Updated query to include both "post" and "blogPost" document types
-    return await client.fetch(`*[_type == "post" || _type == "blogPost"] | order(publishedAt desc){
+    const productionPosts = await client.fetch(`*[_type == "post" || _type == "blogPost"] | order(publishedAt desc){
       _id,
       title,
       slug,
@@ -27,6 +35,26 @@ export async function getPosts() {
       mainImage,
       "categories": categories[]->title
     }`);
+
+    const localPosts = await localClient.fetch(`*[_type == "post" || _type == "blogPost"] | order(publishedAt desc){
+      _id,
+      title,
+      slug,
+      publishedAt,
+      excerpt,
+      mainImage,
+      "categories": categories[]->title
+    }`);
+
+    // Merge and deduplicate posts by _id
+    const allPosts = [...productionPosts, ...localPosts].reduce((acc, post) => {
+      if (!acc.find((p: {_id: string}) => p._id === post._id)) {
+        acc.push(post);
+      }
+      return acc;
+    }, []);
+
+    return allPosts;
   } catch (error) {
     console.error("Error fetching posts:", error);
     return [];
