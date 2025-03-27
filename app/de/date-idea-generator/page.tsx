@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "../../../utils/supabaseClient";
-import { getImageUrl } from "../../utils/imageService";
-import TinderSwipeView from "../../components/TinderSwipeView";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import PageTitle from "../../components/PageTitle";
-import { PAGE_TITLES } from "../../utils/titleUtils";
+import { supabase } from "@/utils/supabaseClient";
+import { getImageUrl } from "@/app/utils/imageService";
+import TinderSwipeView from "@/app/components/TinderSwipeView";
+import Header from "@/app/components/Header";
+import Footer from "@/app/components/Footer";
+import PageTitle from "@/app/components/PageTitle";
+import { PAGE_TITLES } from "@/app/utils/titleUtils";
 import Link from "next/link";
 import Head from "next/head";
 
@@ -97,9 +97,9 @@ export default function DateIdeaGenerator() {
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-rose-500 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">Random Date Idea Generator for Couples</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">Date-Ideen-Generator</h1>
           <p className="text-xl max-w-2xl mx-auto mb-8">
-            Our AI-powered date night generator helps couples find the perfect date. Swipe right on date ideas you love, left on ones you don't
+            Unser KI-gesteuerter Date-Night-Generator hilft Paaren, das perfekte Date zu finden. Wischen Sie nach rechts für Ideen, die Sie mögen, nach links für die, die Sie nicht mögen.
           </p>
         </div>
       </section>
@@ -246,13 +246,4 @@ export default function DateIdeaGenerator() {
       <Footer />
     </div>
   );
-}
-
-export default function IdeaGeneratorPage() {
-    return (
-        <div>
-            <h1>Date-Ideen-Generator</h1>
-            <p>Generieren Sie kreative und einzigartige Date-Ideen.</p>
-        </div>
-    );
 }

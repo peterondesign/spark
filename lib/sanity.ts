@@ -17,7 +17,8 @@ export const urlFor = (source: any) => {
 // Helper to fetch blog posts
 export async function getPosts() {
   try {
-    return await client.fetch(`*[_type == "post"] | order(publishedAt desc){
+    // Updated query to include both "post" and "blogPost" document types
+    return await client.fetch(`*[_type == "post" || _type == "blogPost"] | order(publishedAt desc){
       _id,
       title,
       slug,
@@ -35,8 +36,9 @@ export async function getPosts() {
 // Helper to fetch a single post by slug
 export async function getPost(slug: string) {
   try {
+    // Updated query to include both "post" and "blogPost" document types
     return await client.fetch(
-      `*[_type == "post" && slug.current == $slug][0]{
+      `*[(_type == "post" || _type == "blogPost") && slug.current == $slug][0]{
         _id,
         title,
         slug,

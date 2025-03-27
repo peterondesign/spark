@@ -2,13 +2,13 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { HeartIcon, MapPinIcon, StarIcon } from "../components/icons";
-import { getImage, getPlaceholderImage, getImageUrl } from "../utils/imageService";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageTitle from "../components/PageTitle";
-import { PAGE_TITLES } from "../utils/titleUtils";
-import { favoritesService } from '../services/favoritesService';
+import { HeartIcon, MapPinIcon, StarIcon } from "../../components/icons";
+import { getImage, getPlaceholderImage, getImageUrl } from "../../utils/imageService";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import PageTitle from "../../components/PageTitle";
+import { PAGE_TITLES } from "../../utils/titleUtils";
+import { favoritesService } from '../../services/favoritesService';
 
 // Type definition for date ideas
 type DateIdea = {
