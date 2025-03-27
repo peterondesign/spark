@@ -68,21 +68,12 @@ export default function Header() {
 
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-4">
-                        <Link href="/" className={getLinkStyle('/')}>
-                            Home
-                        </Link>
-                        <Link href="/favorites" className={getLinkStyle('/favorites')}>
-                            Favorites
-                        </Link>
-                        <Link href="/calendar" className={getLinkStyle('/calendar')}>
-                            Shared Date Calendar
-                        </Link>
-                        <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>
-                            Date Idea Generator
-                        </Link>
-                        <a href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">
-                            Contact Us
-                        </a>
+                        <Link href="/" className={getLinkStyle('/')}>Home</Link>
+                        <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
+                        <Link href="/calendar" className={getLinkStyle('/calendar')}>Shared Date Calendar</Link>
+                        <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
+                        <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link>
+                        <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link>
                     </div>
                     
                     {/* Mobile Hamburger Button */}
@@ -110,21 +101,12 @@ export default function Header() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6 flex flex-col space-y-6 pt-16">
-                            <Link href="/" className={getMobileLinkStyle('/')}>
-                                Home
-                            </Link>
-                            <Link href="/favorites" className={getMobileLinkStyle('/favorites')}>
-                                Favorites
-                            </Link>
-                            <Link href="/calendar" className={getMobileLinkStyle('/calendar')}>
-                                Shared Date Calendar
-                            </Link>
-                            <Link href="/date-idea-generator" className={getMobileLinkStyle('/date-idea-generator')}>
-                                Date Idea Generator
-                            </Link>
-                            <a href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-800 hover:text-gray-900 text-lg font-medium py-2 border-b border-gray-100">
-                                Contact Us
-                            </a>
+                            <Link href="/" className={getMobileLinkStyle('/')}>Home</Link>
+                            <Link href="/favorites" className={getMobileLinkStyle('/favorites')}>Favorites</Link>
+                            <Link href="/calendar" className={getMobileLinkStyle('/calendar')}>Shared Date Calendar</Link>
+                            <Link href="/date-idea-generator" className={getMobileLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
+                            <Link href="/blog" className={getMobileLinkStyle('/blog')}>Blog</Link>
+                            <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-800 hover:text-gray-900 text-lg font-medium py-2 border-b border-gray-100">Contact Us</Link>
                         </div>
                     </div>
                 </div>

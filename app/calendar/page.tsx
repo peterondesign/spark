@@ -9,7 +9,7 @@ import { supabase } from "@/utils/supabaseClient";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FavoritesAccordion from '../components/FavoritesAccordion';
-import { Pricing } from '../date-gift-planning-assistant/page';
+import Pricing from '../date-gift-planning-assistant/page';
 import { favoritesService, DateIdea } from '../services/favoritesService';
 import { X, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -491,7 +491,7 @@ const CalendarPage: React.FC = () => {
             </div>
 
             <h2 className="text-xl font-semibold text-gray-800 mt-6 mb-3">How to Use Your Calendar</h2>
-            
+
             Get started by browsing your favorite date ideas in the panel to the left. If you haven't saved any favorites yet, visit our
             <a href="/" className="text-rose-600 hover:text-rose-800 font-medium"> main page</a> to discover and save date ideas. Then simply drag
             your chosen date idea to your preferred day on the calendar. Your date plans will be automatically saved to your device so you can
