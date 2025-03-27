@@ -2,6 +2,8 @@ import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
+import { ThemeProvider } from '@/components/theme-provider';
+import CronitorInitializer from './components/CronitorInitializer';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
@@ -55,13 +57,25 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+
+  
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="alternate" hrefLang="en" href="https://www.sparkus.cc/" />
         <link rel="alternate" hrefLang="de" href="https://www.sparkus.cc/de/" />
       </head>
-      <body className={plusJakartaSans.className}>{children}</body>
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <CronitorInitializer />
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as Cronitor from '@cronitorio/cronitor-rum';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ const DateNightBoxSubscription = () => {
             "availability": "https://schema.org/InStock"
         }
     };
+
+  
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

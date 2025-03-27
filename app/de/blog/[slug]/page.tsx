@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import { getPost, getPosts } from '../../../lib/sanity';
+import Header from '../../../components/Header';
+import Footer from '../../../components/Footer';
+import { getPost, getPosts } from '../../../../lib/sanity';
 import { PortableText } from '@portabletext/react';
 
 interface Post {
