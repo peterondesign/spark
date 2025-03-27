@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { PAGE_TITLES, META_DESCRIPTIONS } from "../utils/titleUtils";
+import { PAGE_TITLES, META_DESCRIPTIONS, getPageTitle } from "../utils/titleUtils";
 import { usePathname } from "next/navigation";
 
 interface PageTitleProps {
@@ -31,10 +31,20 @@ const PageTitle: React.FC<PageTitleProps> = ({
         return PAGE_TITLES.PREFERENCES;
       case "/calendar":
         return PAGE_TITLES.CALENDAR;
+      case "/date-ideas-near-me":
+        return PAGE_TITLES.DATE_IDEAS_NEAR_ME;
       default:
         // For dynamic paths like date detail pages
         if (pathname?.includes("/date-idea/")) {
-          return customTitle || PAGE_TITLES.HOME;
+          return customTitle ? PAGE_TITLES.DATE_DETAIL(customTitle) : PAGE_TITLES.HOME;
+        }
+        // For /date-ideas-near-me/[location] paths
+        if (pathname?.includes("/date-ideas-near-me/")) {
+          const location = pathname.split('/').pop() || '';
+          const formattedLocation = location.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+          return getPageTitle(`Date Ideas in ${formattedLocation} - Local Date Night Suggestions`);
         }
         return PAGE_TITLES.HOME;
     }
@@ -52,10 +62,20 @@ const PageTitle: React.FC<PageTitleProps> = ({
         return META_DESCRIPTIONS.PREFERENCES;
       case "/calendar":
         return META_DESCRIPTIONS.CALENDAR;
+      case "/date-ideas-near-me":
+        return META_DESCRIPTIONS.DATE_IDEAS_NEAR_ME;
       default:
         // For dynamic paths like date detail pages
         if (pathname?.includes("/date-idea/") && customTitle) {
           return META_DESCRIPTIONS.DATE_DETAIL(customTitle);
+        }
+        // For /date-ideas-near-me/[location] paths
+        if (pathname?.includes("/date-ideas-near-me/")) {
+          const location = pathname.split('/').pop() || '';
+          const formattedLocation = location.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+          return `Find the best date ideas in ${formattedLocation}. Discover local date night spots and activities for couples in this area.`;
         }
         return META_DESCRIPTIONS.HOME;
     }
@@ -68,7 +88,16 @@ const PageTitle: React.FC<PageTitleProps> = ({
   // Update document title imperatively since we're in a client component
   useEffect(() => {
     document.title = pageTitle;
-  }, [pageTitle]);
+    
+    // Add meta description tag
+    let metaDescElement = document.querySelector('meta[name="description"]');
+    if (!metaDescElement) {
+      metaDescElement = document.createElement('meta');
+      metaDescElement.setAttribute('name', 'description');
+      document.head.appendChild(metaDescElement);
+    }
+    metaDescElement.setAttribute('content', metaDescription);
+  }, [pageTitle, metaDescription]);
 
   return null; // This component no longer renders any HTML
 };

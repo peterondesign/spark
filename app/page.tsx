@@ -387,9 +387,9 @@ export default function Home() {
       <section className="relative">
         <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[320px] w-full"></div>
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 text-white px-4">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Find your perfect date idea</h1>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Best Date Ideas & Date Night Inspiration</h1>
           <p className="text-xl md:text-2xl text-center mb-8 max-w-2xl">
-            Discover unique and memorable date ideas made just for you and your person
+            Discover unique date ideas near me and memorable date night experiences made just for you and your person
           </p>
         </div>
       </section>
@@ -401,7 +401,7 @@ export default function Home() {
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8 bg-white z-50 sticky top-0 z-30 py-4 px-2">
-            <h2 className="text-3xl font-bold text-gray-800">Browse All Date Ideas</h2>
+            <h2 className="text-3xl font-bold text-gray-800">Browse Date Night Ideas</h2>
             <div className="flex items-center space-x-4">
               <button onClick={openModal} className="text-rose-500 hover:text-rose-600 font-medium">
                 Advanced Search
@@ -450,8 +450,8 @@ export default function Home() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Stay Updated</h2>
-            <p className="text-gray-600 mb-6">Get the latest date ideas and relationship tips delivered to your inbox.</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Fresh Date Ideas Every Week</h2>
+            <p className="text-gray-600 mb-6">Subscribe to receive the latest date night ideas and relationship tips delivered to your inbox.</p>
             <iframe 
               src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true" 
               data-test-id="beehiiv-embed" 
@@ -536,7 +536,7 @@ export default function Home() {
         <div className="rounded-3xl shadow-xl overflow-hidden">
           <div className="h-full bg-gradient-to-br from-gray-100 to-gray-200 p-8 text-center">
             <div className="backdrop-blur-sm rounded-2xl py-6">
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Need Inspiration?</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Need Date Night Inspiration?</h2>
           <p className="text-lg text-gray-700 mb-6 px-4">Let our Date Idea Generator surprise you with the perfect date based on your preferences.</p>
           <Link href="/date-idea-generator" className="bg-rose-600 text-white px-6 py-3 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-md">
             Generate Date Idea
@@ -545,13 +545,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Contact Section Card */}
+        {/* Local Date Ideas Card */}
         <div className="rounded-2xl shadow-lg overflow-hidden">
           <div className="h-full bg-gray-800 text-white p-8 text-center">
-            <h2 className="text-2xl font-extrabold mb-4">Get In Touch</h2>
-            <p className="text-lg mb-6 px-4">Have a suggestion or need help planning your perfect date? We'd love to hear from you!</p>
-            <Link href="https://tally.so/r/3XzK4g" target="_blank" className="bg-white text-gray-800 px-6 py-3 rounded-full hover:bg-gray-200 transition-colors font-semibold shadow-md">
-          Contact Us
+            <h2 className="text-2xl font-extrabold mb-4">Date Ideas Near Me</h2>
+            <p className="text-lg mb-6 px-4">Discover local date night spots and activities perfect for couples in your area!</p>
+            <Link href="/date-ideas-near-me" className="bg-white text-gray-800 px-6 py-3 rounded-full hover:bg-gray-200 transition-colors font-semibold shadow-md">
+          Find Local Dates
             </Link>
           </div>
         </div>
