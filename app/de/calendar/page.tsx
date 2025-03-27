@@ -9,7 +9,6 @@ import { supabase } from "@/utils/supabaseClient";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import FavoritesAccordion from "../../components/FavoritesAccordion";
-import Pricing from '../date-gift-planning-assistant/page';
 import {favoritesService } from "../../services/favoritesService";
 import { X, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -555,9 +554,6 @@ const CalendarPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="mt-8">
-          <Pricing />
-        </div>
 
         <div className='container mx-auto px-4'>
           <p className="text-gray-700 mb-4">

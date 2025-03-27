@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { HeartIcon } from "../components/icons";
-import Header from "../components/Header";
-import PageTitle from "../components/PageTitle";
-import { PAGE_TITLES } from "../utils/titleUtils";
+import Header from "../../components/Header";
+import PageTitle from "../../components/PageTitle";
+import { PAGE_TITLES } from "../../utils/titleUtils";
+import { HeartIcon } from "../../components/icons";
 
 type Question = {
   id: string;
