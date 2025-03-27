@@ -278,16 +278,4 @@ const MysteryBox = () => {
     );
 };
 
-// Remove one of the default exports - keeping the DateGiftPlanningAssistant
-// as it contains all the implementation
 export default DateGiftPlanningAssistant;
-
-// This function can be exported regularly if needed elsewhere
-export function GiftPlanningPage() {
-    return (
-        <div>
-            <h1>Geschenk- und Date-Planungsassistent</h1>
-            <p>Erhalten Sie Unterstützung bei der Planung von Geschenken und Dates.</p>
-        </div>
-    );
-}
