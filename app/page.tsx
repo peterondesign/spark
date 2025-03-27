@@ -387,9 +387,10 @@ export default function Home() {
       <section className="relative">
         <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[320px] w-full"></div>
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 text-white px-4">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Best Date Ideas & Date Night Inspiration</h1>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Find your perfect date idea
+          </h1>
           <p className="text-xl md:text-2xl text-center mb-8 max-w-2xl">
-            Discover unique date ideas near me and memorable date night experiences made just for you and your person
+            Discover unique date ideas near you and memorable date night experiences made just for you and your person
           </p>
         </div>
       </section>

@@ -76,10 +76,11 @@
 
 /* Make date cells more friendly for content */
 .rbc-date-cell {
-  padding: 4px;
+  padding: 8px;
   text-align: center;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
 /* Style for date numbers */
@@ -99,6 +100,129 @@
   background-color: #f43f5e;
   color: white;
   font-weight: bold;
+}
+
+.rbc-calendar {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.rbc-header {
+  padding: 12px 4px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #4b5563;
+  text-transform: none;
+  border-bottom: none;
+}
+
+.rbc-month-view {
+  border: none;
+  background: white;
+  border-radius: 12px;
+}
+
+.rbc-date-cell.rbc-now {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.rbc-day-bg {
+  transition: background-color 0.2s ease;
+}
+
+.rbc-day-bg.rbc-today {
+  background-color: #eff6ff;
+}
+
+.rbc-day-bg:hover {
+  background-color: #f8fafc;
+}
+
+.rbc-off-range-bg {
+  background: #fafafa;
+}
+
+.rbc-event {
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 2px;
+}
+
+.rbc-event.rbc-selected {
+  background-color: transparent;
+}
+
+.rbc-event:focus {
+  outline: none;
+}
+
+.calendar-event {
+  margin: 2px 0;
+}
+
+.rbc-toolbar button {
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #f8fafc;
+  border-color: #d1d5db;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.rbc-toolbar button.rbc-active:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.rbc-month-row {
+  overflow: visible;
+}
+
+.rbc-row-content {
+  z-index: 1;
+}
+
+.rbc-show-more {
+  color: #2563eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  background: transparent;
+}
+
+.rbc-show-more:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 4px;
+}
+
+.rbc-overlay {
+  background-color: white;
+  border: none;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.rbc-overlay-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
 }
 
 /* Styling for calendar events */
@@ -251,4 +375,165 @@
 .calendar-container.drag-over .rbc-date-cell.active-drop-target {
   background-color: rgba(244, 63, 94, 0.2);
   border: 2px dashed #e11d48;
+}
+
+/* Calendar Container Styles */
+.rbc-calendar {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --calendar-border-color: #e5e7eb;
+  --calendar-bg: white;
+  --calendar-text: #374151;
+  --calendar-header-bg: #fafafa;
+  --calendar-today-bg: #eff6ff;
+  --calendar-event-bg: white;
+  --calendar-hover-bg: #f8fafc;
+}
+
+/* Header Styles */
+.rbc-toolbar {
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-family: inherit;
+}
+
+.rbc-toolbar button {
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  background: var(--calendar-bg);
+  transition: all 0.2s ease;
+}
+
+.rbc-toolbar button:hover {
+  background-color: var(--calendar-hover-bg);
+  border-color: #d1d5db;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.rbc-toolbar-label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--calendar-text);
+}
+
+/* Month View Styles */
+.rbc-month-view {
+  border: 1px solid var(--calendar-border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.rbc-month-header {
+  background: var(--calendar-header-bg);
+  border-bottom: 1px solid var(--calendar-border-color);
+}
+
+.rbc-header {
+  padding: 0.75rem 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #6b7280;
+  border-bottom: none;
+  text-transform: none;
+}
+
+.rbc-date-cell {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--calendar-text);
+}
+
+.rbc-date-cell.rbc-now {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* Today Highlight */
+.rbc-day-bg.rbc-today {
+  background-color: var(--calendar-today-bg);
+}
+
+/* Event Styles */
+.rbc-event {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 2px 0;
+}
+
+.rbc-event.rbc-selected {
+  background-color: transparent;
+}
+
+.rbc-event:focus {
+  outline: none;
+}
+
+.calendar-event {
+  margin: 2px 0;
+}
+
+/* Hover and Animation Effects */
+.rbc-day-bg {
+  transition: background-color 0.2s ease;
+}
+
+.rbc-day-bg:hover {
+  background-color: var(--calendar-hover-bg);
+}
+
+/* Show More Link */
+.rbc-show-more {
+  color: #2563eb;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.rbc-show-more:hover {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-radius: 0.25rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .rbc-toolbar-label {
+    text-align: center;
+    margin: 0.5rem 0;
+  }
+  
+  .rbc-btn-group {
+    justify-content: center;
+  }
+}
+
+/* Drag and Drop Styling */
+.rbc-addons-dnd .rbc-drag-preview {
+  opacity: 0.7;
+  border: 2px dashed #2563eb;
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.rbc-day-bg.rbc-addons-dnd-over {
+  background-color: #eff6ff;
+  border: 2px dashed #2563eb;
 }
