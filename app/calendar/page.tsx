@@ -13,22 +13,9 @@ import PageTitle from '../components/PageTitle';
 import { PAGE_TITLES } from '../utils/titleUtils';
 import Image from 'next/image';
 
-import { DateIdea as ServiceDateIdea } from '../services/favoritesService';
+import { DateIdea } from '../services/favoritesService';
 
-interface DateIdea {
-  id: string;
-  title: string;
-  image?: string;
-  description?: string;
-  category?: string;
-  location?: string;
-  cost?: string;
-  duration?: string;
-  timeOfDay?: string;
-  season?: string;
-  isIndoor?: boolean;
-  specialOccasion?: boolean;
-}
+// Using the imported DateIdea type directly instead of creating a local interface
 
 interface CalendarEvent extends Event {
   dateIdea?: DateIdea;

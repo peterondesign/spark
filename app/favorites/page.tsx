@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { HeartIcon, MapPinIcon, StarIcon } from "../components/icons";
+import { CalendarIcon, SparklesIcon, SunIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { getImage, getPlaceholderImage, getImageUrl } from "../utils/imageService";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -289,59 +290,134 @@ export default function Favorites() {
       </div>
 
       {/* Introduction section with meaningful content */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto py-8 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">Your Favorite Date Ideas Collection</h1>
+      <section className="bg-gradient-to-b from-white to-rose-50/30 border-t border-b border-rose-100/50">
+        <div className="container mx-auto py-16 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                  Your Favorite Date Ideas Collection
+                </h1>
+                <p className="text-lg text-gray-700 leading-relaxed">
+                  Welcome to your personalized favorites collection – your curated library of date experiences that caught your attention.
+                </p>
+              </div>
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+                <Image
+                  src="/placeholder.jpg"
+                  alt="Couple enjoying a date"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </div>
 
-            <div className="prose max-w-none">
-              <p className="text-gray-700 mb-4">
-                Welcome to your personalized favorites collection – your curated library of date experiences that caught your attention.
-                Saving date ideas allows you to create a personalized repository of experiences that match your unique preferences,
-                making it easier to plan memorable moments with your partner without having to search from scratch each time.
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
-                <div className="bg-rose-50 p-5 rounded-lg">
-                  <h3 className="font-medium text-rose-800 mb-3">Why Save Favorite Date Ideas?</h3>
-                  <ul className="list-disc pl-5 text-gray-700 space-y-2">
-                    <li><strong>Simplify planning:</strong> Access your preferred date ideas instantly when scheduling your next date night</li>
-                    <li><strong>Create variety:</strong> Build a diverse collection of experiences to keep your relationship fresh and exciting</li>
-                    <li><strong>Remember inspirations:</strong> Never lose track of that perfect date idea you discovered</li>
-                    <li><strong>Share with your partner:</strong> Create a shared wishlist of experiences to enjoy together</li>
-                    <li><strong>Seasonal planning:</strong> Save ideas for different times of year, occasions, or moods</li>
-                  </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+              {/* Feature Cards */}
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mb-4">
+                  <CalendarIcon className="w-6 h-6 text-rose-600" />
                 </div>
-
-                <div className="bg-purple-50 p-5 rounded-lg">
-                  <h3 className="font-medium text-purple-800 mb-3">Making the Most of Your Favorites</h3>
-                  <ul className="list-disc pl-5 text-gray-700 space-y-2">
-                    <li><strong>Schedule directly:</strong> Drag favorites to your <a href="/calendar" className="text-purple-600 hover:text-purple-800 font-medium">date calendar</a> for easy planning</li>
-                    <li><strong>Categorize mentally:</strong> Save different types of dates for different occasions</li>
-                    <li><strong>Budget considerations:</strong> Include a mix of free, affordable, and special occasion date ideas</li>
-                    <li><strong>Revisit regularly:</strong> Return to your favorites to keep your date nights fresh and exciting</li>
-                    <li><strong>Seasonal rotation:</strong> Use your collection to find perfect date ideas for any season or weather</li>
-                  </ul>
-                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Simplify Planning</h3>
+                <p className="text-gray-600">Access your preferred date ideas instantly when scheduling your next date night.</p>
               </div>
 
-              <p className="text-gray-700 mb-4">
-                Research shows that couples who maintain a "relationship bucket list" of experiences they want to share together report
-                higher relationship satisfaction and feel more connected. Your favorites collection serves as this relationship bucket list,
-                helping you prioritize quality time together and create meaningful shared experiences that strengthen your bond.
-              </p>
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                  <SparklesIcon className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Create Variety</h3>
+                <p className="text-gray-600">Build a diverse collection of experiences to keep your relationship fresh and exciting.</p>
+              </div>
 
-              <p className="text-gray-700">
-                To add more date ideas to your favorites, simply browse our <a href="/" className="text-rose-600 hover:text-rose-800 font-medium">date ideas collection</a> and
-                click the heart icon on any date that interests you. You can also try our <a href="/date-idea-generator" className="text-rose-600 hover:text-rose-800 font-medium">date idea generator</a> to
-                discover new and exciting experiences tailored to your preferences.
-              </p>
+              <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <HeartIcon className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Share Together</h3>
+                <p className="text-gray-600">Create a shared wishlist of experiences to enjoy with your partner.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="order-2 lg:order-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <Image
+                    src="/placeholder.jpg"
+                    alt="Romantic dinner"
+                    width={300}
+                    height={400}
+                    className="rounded-xl object-cover w-full h-[200px] md:h-[300px]"
+                  />
+                  <Image
+                    src="/placeholder.jpg"
+                    alt="Outdoor adventure"
+                    width={300}
+                    height={400}
+                    className="rounded-xl object-cover w-full h-[200px] md:h-[300px] mt-8"
+                  />
+                </div>
+              </div>
+              
+              <div className="order-1 lg:order-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">Making the Most of Your Favorites</h2>
+                <ul className="space-y-4">
+                  {[
+                    {
+                      title: "Schedule Directly",
+                      description: "Drag favorites to your date calendar for easy planning",
+                      icon: <CalendarIcon className="w-5 h-5 text-rose-500" />
+                    },
+                    {
+                      title: "Budget Smart",
+                      description: "Include a mix of free, affordable, and special occasion dates",
+                      icon: <CurrencyDollarIcon className="w-5 h-5 text-rose-500" />
+                    },
+                    {
+                      title: "Stay Seasonal",
+                      description: "Find perfect date ideas for any season or weather",
+                      icon: <SunIcon className="w-5 h-5 text-rose-500" />
+                    }
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-start gap-4">
+                      <div className="mt-1">{item.icon}</div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                        <p className="text-gray-600">{item.description}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
+              <div className="max-w-3xl mx-auto text-center">
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">Ready to Start Planning?</h2>
+                <p className="text-lg text-gray-700 mb-8">
+                  Browse our collection and click the heart icon on any date that interests you, or try our date idea generator
+                  to discover experiences tailored to your preferences.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center justify-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
+                  >
+                    Browse Date Ideas
+                  </Link>
+                  <Link
+                    href="/date-idea-generator"
+                    className="inline-flex items-center justify-center px-6 py-3 bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50 rounded-full font-medium transition-colors"
+                  >
+                    Try Date Generator
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-
+      </section>
 
       <Footer />
     </div>
