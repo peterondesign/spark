@@ -7,7 +7,6 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { getPost, getPosts } from '../../../lib/sanity';
 import { PortableText } from '@portabletext/react';
-import Head from 'next/head';
 
 interface Post {
   _id: string;
@@ -51,35 +50,6 @@ export default function BlogPostPage() {
     loadPost();
   }, [slug]);
 
-  // Schema markup for search engines
-  const blogPostSchema = post ? {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": post.title,
-    "description": post.excerpt,
-    "image": post.mainImage?.asset?.url || "",
-    "datePublished": post.publishedAt,
-    "dateModified": post.publishedAt,
-    "author": {
-      "@type": "Person",
-      "name": post.author?.name || "Spark Team",
-      "image": post.author?.image?.asset?.url || ""
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Spark",
-      "logo": {
-        "@type": "ImageObject",
-        "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/dateideas.png`
-      }
-    },
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": typeof window !== 'undefined' ? window.location.href : ''
-    },
-    "keywords": post.categories?.join(", ") || "date ideas, relationships, couples"
-  } : null;
-
   if (loading) {
     return (
       <>
@@ -111,13 +81,6 @@ export default function BlogPostPage() {
 
   return (
     <>
-      {blogPostSchema && (
-        <Head>
-          <script type="application/ld+json">
-            {JSON.stringify(blogPostSchema)}
-          </script>
-        </Head>
-      )}
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

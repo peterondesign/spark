@@ -6,16 +6,33 @@ import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import './calendar.css'; // Import custom styles
 import { supabase } from "@/utils/supabaseClient";
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import FavoritesAccordion from '../components/FavoritesAccordion';
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import FavoritesAccordion from "../../components/FavoritesAccordion";
 import Pricing from '../date-gift-planning-assistant/page';
-import { favoritesService, DateIdea } from '../services/favoritesService';
+import {favoritesService } from "../../services/favoritesService";
 import { X, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import Image from 'next/image';
-import PageTitle from '../components/PageTitle';
-import { PAGE_TITLES } from '../utils/titleUtils';
+import PageTitle from "../../components/PageTitle";
+import { PAGE_TITLES } from "../../utils/titleUtils";
 
+// Define DateIdea interface to represent a date activity
+interface DateIdea {
+  id: number; // Changed to strictly number
+  title: string;
+  description: string; // Changed to strictly string
+  image: string; // Changed from optional to required string
+  category?: string;
+  rating?: number;
+  location?: string;
+  price: string; // Changed to string
+  duration?: string;
+  slug?: string;
+  [key: string]: any; // Allow additional properties to ensure compatibility
+}
+
+// For compatibility with FavoritesAccordion component
+type ServiceDateIdea = DateIdea;
 
 // Define the custom event type that includes the date idea
 interface CalendarEvent extends Event {
@@ -395,6 +412,46 @@ const CalendarPage: React.FC = () => {
     };
   };
 
+  // Map the favorites to the expected structure before passing them to FavoritesAccordion
+  const mappedMyFavorites = myFavorites.map(fav => ({
+    ...fav,
+    id: Number(fav.id),
+    description: fav.description || '',
+    image: fav.image || '/placeholder-date.jpg', // Ensure image has a default
+    category: fav.category || '',
+    rating: fav.rating || 0,
+    location: fav.location || '',
+    price: String(fav.price || '0'),
+    duration: fav.duration || '',
+    slug: fav.slug || ''
+  }));
+
+  const mappedPartnerFavorites = partnerFavorites.map(fav => ({
+    ...fav,
+    id: Number(fav.id),
+    description: fav.description || '',
+    image: fav.image || '/placeholder-date.jpg', // Ensure image has a default
+    category: fav.category || '',
+    rating: fav.rating || 0,
+    location: fav.location || '',
+    price: String(fav.price || '0'),
+    duration: fav.duration || '',
+    slug: fav.slug || ''
+  }));
+
+  const mappedJointFavorites = jointFavorites.map(fav => ({
+    ...fav,
+    id: Number(fav.id),
+    description: fav.description || '',
+    image: fav.image || '/placeholder-date.jpg', // Ensure image has a default
+    category: fav.category || '',
+    rating: fav.rating || 0,
+    location: fav.location || '',
+    price: String(fav.price || '0'),
+    duration: fav.duration || '',
+    slug: fav.slug || ''
+  }));
+
   return (
     <div className="min-h-screen bg-gray-100">
       <PageTitle title={PAGE_TITLES.CALENDAR} />
@@ -412,143 +469,137 @@ const CalendarPage: React.FC = () => {
               to prioritize your connection despite busy lives.
             </p>
 
-
             <div className="justify-center gap-4 mx-auto flex flex-col md:flex-row mb-8 w-full">
-              <div className="w-full md:w-[480px] flex-shrink-0">
-                {/* Favorites Sections */}
-                <div className="space-y-4">
-                  <FavoritesAccordion
-                    title="My Favorites"
-                    items={myFavorites}
-                    defaultOpen={true}
-                    isLoading={isLoading}
-                  />
+              <FavoritesAccordion
+                title="My Favorites"
+                items={mappedMyFavorites}
+                defaultOpen={true}
+                isLoading={isLoading}
+              />
 
-                  <FavoritesAccordion
-                    title="Partner's Favorites"
-                    items={partnerFavorites}
-                    isLoading={isLoading}
-                  />
+              <FavoritesAccordion
+                title="Partner's Favorites"
+                items={mappedPartnerFavorites}
+                isLoading={isLoading}
+              />
 
-                  <FavoritesAccordion
-                    title="Joint Favorites"
-                    items={jointFavorites}
-                    isLoading={isLoading}
-                  />
-                </div>
-              </div>
-              <div
-                ref={calendarRef}
-                className={`calendar-container flex-grow ${dragOverCalendar ? 'drag-over' : ''}`}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleCalendarDrop}
-                onMouseMove={handleMouseMove}
-              >
-                {/* Drop indicator overlay */}
-                {dragOverCalendar && dropTarget && (
-                  <div
-                    className="absolute pointer-events-none z-10 drop-indicator"
-                    style={{
-                      left: dropTarget.position.x,
-                      top: dropTarget.position.y,
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  >
-                    <div className="drop-indicator-inner">
-                      <CalendarIcon size={20} className="drop-indicator-icon" />
-                    </div>
-                  </div>
-                )}
-
-                <Calendar
-                  localizer={localizer}
-                  events={events}
-                  defaultView="month"
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ height: 500 }}
-                  className={`bg-white p-4 rounded-lg shadow flex-grow ${dragOverCalendar ? 'rbc-calendar-drag-over' : ''}`}
-                  views={[Views.MONTH, Views.WEEK]}
-                  components={{
-                    event: EventComponent
-                  }}
-                  dayPropGetter={dayPropGetter}
-                  slotPropGetter={slotPropGetter}
-                  popup
-                  tooltipAccessor={event => {
-                    const idea = (event as CalendarEvent).dateIdea;
-                    return idea ? `${idea.title}: ${idea.description || 'No description provided'}` : '';
-                  }}
-                  eventPropGetter={(event) => ({
-                    className: `calendar-event ${!event.allDay ? 'calendar-event-timed' : ''}`
-                  })}
-                  onView={handleViewChange}
-                  step={30}
-                  timeslots={2}
-                />
-              </div>
+              <FavoritesAccordion
+                title="Joint Favorites"
+                items={mappedJointFavorites}
+                isLoading={isLoading}
+              />
             </div>
 
-            <h2 className="text-xl font-semibold text-gray-800 mt-6 mb-3">How to Use Your Calendar</h2>
+            <div
+              ref={calendarRef}
+              className={`calendar-container flex-grow ${dragOverCalendar ? 'drag-over' : ''}`}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleCalendarDrop}
+              onMouseMove={handleMouseMove}
+            >
+              {/* Drop indicator overlay */}
+              {dragOverCalendar && dropTarget && (
+                <div
+                  className="absolute pointer-events-none z-10 drop-indicator"
+                  style={{
+                    left: dropTarget.position.x,
+                    top: dropTarget.position.y,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                >
+                  <div className="drop-indicator-inner">
+                    <CalendarIcon size={20} className="drop-indicator-icon" />
+                  </div>
+                </div>
+              )}
 
+              <Calendar
+                localizer={localizer}
+                events={events}
+                defaultView="month"
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: 500 }}
+                className={`bg-white p-4 rounded-lg shadow flex-grow ${dragOverCalendar ? 'rbc-calendar-drag-over' : ''}`}
+                views={[Views.MONTH, Views.WEEK]}
+                components={{
+                  event: EventComponent
+                }}
+                dayPropGetter={dayPropGetter}
+                slotPropGetter={slotPropGetter}
+                popup
+                tooltipAccessor={event => {
+                  const idea = (event as CalendarEvent).dateIdea;
+                  return idea ? `${idea.title}: ${idea.description || 'No description provided'}` : '';
+                }}
+                eventPropGetter={(event) => ({
+                  className: `calendar-event ${!event.allDay ? 'calendar-event-timed' : ''}`
+                })}
+                onView={handleViewChange}
+                step={30}
+                timeslots={2}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 mt-6 mb-3">How to Use Your Calendar</h2>
+          <p className="text-gray-700">
             Get started by browsing your favorite date ideas in the panel to the left. If you haven't saved any favorites yet, visit our
             <a href="/" className="text-rose-600 hover:text-rose-800 font-medium"> main page</a> to discover and save date ideas. Then simply drag
             your chosen date idea to your preferred day on the calendar. Your date plans will be automatically saved to your device so you can
             always come back to review and update your schedule.
+          </p>
+        </div>
+
+        <div className="mt-8">
+          <Pricing />
+        </div>
+
+        <div className='container mx-auto px-4'>
+          <p className="text-gray-700 mb-4">
+            Your date planning calendar offers a simple drag-and-drop interface that makes scheduling date nights effortless. Browse your favorite
+            date ideas on the left panel and simply drag them onto your preferred day. You can view your calendar by month or week, allowing you
+            to plan dates well in advance or schedule spontaneous outings for the coming days.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-6">
+            <div className="bg-rose-50 p-4 rounded-lg">
+              <h3 className="font-medium text-rose-800 mb-2">Benefits of Regular Date Nights</h3>
+              <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                <li>Strengthens emotional bonds and intimacy</li>
+                <li>Creates new shared experiences and memories</li>
+                <li>Reduces relationship stress and prevents staleness</li>
+                <li>Improves communication through quality time together</li>
+                <li>Increases relationship satisfaction and happiness</li>
+              </ul>
+            </div>
+
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <h3 className="font-medium text-purple-800 mb-2">Calendar Features</h3>
+              <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                <li>Drag-and-drop date planning interface</li>
+                <li>Monthly and weekly calendar views</li>
+                <li>Personal, partner, and joint favorites sections</li>
+                <li>Visual previews of each date idea</li>
+                <li>Automatic local storage of your planned dates</li>
+                <li>Time-specific scheduling for detailed planning</li>
+              </ul>
+            </div>
           </div>
+
+          <p className="text-gray-700 mb-4">
+            Relationship experts recommend scheduling at least one date night per week to maintain a healthy connection with your partner.
+            Our calendar makes this easy by giving you a visual overview of your upcoming dates, helping you ensure you're making time for what
+            matters most - your relationship. Studies show that couples who regularly plan and engage in date nights report higher levels of
+            communication, sexual satisfaction, and commitment.
+          </p>
         </div>
       </div>
 
-
-
-      <div className="mt-8">
-        <Pricing />
-      </div>
-
-      <div className='container mx-auto px-4'>
-        <p className="text-gray-700 mb-4">
-          Your date planning calendar offers a simple drag-and-drop interface that makes scheduling date nights effortless. Browse your favorite
-          date ideas on the left panel and simply drag them onto your preferred day. You can view your calendar by month or week, allowing you
-          to plan dates well in advance or schedule spontaneous outings for the coming days.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-6">
-          <div className="bg-rose-50 p-4 rounded-lg">
-            <h3 className="font-medium text-rose-800 mb-2">Benefits of Regular Date Nights</h3>
-            <ul className="list-disc pl-5 text-gray-700 space-y-1">
-              <li>Strengthens emotional bonds and intimacy</li>
-              <li>Creates new shared experiences and memories</li>
-              <li>Reduces relationship stress and prevents staleness</li>
-              <li>Improves communication through quality time together</li>
-              <li>Increases relationship satisfaction and happiness</li>
-            </ul>
-          </div>
-
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h3 className="font-medium text-purple-800 mb-2">Calendar Features</h3>
-            <ul className="list-disc pl-5 text-gray-700 space-y-1">
-              <li>Drag-and-drop date planning interface</li>
-              <li>Monthly and weekly calendar views</li>
-              <li>Personal, partner, and joint favorites sections</li>
-              <li>Visual previews of each date idea</li>
-              <li>Automatic local storage of your planned dates</li>
-              <li>Time-specific scheduling for detailed planning</li>
-            </ul>
-          </div>
-        </div>
-
-        <p className="text-gray-700 mb-4">
-          Relationship experts recommend scheduling at least one date night per week to maintain a healthy connection with your partner.
-          Our calendar makes this easy by giving you a visual overview of your upcoming dates, helping you ensure you're making time for what
-          matters most - your relationship. Studies show that couples who regularly plan and engage in date nights report higher levels of
-          communication, sexual satisfaction, and commitment.
-        </p>
-
-        <p className="text-gray-700">
-        </p>
-      </div>
       <Footer />
     </div>
   );

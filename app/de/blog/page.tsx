@@ -2,11 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import { getPosts } from '../../lib/sanity';
-import Head from 'next/head';
-
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import { getPosts } from "../../../lib/sanity";
 
 interface Post {
   _id: string;
@@ -16,7 +14,6 @@ interface Post {
   excerpt: string;
   mainImage?: { asset: { url: string } }; // Updated to match Sanity's image structure
   categories?: string[];
-  author?: { name: string };
 }
 
 export default function BlogPage() {
@@ -38,49 +35,8 @@ export default function BlogPage() {
     loadPosts();
   }, []);
 
-  // Schema markup for search engines
-  const blogListingSchema = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "headline": "Spark Blog - Relationship Tips and Date Ideas",
-    "description": "Discover our latest articles on date ideas, relationship advice, and tips for couples.",
-    "url": typeof window !== 'undefined' ? window.location.href : '',
-    "mainEntity": {
-      "@type": "ItemList",
-      "itemListElement": posts.map((post, index) => ({
-        "@type": "ListItem",
-        "position": index + 1,
-        "item": {
-          "@type": "BlogPosting",
-          "headline": post.title,
-          "description": post.excerpt,
-          "author": {
-            "@type": "Person",
-            "name": post.author?.name || "Spark Team"
-          },
-          "datePublished": post.publishedAt,
-          "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/blog/${post.slug.current}`,
-          "image": post.mainImage?.asset?.url || "",
-          "publisher": {
-            "@type": "Organization",
-            "name": "Spark",
-            "logo": {
-              "@type": "ImageObject",
-              "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/dateideas.png`
-            }
-          }
-        }
-      }))
-    }
-  };
-
   return (
     <>
-      <Head>
-        <script type="application/ld+json">
-          {JSON.stringify(blogListingSchema)}
-        </script>
-      </Head>
       <Header />
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Date Ideas Blog</h1>

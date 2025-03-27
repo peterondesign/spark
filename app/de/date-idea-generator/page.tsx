@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "../../utils/supabaseClient";
-import { getImageUrl } from "../utils/imageService";
-import TinderSwipeView from "../components/TinderSwipeView";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageTitle from "../components/PageTitle";
-import { PAGE_TITLES } from "../utils/titleUtils";
+import { supabase } from "../../../utils/supabaseClient";
+import { getImageUrl } from "../../utils/imageService";
+import TinderSwipeView from "../../components/TinderSwipeView";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import PageTitle from "../../components/PageTitle";
+import { PAGE_TITLES } from "../../utils/titleUtils";
 import Link from "next/link";
 import Head from "next/head";
 
@@ -46,7 +46,6 @@ const generateStructuredData = () => {
     }
   };
 };
-
 
 export default function DateIdeaGenerator() {
   const [allDateIdeas, setAllDateIdeas] = useState<DateIdea[]>([]);
@@ -247,4 +246,13 @@ export default function DateIdeaGenerator() {
       <Footer />
     </div>
   );
+}
+
+export default function IdeaGeneratorPage() {
+    return (
+        <div>
+            <h1>Date-Ideen-Generator</h1>
+            <p>Generieren Sie kreative und einzigartige Date-Ideen.</p>
+        </div>
+    );
 }

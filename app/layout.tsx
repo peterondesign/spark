@@ -57,6 +57,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="alternate" hrefLang="en" href="https://www.sparkus.cc/" />
+        <link rel="alternate" hrefLang="de" href="https://www.sparkus.cc/de/" />
+      </head>
       <body className={plusJakartaSans.className}>{children}</body>
     </html>
   )

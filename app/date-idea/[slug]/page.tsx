@@ -9,6 +9,7 @@ import SaveButton from "../../components/SaveButton";
 import { supabase } from "@/utils/supabaseClient";
 import { getImageUrl } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
+import Head from 'next/head';
 
 interface Experience {
   title: string;
@@ -338,6 +339,37 @@ function handleClickOutside(event: MouseEvent) {
     setShowUserLocationBadge(false);
   };
 
+  // Schema markup for search engines
+  const dateIdeaSchema = dateIdea ? {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": dateIdea.title,
+    "description": dateIdea.description || dateIdea.longDescription || "",
+    "image": imageUrls && imageUrls.length > 0 ? imageUrls[0] : "",
+    "startDate": new Date().toISOString().split('T')[0], // Today's date as a fallback
+    "endDate": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0], // One year from now
+    "location": {
+      "@type": "Place",
+      "name": dateIdea.location,
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": dateIdea.location
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock",
+      "validFrom": new Date().toISOString().split('T')[0]
+    },
+    "organizer": {
+      "@type": "Organization",
+      "name": "Spark",
+      "url": typeof window !== 'undefined' ? window.location.origin : ''
+    }
+  } : null;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -465,6 +497,13 @@ function handleClickOutside(event: MouseEvent) {
 
   return (
     <div className="min-h-screen bg-white">
+      {dateIdeaSchema && (
+        <Head>
+          <script type="application/ld+json">
+            {JSON.stringify(dateIdeaSchema)}
+          </script>
+        </Head>
+      )}
       {/* Navigation - Header */}
       <Header />
 

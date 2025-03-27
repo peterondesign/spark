@@ -39,7 +39,6 @@ const fallbackLocations: LocationDateIdea[] = [
   }
 ];
 
-
 export default function DateIdeasNearMe() {
   const [locationDateIdeas, setLocationDateIdeas] = useState<LocationDateIdea[]>([]);
   const [loading, setLoading] = useState(true);
