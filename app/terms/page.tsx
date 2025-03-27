@@ -30,7 +30,7 @@ export default function Terms() {
                     </p>
                     
                     <p className="my-4">
-                        Our Date and Gift Planning Assistant subscription-based chatbot service that provides date reminders, special occasion notifications, and personalized gift recommendations via WhatsApp and email.
+                        Our Date Night Box Subscription service provides curated monthly boxes with everything needed for memorable date nights at home. Subscriptions include themed date activities, treats, and personalized elements delivered via mail.
                     </p>
                     
                     <p className="my-6 font-medium">
@@ -62,7 +62,7 @@ export default function Terms() {
                         Users release DateIdeas.cc from any liability for losses or damages from third-party purchases.
                     </p>
 
-                    <h2 className="text-2xl font-semibold mt-8 mb-4">2. Date and Gift Planning Assistant Subscription</h2>
+                    <h2 className="text-2xl font-semibold mt-8 mb-4">2. Date Night Box Subscription</h2>
                     <h3 className="text-xl font-medium mb-2">2.1 Service Overview</h3>
                     <p>Our chatbot service offers:</p>
                     <p className="my-1">Date & Special Occasion Reminders via WhatsApp and Email</p>

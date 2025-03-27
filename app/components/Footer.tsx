@@ -34,7 +34,7 @@ export default function Footer() {
                             <li><Link href="/favorites" className="text-gray-600 hover:text-gray-900">Favorites</Link></li>
                             <li><Link href="/calendar" className="text-gray-600 hover:text-gray-900">Calendar</Link></li>
                             <li><Link href="/date-idea-generator" className="text-gray-600 hover:text-gray-900">Date Idea Generator</Link></li>
-                            <li><Link href="/date-gift-planning-assistant" className="text-gray-600 hover:text-gray-900">Date and Gift Planning Assistant</Link></li>
+                            <li><Link href="/date-gift-planning-assistant" className="text-gray-600 hover:text-gray-900">Date Night Box Subscription</Link></li>
                             <li><Link href="/date-ideas-near-me" className="text-gray-600 hover:text-gray-900">Date Ideas Near Me</Link></li>
                             <li><Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
                             <li><Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link></li>
