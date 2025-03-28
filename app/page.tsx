@@ -476,18 +476,8 @@ export default function Home() {
     const newFilteredIdeas = allDateIdeas.filter((idea) => {
       let matchesFilter = true;
 
-      // City filter
-      if (activeFilters.city) {
-        if (typeof idea.location === 'string' && idea.location) {
-          matchesFilter = matchesFilter && 
-            idea.location.toLowerCase().includes(activeFilters.city.toLowerCase());
-        } else if (typeof idea.location === 'object' && idea.location?.city) {
-          matchesFilter = matchesFilter && 
-            idea.location.city.toLowerCase().includes(activeFilters.city.toLowerCase());
-        } else {
-          matchesFilter = false;
-        }
-      }
+      // City filter is disabled but we still show the user's location
+      // No longer filtering by city as requested
 
       // Simple price filter - direct text matching with alternatives
       if (activeFilters.price !== 'all') {
@@ -699,16 +689,27 @@ export default function Home() {
           <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {/* Location Filter */}
+              {/* Location Filter - Modified to show IP location without filtering */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Location</label>
-                <input
-                  type="text"
-                  value={activeFilters.city || ''}
-                  placeholder="Enter a city or area"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, city: e.target.value })}
-                />
+                <label className="text-gray-700 font-medium text-sm block mb-2">Your Location</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={userCity || ''}
+                    placeholder="Location not detected"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 transition-all duration-200"
+                    disabled
+                    title="Your detected location"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <MapPinIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  {/* {userCity && (
+                    <div className="text-xs text-gray-500 mt-1 pl-1">
+                      This is your current detected location. Filtering is disabled.
+                    </div>
+                  )} */}
+                </div>
               </div>
 
               {/* Price Range Filter - Updated to show readable values */}
@@ -888,12 +889,12 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {process.env.NODE_ENV === 'development' && (
+              {/* {process.env.NODE_ENV === 'development' && (
                 <div className="mb-4 p-4 bg-gray-100 rounded-lg">
                   <p>Data stats: {filteredDateIdeas.length} filtered ideas, {allDateIdeas.length} total ideas</p>
                   <p>Active filters: {JSON.stringify(selectedFilters)}</p>
                 </div>
-              )}
+              )} */}
               
               <GridView
                 dateIdeas={(filteredDateIdeas.length > 0 ? filteredDateIdeas : allDateIdeas).map(idea => ({
