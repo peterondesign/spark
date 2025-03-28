@@ -27,6 +27,21 @@ export default function FavoritesAccordion({
   const [itemsWithImages, setItemsWithImages] = useState<DateIdea[]>(items);
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
 
+  // Helper function to format location based on its type
+  const formatLocation = (location: string | { [key: string]: any; } | null): string => {
+    if (!location) return 'No location specified';
+    if (typeof location === 'string') return location;
+    if (typeof location === 'object') {
+      // Return city if available, or any other useful location information
+      if (location.city) return location.city;
+      if (location.name) return location.name;
+      if (location.type) return location.type;
+      // If nothing specific found, return a generic string
+      return 'Location details available';
+    }
+    return 'Unknown location';
+  };
+
   useEffect(() => {
     // Process images for each item
     const loadImages = async () => {
@@ -155,7 +170,7 @@ export default function FavoritesAccordion({
                             {item.title}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
-                            {item.location}
+                            {formatLocation(item.location)}
                           </p>
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-800">
                             {item.category}

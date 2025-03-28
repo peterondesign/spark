@@ -141,7 +141,7 @@ export default function Home() {
 
   const getSelectedFiltersText = () => {
     const count = Object.values(selectedFilters).reduce((acc, filters) => acc + filters.length, 0);
-    if (count === 0) return "Advanced Filters";
+    if (count === 0) return "Mood";
     
     const allSelected = [
       ...selectedFilters.categories,
@@ -792,7 +792,7 @@ export default function Home() {
 
               {/* Advanced Filters Dropdown - Updated to show selected filters */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Advanced Filters</label>
+                <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
                 <div className="w-full">
                   <button 
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} 
