@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { HeartIcon, MapPinIcon, SearchIcon, StarIcon } from "./components/icons";
@@ -14,11 +14,32 @@ import Footer from "./components/Footer";
 import PageTitle from "./components/PageTitle"; // Import the new PageTitle component
 import HowItWorksCarousel from "./components/HowItWorksCarousel"; // Import the carousel component
 import { PAGE_TITLES } from "./utils/titleUtils";
-import { favoritesService, FavoritesError, DateIdea } from './services/favoritesService';
+import { favoritesService, FavoritesError, DateIdea as ImportedDateIdea } from './services/favoritesService';
+import type { DateIdea as GridViewDateIdea } from './components/GridView'; // Import the DateIdea type from GridView
 import FilterButtons from "./components/FilterButtons";
 import Head from 'next/head';
 
 // Removed metadata export as it's not allowed in client components
+
+interface DateIdea {
+  id: number;
+  title: string;
+  category: string;
+  rating: number;
+  location: string | { [key: string]: any; } | null;
+  description: string;
+  price: string;
+  duration: string;
+  slug: string;
+  image: string;
+  priceLevel?: number;
+  bestForStage?: string;
+  tips?: string | null;
+  idealFor?: string;
+  mood?: string | { pace?: string; vibe?: string }; // Updated property
+  timeOfDay?: string; // Added property
+  longDescription?: string;
+}
 
 export default function Home() {
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
@@ -33,9 +54,41 @@ export default function Home() {
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string | null>(null);
   const [filteredDateIdeas, setFilteredDateIdeas] = useState<DateIdea[]>([]);
+  
+  // Add new state for advanced filters
+  const [filterOptions, setFilterOptions] = useState<{
+    categories: string[];
+    locationTypes: string[];
+    locationSettings: string[];
+    moodPaces: string[];
+    moodVibes: string[];
+  }>({
+    categories: [],
+    locationTypes: [],
+    locationSettings: [],
+    moodPaces: [],
+    moodVibes: []
+  });
+  
+  const [selectedFilters, setSelectedFilters] = useState<{
+    categories: string[];
+    locationTypes: string[];
+    locationSettings: string[];
+    moodPaces: string[];
+    moodVibes: string[];
+  }>({
+    categories: [],
+    locationTypes: [],
+    locationSettings: [],
+    moodPaces: [],
+    moodVibes: []
+  });
+
   const [activeFilters, setActiveFilters] = useState<{
     city: string | null;
     price: 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus';
+    timeOfDay?: string;
+    mood?: string;
   }>({ city: null, price: 'all' });
 
   useEffect(() => {
@@ -46,23 +99,56 @@ export default function Home() {
           .select('*');
 
         if (error) {
-          console.error("Supabase Error:", error); // Log the full error object
+          console.error("Supabase Error:", error);
           throw error;
         }
 
-        setAllDateIdeas(data || []);
+        if (data) {
+          // Extract all unique filter values from data
+          const categories = new Set<string>();
+          const locationTypes = new Set<string>();
+          const locationSettings = new Set<string>();
+          const moodPaces = new Set<string>();
+          const moodVibes = new Set<string>();
+
+          data.forEach(idea => {
+            // Extract category
+            if (idea.category) {
+              categories.add(idea.category);
+            }
+
+            // Extract location type and setting
+            if (typeof idea.location === 'object' && idea.location) {
+              if (idea.location.type) locationTypes.add(idea.location.type);
+              if (idea.location.setting) locationSettings.add(idea.location.setting);
+            }
+
+            // Extract mood pace and vibe
+            if (typeof idea.mood === 'object' && idea.mood) {
+              if (idea.mood.pace) moodPaces.add(idea.mood.pace);
+              if (idea.mood.vibe) moodVibes.add(idea.mood.vibe);
+            }
+          });
+
+          // Set filter options
+          setFilterOptions({
+            categories: Array.from(categories).sort(),
+            locationTypes: Array.from(locationTypes).sort(),
+            locationSettings: Array.from(locationSettings).sort(),
+            moodPaces: Array.from(moodPaces).sort(),
+            moodVibes: Array.from(moodVibes).sort()
+          });
+
+          setAllDateIdeas(data);
+        }
 
         // Load images for all date ideas
         if (data) {
-          // Split data into initial high-priority batch and remaining items
           const initialBatchSize = 8;
           const initialBatch = data.slice(0, initialBatchSize);
           const remainingBatch = data.slice(initialBatchSize);
 
-          // Load the initial batch with higher priority
           await loadImagesForBatch(initialBatch);
-
-          // Then load the remaining images in the background
           loadImagesForBatch(remainingBatch);
         }
 
@@ -74,18 +160,15 @@ export default function Home() {
     };
 
     const loadImages = async () => {
-      // Load hero image with priority
       const heroImg = await getImageUrl("/", "romantic couple date", 1920, 500);
       setHeroImageUrl(heroImg);
     };
 
-    // Start both loading processes in parallel
     loadImages();
     fetchDateIdeas();
   }, []);
 
   useEffect(() => {
-    // Sync favorites on page load
     favoritesService.syncFavorites().catch(error =>
       console.warn('Failed to sync favorites:', error)
     );
@@ -94,7 +177,6 @@ export default function Home() {
       setFavoritesLoading(true);
       setFavoritesError(null);
       try {
-        // First check local storage for favorites
         let favorites: DateIdea[] = [];
 
         if (typeof window !== 'undefined') {
@@ -102,32 +184,26 @@ export default function Home() {
             const savedIdeas = localStorage.getItem('savedDateIdeas');
             if (savedIdeas) {
               const parsedIdeas = JSON.parse(savedIdeas) as DateIdea[];
-              favorites = parsedIdeas.slice(0, 3); // Get only the 3 most recent
+              favorites = parsedIdeas.slice(0, 3);
             }
           } catch (localStorageError) {
             console.warn('Error accessing localStorage:', localStorageError);
-            // Continue execution even if localStorage fails
           }
         }
 
-        // If we have local favorites, use them
         if (favorites.length > 0) {
           setRecentFavorites(favorites);
         } else {
-          // Otherwise try to get from service (which now tries localStorage first anyway)
-          // Wrap in try/catch to ensure we handle any service errors
           try {
             const serviceFavorites = await favoritesService.getRecentFavorites();
             setRecentFavorites(serviceFavorites);
           } catch (serviceError) {
             console.warn('Error from favorites service:', serviceError);
-            // Don't set an error state here - just use empty array
             setRecentFavorites([]);
           }
         }
       } catch (error) {
         console.error('Error in fetchRecentFavorites:', error);
-        // Set general error message but don't expose details to UI
         setFavoritesError('Unable to load favorites');
       } finally {
         setFavoritesLoading(false);
@@ -138,9 +214,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Function to check scroll position and show/hide button
     const handleScroll = () => {
-      // Show button when user scrolls down 500px or more
       if (window.scrollY > 500) {
         setShowScrollButton(true);
       } else {
@@ -148,16 +222,13 @@ export default function Home() {
       }
     };
 
-    // Add scroll event listener
     window.addEventListener('scroll', handleScroll);
 
-    // Clean up the event listener
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
-  // Add location detection effect
   useEffect(() => {
     const detectLocation = async () => {
       try {
@@ -167,7 +238,7 @@ export default function Home() {
           setActiveFilters(prev => ({ ...prev, city: savedCity }));
           return;
         }
-        
+
         const response = await fetch('/api/location');
         const data = await response.json();
         if (data.city) {
@@ -179,98 +250,56 @@ export default function Home() {
         console.error('Error detecting location:', error);
       }
     };
-    
+
     detectLocation();
   }, []);
 
-  // Add effect to filter date ideas when filters or data changes
   useEffect(() => {
     if (!allDateIdeas.length) return;
-    
-    const newFilteredIdeas = allDateIdeas.filter((idea) => {
-      let matchesFilter = true;
-      
-      // Filter by city if a city is selected
-      if (activeFilters.city) {
-        matchesFilter = matchesFilter && 
-          idea.location.toLowerCase().includes(activeFilters.city.toLowerCase());
-      }
-      
-      // Filter by price range
-      if (activeFilters.price !== 'all') {
-        const priceLevel = idea.priceLevel || 1; // Default to 1 if not specified
-        
-        switch (activeFilters.price) {
-          case 'free':
-            matchesFilter = matchesFilter && priceLevel === 1;
-            break;
-          case 'under-25':
-            matchesFilter = matchesFilter && priceLevel <= 2;
-            break;
-          case 'under-50':
-            matchesFilter = matchesFilter && priceLevel <= 3;
-            break;
-          case 'under-100':
-            matchesFilter = matchesFilter && priceLevel <= 4;
-            break;
-          case '100-plus':
-            matchesFilter = matchesFilter && priceLevel >= 5;
-            break;
-        }
-      }
-      
-      return matchesFilter;
-    });
-    
-    setFilteredDateIdeas(newFilteredIdeas);
-    setVisibleIdeas(20); // Reset to first page when filters change
-  }, [allDateIdeas, activeFilters]);
 
-  // Function to scroll to the top
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+    const today = new Date().toISOString().split('T')[0];
+    const seed = today.split('-').reduce((acc, val) => acc + parseInt(val), 0);
+
+    const shuffledIdeas = [...allDateIdeas].sort((a, b) => {
+      const randomA = Math.sin(seed + a.id) * 10000 % 1;
+      const randomB = Math.sin(seed + b.id) * 10000 % 1;
+      return randomA - randomB;
     });
-  };
+
+    if (JSON.stringify(shuffledIdeas.map(i => i.id)) !== JSON.stringify(allDateIdeas.map(i => i.id))) {
+      setAllDateIdeas(shuffledIdeas);
+    }
+  }, []);
 
   const loadMoreIdeas = () => {
     setVisibleIdeas(prev => prev + 20);
   };
 
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
-
   const handleSearch = (filters: any) => {
     setLoading(true);
 
-    // Filter date ideas based on the provided filters
     const filteredIdeas = allDateIdeas.filter((idea) => {
       let matches = true;
 
-      // Filter by category if specified
       if (filters.category && filters.category !== "all") {
         matches = matches && idea.category === filters.category;
       }
 
-      // Filter by price level if specified
       if (filters.priceLevel && filters.priceLevel !== "all") {
-        // Convert string price level to number for comparison
         const priceLevelNum = parseInt(filters.priceLevel);
         matches = matches && idea.priceLevel === priceLevelNum;
       }
 
-      // Filter by location if specified
       if (filters.location && filters.location.trim() !== "") {
-        matches = matches && idea.location.toLowerCase().includes(filters.location.toLowerCase());
+        if (typeof idea.location === 'string') {
+          matches = matches && idea.location.toLowerCase().includes(filters.location.toLowerCase());
+        } else if (typeof idea.location === 'object' && idea.location?.city) {
+          matches = matches && idea.location.city.toLowerCase().includes(filters.location.toLowerCase());
+        } else {
+          matches = false;
+        }
       }
 
-      // Filter by search term (in title or description)
       if (filters.searchTerm && filters.searchTerm.trim() !== "") {
         const term = filters.searchTerm.toLowerCase();
         const titleMatch = idea.title.toLowerCase().includes(term);
@@ -278,31 +307,15 @@ export default function Home() {
         matches = matches && (titleMatch || descMatch);
       }
 
-      // Filter by idealFor if specified
-      if (filters.idealFor && filters.idealFor !== "all") {
-        matches = matches && idea.idealFor === filters.idealFor;
-      }
-
-      // Filter by duration if specified
-      if (filters.duration && filters.duration !== "all") {
-        matches = matches && idea.duration === filters.duration;
-      }
-
       return matches;
     });
 
-    // Update state with filtered ideas
     setAllDateIdeas(filteredIdeas);
-    // Reset the number of visible ideas
     setVisibleIdeas(20);
     setLoading(false);
-
-    // Close the modal after search
-    closeModal();
   };
 
   const loadImagesForBatch = async (ideas: DateIdea[]) => {
-    // Process in small batches to avoid overwhelming the browser
     const batchSize = 5;
 
     for (let i = 0; i < ideas.length; i += batchSize) {
@@ -324,7 +337,6 @@ export default function Home() {
 
       setAllDateIdeaImages(prev => ({ ...prev, ...batchImages }));
 
-      // Small delay to let the browser breathe between batches
       if (i + batchSize < ideas.length) {
         await new Promise(r => setTimeout(r, 100));
       }
@@ -336,14 +348,117 @@ export default function Home() {
     setUserCity(null);
   };
 
-  const handleFilterChange = (filters: { 
-    city: string | null; 
-    price: 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus'
-  }) => {
-    setActiveFilters(filters);
+  const handleFilterChange = (filterType: string, value: string, isChecked: boolean) => {
+    setSelectedFilters(prev => {
+      const newFilters = { ...prev };
+      const filterArray = newFilters[filterType as keyof typeof newFilters];
+      
+      if (isChecked) {
+        if (!filterArray.includes(value)) {
+          newFilters[filterType as keyof typeof newFilters] = [...filterArray, value];
+        }
+      } else {
+        newFilters[filterType as keyof typeof newFilters] = filterArray.filter(v => v !== value);
+      }
+      
+      return newFilters;
+    });
   };
 
-  // Schema markup for search engines
+  useEffect(() => {
+    if (!allDateIdeas.length) return;
+
+    console.log('Applying filters:', selectedFilters);
+    
+    const newFilteredIdeas = allDateIdeas.filter((idea) => {
+      let matchesFilter = true;
+
+      if (activeFilters.city) {
+        if (typeof idea.location === 'string' && idea.location) {
+          matchesFilter = matchesFilter && 
+            idea.location.toLowerCase().includes(activeFilters.city.toLowerCase());
+        } else if (typeof idea.location === 'object' && idea.location?.city) {
+          matchesFilter = matchesFilter && 
+            idea.location.city.toLowerCase().includes(activeFilters.city.toLowerCase());
+        } else {
+          matchesFilter = matchesFilter && true;
+        }
+      }
+
+      if (activeFilters.price !== 'all') {
+        const priceLevel = idea.priceLevel || 1;
+
+        switch (activeFilters.price) {
+          case 'free':
+            matchesFilter = matchesFilter && priceLevel === 1;
+            break;
+          case 'under-25':
+            matchesFilter = matchesFilter && priceLevel <= 2;
+            break;
+          case 'under-50':
+            matchesFilter = matchesFilter && priceLevel <= 3;
+            break;
+          case 'under-100':
+            matchesFilter = matchesFilter && priceLevel <= 4;
+            break;
+          case '100-plus':
+            matchesFilter = matchesFilter && priceLevel >= 5;
+            break;
+        }
+      }
+
+      if (activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all') {
+        matchesFilter = matchesFilter && idea.timeOfDay === activeFilters.timeOfDay;
+      }
+
+      if (selectedFilters.categories.length > 0) {
+        matchesFilter = matchesFilter && selectedFilters.categories.includes(idea.category);
+      }
+
+      if (selectedFilters.locationTypes.length > 0) {
+        const locationType = typeof idea.location === 'object' && idea.location?.type;
+        if (!locationType || !selectedFilters.locationTypes.includes(locationType)) {
+          matchesFilter = false;
+        }
+      }
+
+      if (selectedFilters.locationSettings.length > 0) {
+        const locationSetting = typeof idea.location === 'object' && idea.location?.setting;
+        if (!locationSetting || !selectedFilters.locationSettings.includes(locationSetting)) {
+          matchesFilter = false;
+        }
+      }
+
+      if (selectedFilters.moodPaces.length > 0) {
+        const moodPace = typeof idea.mood === 'object' && idea.mood?.pace;
+        if (!moodPace || !selectedFilters.moodPaces.includes(moodPace)) {
+          matchesFilter = false;
+        }
+      }
+
+      if (selectedFilters.moodVibes.length > 0) {
+        const moodVibe = typeof idea.mood === 'object' && idea.mood?.vibe;
+        if (!moodVibe || !selectedFilters.moodVibes.includes(moodVibe)) {
+          matchesFilter = false;
+        }
+      }
+
+      return matchesFilter;
+    });
+
+    console.log('Filtered date ideas count:', newFilteredIdeas.length);
+
+    setFilteredDateIdeas(newFilteredIdeas);
+    setVisibleIdeas(20); 
+  }, [allDateIdeas, activeFilters, selectedFilters]);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   const dateIdeasSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -379,11 +494,8 @@ export default function Home() {
         </script>
       </Head>
       <PageTitle title={PAGE_TITLES.HOME} />
-      {/* Render the AdvancedSearchModal component */}
-      <AdvancedSearchModal isOpen={isModalOpen} onClose={closeModal} onSearch={handleSearch} />
       <Header />
 
-      {/* Hero Section */}
       <section className="relative">
         <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[320px] w-full"></div>
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 text-white px-4">
@@ -392,26 +504,117 @@ export default function Home() {
           <p className="text-3xl">Personalised for you and your person</p>
         </div>
       </section>
-      
-      {/* All Date Ideas Section */}
+
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-8 bg-white z-50 sticky top-0 z-30 py-4 px-2">
-            <h2 className="text-3xl font-bold text-gray-800">Browse Date Night Ideas</h2>
-            <div className="flex items-center space-x-4">
-              <button onClick={openModal} className="text-rose-500 hover:text-rose-600 font-medium">
-                Advanced Search
+          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Location</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPinIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={activeFilters.city || ''}
+                    placeholder="Enter a city or area"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all duration-200"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, city: e.target.value })}
+                  />
+                  {activeFilters.city && (
+                    <button
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setActiveFilters({ ...activeFilters, city: null })}
+                    >
+                      <span className="text-gray-400 hover:text-gray-600">✕</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
+                <select
+                  value={activeFilters.price}
+                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                  onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                >
+                  <option value="all">All Prices</option>
+                  <option value="free">Free</option>
+                  <option value="under-25">Under $25</option>
+                  <option value="under-50">Under $50</option>
+                  <option value="under-100">Under $100</option>
+                  <option value="100-plus">$100+</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
+                <select
+                  value={activeFilters.timeOfDay || 'all'}
+                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                  onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
+                >
+                  <option value="all">Any Time</option>
+                  <option value="day">Day Date</option>
+                  <option value="night">Night Date</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
+                <select
+                  value={activeFilters.mood || 'all'}
+                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                  onChange={(e) => setActiveFilters({ ...activeFilters, mood: e.target.value })}
+                >
+                  <option value="all">Any Mood</option>
+                  <option value="adventurous">Adventurous</option>
+                  <option value="cozy">Cozy</option>
+                  <option value="low-effort">Low Effort</option>
+                  <option value="romantic">Romantic</option>
+                  <option value="fun">Fun</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end mt-4">
+              <button
+                onClick={() => {
+                  setActiveFilters({ city: null, price: 'all', timeOfDay: 'all', mood: 'all' });
+                  setSelectedFilters({
+                    categories: [],
+                    locationTypes: [],
+                    locationSettings: [],
+                    moodPaces: [],
+                    moodVibes: []
+                  });
+                }}
+                className="text-rose-600 hover:text-rose-800 font-medium text-sm flex items-center transition-colors duration-200"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear All Filters
               </button>
             </div>
           </div>
-
-          {/* Filter Buttons */}
-          <FilterButtons 
-            currentCity={userCity} 
-            clearCity={clearUserCity} 
-            onFilterChange={handleFilterChange} 
-          />
-
           {loading ? (
             <div className="h-96 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {[...Array(8)].map((_, i) => (
@@ -419,16 +622,40 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <GridView
-              dateIdeas={filteredDateIdeas.length > 0 ? filteredDateIdeas : allDateIdeas}
-              dateIdeaImages={allDateIdeaImages}
-              visibleIdeas={visibleIdeas}
-              onLoadMore={loadMoreIdeas}
-            />
+            <>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mb-4 p-4 bg-gray-100 rounded-lg">
+                  <p>Data stats: {filteredDateIdeas.length} filtered ideas, {allDateIdeas.length} total ideas</p>
+                  <p>Active filters: {JSON.stringify(selectedFilters)}</p>
+                </div>
+              )}
+              
+              <GridView
+                dateIdeas={(filteredDateIdeas.length > 0 ? filteredDateIdeas : allDateIdeas).map(idea => ({
+                  id: idea.id,
+                  title: idea.title,
+                  category: idea.category || '',
+                  location: idea.location || '',
+                  description: idea.description || '',
+                  slug: idea.slug,
+                  image: idea.image || '/placeholder.svg?height=300&width=400',
+                  timeOfDay: idea.timeOfDay || '',
+                  mood: idea.mood || '',
+                  priceLevel: idea.priceLevel,
+                  tips: idea.tips || '',
+                  longDescription: idea.longDescription || '',
+                }))}
+                dateIdeaImages={allDateIdeaImages}
+                visibleIdeas={visibleIdeas}
+                onLoadMore={loadMoreIdeas}
+                filterOptions={filterOptions}
+                selectedFilters={selectedFilters}
+                onFilterChange={handleFilterChange}
+              />
+            </>
           )}
         </div>
 
-        {/* Scroll To Top Button */}
         {showScrollButton && (
           <button
             onClick={scrollToTop}
@@ -442,25 +669,23 @@ export default function Home() {
         )}
       </section>
 
-      {/* Newsletter Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Fresh Date Ideas Every Week</h2>
             <p className="text-gray-600 mb-6">Subscribe to receive the latest date night ideas and relationship tips delivered to your inbox.</p>
-            <iframe 
-              src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true" 
-              data-test-id="beehiiv-embed" 
-              height="52" 
-              frameBorder="0" 
-              scrolling="no" 
+            <iframe
+              src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true"
+              data-test-id="beehiiv-embed"
+              height="52"
+              frameBorder="0"
+              scrolling="no"
               style={{ margin: 0, borderRadius: 0, backgroundColor: 'transparent', width: '100%' }}
             />
           </div>
         </div>
       </section>
-      
-      {/* Favorites Section */}
+
       <section className="py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center">Your Favorite Date Ideas</h2>
@@ -513,48 +738,43 @@ export default function Home() {
         </div>
       </section>
 
-      {/* New Sections as Cards in a Row */}
       <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Shared Date Calendar Card */}
-        <div className="rounded-2xl shadow-lg overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-8 text-center">
-            <h2 className="text-2xl font-extrabold mb-4">Date Night Calendar</h2>
-            <p className="text-lg mb-6 px-4">Plan and schedule your upcoming dates. Share your calendar with your partner.</p>
-            <Link href="/calendar" className="bg-white text-purple-700 px-6 py-3 rounded-full hover:bg-purple-100 transition-colors font-semibold shadow-md">
-          Open Calendar
-            </Link>
-          </div>
-        </div>
+            <div className="rounded-2xl shadow-lg overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-8 text-center">
+                <h2 className="text-2xl font-extrabold mb-4">Date Night Calendar</h2>
+                <p className="text-lg mb-6 px-4">Plan and schedule your upcoming dates. Share your calendar with your partner.</p>
+                <Link href="/calendar" className="bg-white text-purple-700 px-6 py-3 rounded-full hover:bg-purple-100 transition-colors font-semibold shadow-md">
+                  Open Calendar
+                </Link>
+              </div>
+            </div>
 
-        {/* Date Idea Generator Card */}
-        <div className="rounded-3xl shadow-xl overflow-hidden">
-          <div className="h-full bg-gradient-to-br from-gray-100 to-gray-200 p-8 text-center">
-            <div className="backdrop-blur-sm rounded-2xl py-6">
-          <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Need Date Night Inspiration?</h2>
-          <p className="text-lg text-gray-700 mb-6 px-4">Let our Date Idea Generator surprise you with the perfect date based on your preferences.</p>
-          <Link href="/date-idea-generator" className="bg-rose-600 text-white px-6 py-3 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-md">
-            Generate Date Idea
-          </Link>
+            <div className="rounded-3xl shadow-xl overflow-hidden">
+              <div className="h-full bg-gradient-to-br from-gray-100 to-gray-200 p-8 text-center">
+                <div className="backdrop-blur-sm rounded-2xl py-6">
+                  <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Need Date Night Inspiration?</h2>
+                  <p className="text-lg text-gray-700 mb-6 px-4">Let our Date Idea Generator surprise you with the perfect date based on your preferences.</p>
+                  <Link href="/date-idea-generator" className="bg-rose-600 text-white px-6 py-3 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-md">
+                    Generate Date Idea
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl shadow-lg overflow-hidden">
+              <div className="h-full bg-gray-800 text-white p-8 text-center">
+                <h2 className="text-2xl font-extrabold mb-4">Date Ideas Near Me</h2>
+                <p className="text-lg mb-6 px-4">Discover local date night spots and activities perfect for couples in your area!</p>
+                <Link href="/date-ideas-near-me" className="bg-white text-gray-800 px-6 py-3 rounded-full hover:bg-gray-200 transition-colors font-semibold shadow-md">
+                  Find Local Dates
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Local Date Ideas Card */}
-        <div className="rounded-2xl shadow-lg overflow-hidden">
-          <div className="h-full bg-gray-800 text-white p-8 text-center">
-            <h2 className="text-2xl font-extrabold mb-4">Date Ideas Near Me</h2>
-            <p className="text-lg mb-6 px-4">Discover local date night spots and activities perfect for couples in your area!</p>
-            <Link href="/date-ideas-near-me" className="bg-white text-gray-800 px-6 py-3 rounded-full hover:bg-gray-200 transition-colors font-semibold shadow-md">
-          Find Local Dates
-            </Link>
-          </div>
-        </div>
-          </div>
-        </div>
       </section>
-
 
       <Footer />
     </div>

@@ -174,81 +174,29 @@ export const locationDateIdeaSchema = {
       },
     },
     {
-      name: 'body',
-      title: 'Body',
-      type: 'array',
-      of: [
-        {
-          type: 'block',
-        },
-        {
-          type: 'image',
-          options: {
-            hotspot: true,
-          },
-        },
-      ],
-    },
-    {
-      name: 'dateIdeas',
-      title: 'Date Ideas',
-      type: 'array',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            {
-              name: 'name',
-              title: 'Name',
-              type: 'string',
-              validation: (Rule: any) => Rule.required(),
-            },
-            {
-              name: 'description',
-              title: 'Description',
-              type: 'text',
-            },
-            {
-              name: 'address',
-              title: 'Address',
-              type: 'string',
-            },
-            {
-              name: 'price',
-              title: 'Price Range',
-              type: 'string',
-            },
-            {
-              name: 'image',
-              title: 'Image',
-              type: 'image',
-              options: {
-                hotspot: true,
-              },
-            },
-            {
-              name: 'category',
-              title: 'Category',
-              type: 'reference',
-              to: { type: 'category' },
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: 'keywords',
-      title: 'Keywords',
-      type: 'array',
-      of: [{ type: 'string' }],
+      name: 'timeOfDay',
+      title: 'Time of Day',
+      type: 'string',
       options: {
-        layout: 'tags',
+        list: [
+          { title: 'Day Date', value: 'day' },
+          { title: 'Night Date', value: 'night' },
+        ],
       },
     },
     {
-      name: 'searchVolume',
-      title: 'Search Volume',
-      type: 'number',
+      name: 'mood',
+      title: 'Mood',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Adventurous', value: 'adventurous' },
+          { title: 'Cozy', value: 'cozy' },
+          { title: 'Low Effort', value: 'low-effort' },
+          { title: 'Romantic', value: 'romantic' },
+          { title: 'Fun', value: 'fun' },
+        ],
+      },
     },
     {
       name: 'categories',

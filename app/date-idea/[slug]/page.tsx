@@ -40,6 +40,8 @@ interface DateIdea {
   relatedDateIdeas?: string[];
   longDescription?: string;
   images?: string[];
+  mood?: string;
+  timeOfDay?: string;
 }
 
 
@@ -132,6 +134,8 @@ export default function DateIdeaDetails() {
             priceLevel: data.price_level || undefined,
             bestForStage: data.best_for_stage || undefined,
             tips: data.tips || undefined,
+            mood: data.mood || undefined,
+            timeOfDay: data.time_of_day || undefined,
             idealFor: data.ideal_for || undefined,
             relatedDateIdeas: data.related_date_ideas || undefined,
             longDescription: data.long_description || undefined,

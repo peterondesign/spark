@@ -89,8 +89,8 @@ export async function getPost(slug: string) {
 export async function getLocationDateIdeas() {
   try {
     console.log('Fetching all location date ideas...');
-    
-    // Try the original query first (locationDateIdea)
+
+    // Updated query to include `timeOfDay` and `mood`
     const locationDateIdeas = await client.fetch(`*[_type == "locationDateIdea"] | order(publishedAt desc){
       _id,
       title,
@@ -102,10 +102,11 @@ export async function getLocationDateIdeas() {
       mainImage,
       keywords,
       searchVolume,
+      timeOfDay,
+      mood,
       "categories": categories[]->title
     }`);
-    
-    // If no results, try the alternative 'location' type
+
     if (!locationDateIdeas || locationDateIdeas.length === 0) {
       console.log('No locationDateIdea documents found, trying location type...');
       const locations = await client.fetch(`*[_type == "location"] | order(title asc) {
@@ -117,8 +118,7 @@ export async function getLocationDateIdeas() {
         publishedAt,
         "dateIdeasCount": count(*[_type == "dateIdea" && references(^._id)])
       }`);
-      
-      // Format locations to match expected structure
+
       return locations.map((loc: any) => ({
         _id: loc._id,
         title: `Date Ideas in ${loc.title}`,
@@ -133,16 +133,15 @@ export async function getLocationDateIdeas() {
         categories: []
       }));
     }
-    
+
     return locationDateIdeas;
   } catch (error) {
     console.error("Error fetching location date ideas:", error);
-    // Log the full error details to help diagnose
     if (error instanceof Error) {
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
     }
-    throw error; // Rethrow so UI can handle it
+    throw error;
   }
 }
 
@@ -150,8 +149,7 @@ export async function getLocationDateIdeas() {
 export async function getDateIdeasByLocation(locationSlug: string) {
   try {
     console.log(`Fetching date ideas for location slug: ${locationSlug}`);
-    
-    // First, try to get a single locationDateIdea document by locationSlug
+
     const singleLocationDoc = await client.fetch(`
       *[_type == "locationDateIdea" && locationSlug.current == $locationSlug][0] {
         _id,
@@ -165,13 +163,14 @@ export async function getDateIdeasByLocation(locationSlug: string) {
         body,
         dateIdeas,
         keywords,
-        searchVolume
+        searchVolume,
+        timeOfDay,
+        mood
       }
     `, { locationSlug });
 
     if (singleLocationDoc) {
       console.log(`Found locationDateIdea document for ${locationSlug}`);
-      // Return in format expected by UI
       return {
         locationInfo: {
           title: singleLocationDoc.title,
@@ -185,15 +184,15 @@ export async function getDateIdeasByLocation(locationSlug: string) {
           excerpt: idea.description,
           mainImage: idea.image,
           price: idea.price,
+          timeOfDay: idea.timeOfDay,
+          mood: idea.mood,
           categories: []
         })) || []
       };
     }
 
-    // If no locationDateIdea document found, try the alternative data structure
     console.log(`No locationDateIdea found, checking for location and dateIdea documents`);
-    
-    // Get the location information
+
     const locationInfo = await client.fetch(`
       *[_type == "location" && locationSlug.current == $locationSlug][0] {
         title,
@@ -202,8 +201,7 @@ export async function getDateIdeasByLocation(locationSlug: string) {
         mainImage
       }
     `, { locationSlug });
-    
-    // Then, get all date ideas for this location
+
     const dateIdeas = await client.fetch(`
       *[_type == "dateIdea" && references(*[_type == "location" && locationSlug.current == $locationSlug]._id)] {
         _id,
@@ -211,22 +209,23 @@ export async function getDateIdeasByLocation(locationSlug: string) {
         slug,
         excerpt,
         mainImage,
+        timeOfDay,
+        mood,
         categories[] {
           title
         },
         price
       }
     `, { locationSlug });
-    
+
     console.log(`Found ${dateIdeas.length} dateIdea documents for location ${locationSlug}`);
-    
-    // Format the date ideas for display
+
     const formattedDateIdeas = dateIdeas.map((idea: any) => ({
       ...idea,
       mainImage: urlFor(idea.mainImage),
       categories: idea.categories?.map((c: any) => c.title) || []
     }));
-    
+
     return {
       locationInfo: locationInfo ? {
         ...locationInfo,

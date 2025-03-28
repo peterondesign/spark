@@ -6,7 +6,7 @@ export type DateIdea = {
   title: string;
   category: string;
   rating: number;
-  location: string;
+  location: string | { [key: string]: any } | null; // Updated to handle JSON location
   description: string;
   price: string;
   duration: string;
@@ -52,7 +52,7 @@ export const favoritesService = {
           return parsedIdeas.slice(0, limit);
         }
       }
-
+      
       // If no localStorage or no items found, try with database
       try {
         // Debug message
@@ -60,39 +60,43 @@ export const favoritesService = {
         
         // Get favorite IDs - handle potential connection issues
         try {
+          const deviceId = getDeviceId();
+          console.log('Using device ID:', deviceId);
+          
           const { data: favorites, error: favoritesError } = await supabase
             .from('favorites')
-            .select('date_idea_id')
+            .select('date_idea_id, device_id, created_at')
+            .eq('device_id', deviceId)
             .order('created_at', { ascending: false })
             .limit(limit);
-
+            
           if (favoritesError) {
             console.warn('Supabase favorites error:', favoritesError);
             // Return empty array instead of throwing
             return [];
           }
-
+          
           if (!favorites || favorites.length === 0) {
             return [];
           }
-
+          
           // Get date ideas for those IDs
           const dateIdeaIds = favorites.map(f => f.date_idea_id);
           const { data: dateIdeas, error: dateIdeasError } = await supabase
             .from('date_ideas')
             .select('*')
             .in('id', dateIdeaIds);
-
+            
           if (dateIdeasError) {
             console.warn('Supabase date ideas error:', dateIdeasError);
             // Return empty array instead of throwing
             return [];
           }
-
+          
           if (!dateIdeas) {
             return [];
           }
-
+          
           // Order date ideas to match favorites order
           return dateIdeaIds
             .map(id => dateIdeas.find(idea => idea.id === id))
@@ -111,7 +115,7 @@ export const favoritesService = {
       return [];
     }
   },
-
+  
   // Add method to save a favorite to localStorage and sync with Supabase
   async saveFavorite(dateIdea: DateIdea): Promise<void> {
     if (typeof window === 'undefined') return;
@@ -131,28 +135,37 @@ export const favoritesService = {
       const deviceId = getDeviceId();
       
       // Check if this favorite already exists for this device
-      const { data: existingFavorite } = await supabase
+      const { data: existingFavorite, error: queryError } = await supabase
         .from('favorites')
         .select('id')
         .eq('date_idea_id', dateIdea.id)
         .eq('device_id', deviceId)
-        .single();
+        .maybeSingle();
+      
+      if (queryError) {
+        console.warn('Error checking for existing favorite:', queryError);
+        return;
+      }
       
       // Only insert if it doesn't exist
       if (!existingFavorite) {
-        await supabase
+        const { error: insertError } = await supabase
           .from('favorites')
           .insert({
             date_idea_id: dateIdea.id,
             device_id: deviceId,
             created_at: new Date().toISOString()
           });
+          
+        if (insertError) {
+          console.warn('Error saving favorite to Supabase:', insertError);
+        }
       }
     } catch (error) {
       console.error('Error saving favorite:', error);
     }
   },
-
+  
   // Remove a favorite from localStorage and Supabase
   async removeFavorite(ideaId: number): Promise<void> {
     if (typeof window === 'undefined') return;
@@ -168,11 +181,15 @@ export const favoritesService = {
       
       // Also remove from Supabase
       const deviceId = getDeviceId();
-      await supabase
+      const { error } = await supabase
         .from('favorites')
         .delete()
         .eq('date_idea_id', ideaId)
         .eq('device_id', deviceId);
+        
+      if (error) {
+        console.warn('Error removing favorite from Supabase:', error);
+      }
     } catch (error) {
       console.error('Error removing favorite:', error);
     }
@@ -191,10 +208,15 @@ export const favoritesService = {
       const favorites: DateIdea[] = JSON.parse(savedIdeas);
       
       // Get all favorites for this device from Supabase
-      const { data: supabaseFavorites } = await supabase
+      const { data: supabaseFavorites, error: fetchError } = await supabase
         .from('favorites')
         .select('date_idea_id')
         .eq('device_id', deviceId);
+        
+      if (fetchError) {
+        console.warn('Error fetching favorites from Supabase:', fetchError);
+        return;
+      }
       
       const supabaseIds = (supabaseFavorites || []).map(f => f.date_idea_id);
       
@@ -209,7 +231,13 @@ export const favoritesService = {
       
       // Add missing favorites to Supabase
       if (favoritesToAdd.length > 0) {
-        await supabase.from('favorites').insert(favoritesToAdd);
+        const { error: insertError } = await supabase
+          .from('favorites')
+          .insert(favoritesToAdd);
+          
+        if (insertError) {
+          console.warn('Error syncing favorites to Supabase:', insertError);
+        }
       }
     } catch (error) {
       console.error('Error syncing favorites:', error);
