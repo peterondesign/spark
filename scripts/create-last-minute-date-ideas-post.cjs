@@ -53,7 +53,7 @@ const generateContent = async (prompt) => {
   }
 };
 
-const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
+const createBlogPost = async (title, slug, excerpt, mainImageUrl, prompt) => {
   try {
     console.log('Generating content with OpenAI...');
     const bodyContent = await generateContent(prompt);
@@ -81,7 +81,13 @@ const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
       slug: { _type: 'slug', current: slug },
       publishedAt: new Date().toISOString(),
       excerpt,
-      mainImage,
+      mainImage: {
+        _type: 'image',
+        asset: {
+          _type: 'reference',
+          _ref: mainImageUrl
+        }
+      },
       body: bodyBlocks
     };
 
@@ -109,9 +115,8 @@ createBlogPost(
   'Last-Minute Date Ideas: Fun and Easy Plans for Any Occasion',
   'last-minute-date-ideas',
   'Need a quick plan? Discover fun and easy last-minute date ideas, including anniversary surprises and spontaneous date night activities.',
-  'https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=2070&q=80',
+  'image-asset-id', // Replace with the actual asset ID of the image in your Sanity project
   `Create a comprehensive, engaging blog post about last-minute date ideas targeting these keywords: "last minute date ideas", "last minute date night ideas", "fun last minute date ideas", and "last minute anniversary date ideas".
-
   The content should:
   
   1. Start with a warm introduction about how spontaneous dates can be exciting and memorable. Naturally incorporate the phrase "last minute date ideas" in the opening.

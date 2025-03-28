@@ -53,7 +53,7 @@ const generateContent = async (prompt) => {
   }
 };
 
-const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
+const createBlogPost = async (title, slug, excerpt, mainImageUrl, prompt) => {
   try {
     console.log('Generating content with OpenAI...');
     const bodyContent = await generateContent(prompt);
@@ -81,7 +81,13 @@ const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
       slug: { _type: 'slug', current: slug },
       publishedAt: new Date().toISOString(),
       excerpt,
-      mainImage,
+      mainImage: {
+        _type: 'image',
+        asset: {
+          _type: 'reference',
+          _ref: mainImageUrl
+        }
+      },
       body: bodyBlocks
     };
 
@@ -109,7 +115,7 @@ createBlogPost(
   '50 Inexpensive Date Ideas: Fun, Affordable Ways to Connect',
   'inexpensive-date-ideas',
   'Looking for cheap date ideas that don\'t feel cheap? Discover 50+ budget-friendly, affordable date night ideas that are creative, romantic, and won\'t empty your wallet.',
-  'https://images.unsplash.com/photo-1522264746902-69e09fbb4abb?auto=format&fit=crop&w=2070&q=80',
+  'image-asset-id', // Replace with the actual asset ID of the image in your Sanity project
   `Create a comprehensive, practical blog post about budget-friendly date ideas that targets these keywords: "inexpensive date ideas", "affordable date night ideas", "cheap date night ideas", "budget date ideas", "free date night ideas", and "low cost date ideas".
 
   The content should:

@@ -53,7 +53,7 @@ const generateContent = async (prompt) => {
   }
 };
 
-const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
+const createBlogPost = async (title, slug, excerpt, mainImageUrl, prompt) => {
   try {
     console.log('Generating content with OpenAI...');
     const bodyContent = await generateContent(prompt);
@@ -81,7 +81,13 @@ const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
       slug: { _type: 'slug', current: slug },
       publishedAt: new Date().toISOString(),
       excerpt,
-      mainImage,
+      mainImage: {
+        _type: 'image',
+        asset: {
+          _type: 'reference',
+          _ref: mainImageUrl
+        }
+      },
       body: bodyBlocks
     };
 
@@ -109,7 +115,7 @@ createBlogPost(
   'Fun Things to Do With Your Partner: 50+ Activities to Strengthen Your Relationship',
   'things-to-do-with-your-partner',
   'Looking for fun things to do with your girlfriend or boyfriend? Discover over 50 activities to try with your partner that will create lasting memories and strengthen your bond.',
-  'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1920&q=80',
+  'image-asset-id', // Replace with the actual asset ID of the image in your Sanity project
   `Create a comprehensive, engaging blog post about activities couples can do together. Target these keywords: "things to do with your girlfriend", "fun things to do with your gf", "sweet things to do for your boyfriend", and "new things to try with your partner".
 
   The content should:

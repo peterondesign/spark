@@ -53,7 +53,7 @@ const generateContent = async (prompt) => {
   }
 };
 
-const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
+const createBlogPost = async (title, slug, excerpt, mainImageUrl, prompt) => {
   try {
     console.log('Generating content with OpenAI...');
     const bodyContent = await generateContent(prompt);
@@ -81,7 +81,13 @@ const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
       slug: { _type: 'slug', current: slug },
       publishedAt: new Date().toISOString(),
       excerpt,
-      mainImage,
+      mainImage: {
+        _type: 'image',
+        asset: {
+          _type: 'reference',
+          _ref: mainImageUrl
+        }
+      },
       body: bodyBlocks
     };
 
@@ -109,7 +115,7 @@ createBlogPost(
   'How to Plan the Perfect Romantic Date Night',
   'how-to-plan-the-perfect-date-night',
   'Discover relaxing date ideas, romantic at-home date night plans, and tips for planning the perfect date with your partner.',
-  'https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=2070&q=80',
+  'image-asset-id', // Replace with the actual asset ID of the image in your Sanity project
   `Create a comprehensive, engaging blog post about planning romantic and relaxing date nights targeting these keywords: "relaxing date ideas", "how to plan a date night", "best at home date night ideas", "how to plan a date with a girl", "how to have a romantic night at home", and "how to plan the perfect date".
 
   The content should:

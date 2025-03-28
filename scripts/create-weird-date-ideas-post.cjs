@@ -53,7 +53,7 @@ const generateContent = async (prompt) => {
   }
 };
 
-const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
+const createBlogPost = async (title, slug, excerpt, mainImageUrl, prompt) => {
   try {
     console.log('Generating content with OpenAI...');
     const bodyContent = await generateContent(prompt);
@@ -81,7 +81,13 @@ const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
       slug: { _type: 'slug', current: slug },
       publishedAt: new Date().toISOString(),
       excerpt,
-      mainImage,
+      mainImage: {
+        _type: 'image',
+        asset: {
+          _type: 'reference',
+          _ref: mainImageUrl
+        }
+      },
       body: bodyBlocks
     };
 
@@ -109,7 +115,7 @@ createBlogPost(
   'Weird and Unconventional Date Ideas: Fun and Memorable Experiences',
   'weird-date-ideas',
   'Looking for something different? Discover weird, funny, and unconventional date ideas that will make your time together unforgettable.',
-  'https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=2070&q=80',
+  'image-asset-id', // Replace with the actual asset ID of the image in your Sanity project
   `Create a comprehensive, engaging blog post about weird and unconventional date ideas targeting these keywords: "weird date ideas", "competitive date ideas", "funny dates", "interactive dates", "unconventional date ideas", "odd date ideas", "strange date ideas", "extravagant date ideas", and "bizarre date ideas".
 
   The content should:

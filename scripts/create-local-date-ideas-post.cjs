@@ -53,7 +53,7 @@ const generateContent = async (prompt) => {
   }
 };
 
-const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
+const createBlogPost = async (title, slug, excerpt, mainImageUrl, prompt) => {
   try {
     console.log('Generating content with OpenAI...');
     const bodyContent = await generateContent(prompt);
@@ -81,7 +81,13 @@ const createBlogPost = async (title, slug, excerpt, mainImage, prompt) => {
       slug: { _type: 'slug', current: slug },
       publishedAt: new Date().toISOString(),
       excerpt,
-      mainImage,
+      mainImage: {
+        _type: 'image',
+        asset: {
+          _type: 'reference',
+          _ref: mainImageUrl
+        }
+      },
       body: bodyBlocks
     };
 
@@ -109,7 +115,7 @@ createBlogPost(
   'Date Ideas Near Me: Finding the Perfect Spots & Activities for Couples',
   'date-ideas-near-me',
   'Searching for "date ideas near me"? Discover the best date night activities, cozy spots, and unique experiences for couples in your area, from romantic dinners to adventurous outings.',
-  'https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=2070&q=80',
+  'image-asset-id', // Replace with the actual asset ID of the image in your Sanity project
   `Create a comprehensive, engaging blog post about local date ideas targeting these keywords: "date ideas near me", "date night activities near me", "date spots near me", "fun date ideas near me for couples", and "date night places near me".
 
   The content should:
