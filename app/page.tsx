@@ -351,19 +351,67 @@ export default function Home() {
   useEffect(() => {
     if (!allDateIdeas.length) return;
     
-    const today = new Date().toISOString().split('T')[0];
-    const seed = today.split('-').reduce((acc, val) => acc + parseInt(val), 0);
-
-    const shuffledIdeas = [...allDateIdeas].sort((a, b) => {
-      const randomA = Math.sin(seed + a.id) * 10000 % 1;
-      const randomB = Math.sin(seed + b.id) * 10000 % 1;
-      return randomA - randomB;
-    });
-
+    // Get current date to use as a seed
+    const today = new Date();
+    const dateString = today.toISOString().split('T')[0];
+    
+    // Create a seed that changes daily by combining the day, month, and year
+    const dateSeed = today.getDate() + (today.getMonth() + 1) * 31 + today.getFullYear() * 366;
+    
+    // Create different sort methods that will rotate daily
+    const sortMethods = [
+      // Method 1: Random sort using sin function with date seed
+      (a: DateIdea, b: DateIdea) => {
+        const randomA = Math.sin(dateSeed + a.id) * 10000 % 1;
+        const randomB = Math.sin(dateSeed + b.id) * 10000 % 1;
+        return randomA - randomB;
+      },
+      // Method 2: Alphabetical by title, but with daily offset
+      (a: DateIdea, b: DateIdea) => {
+        // Rotate starting position based on day of month
+        const offset = today.getDate() % 26;
+        const titleA = a.title.charAt(0).toLowerCase();
+        const titleB = b.title.charAt(0).toLowerCase();
+        const posA = (titleA.charCodeAt(0) - 97 + offset) % 26;
+        const posB = (titleB.charCodeAt(0) - 97 + offset) % 26;
+        return posA - posB || a.title.localeCompare(b.title);
+      },
+      // Method 3: By ID with daily offset
+      (a: DateIdea, b: DateIdea) => {
+        const offset = today.getDate();
+        return ((a.id + offset) % 100) - ((b.id + offset) % 100);
+      },
+      // Method 4: By category with daily rotation
+      (a: DateIdea, b: DateIdea) => {
+        // Start with different category each day
+        const catA = a.category || '';
+        const catB = b.category || '';
+        const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+        return ((catA.charCodeAt(0) || 0) + dayOfYear) % 65536 - ((catB.charCodeAt(0) || 0) + dayOfYear) % 65536 
+          || a.title.localeCompare(b.title);
+      },
+      // Method 5: By price level with daily rotation
+      (a: DateIdea, b: DateIdea) => {
+        const priceA = a.priceLevel || 3;
+        const priceB = b.priceLevel || 3;
+        // Rotate whether to show cheaper or more expensive first
+        const dayOfWeek = today.getDay();
+        return dayOfWeek % 2 === 0 ? priceA - priceB : priceB - priceA;
+      }
+    ];
+    
+    // Select sort method based on day of week (0-6) modulo number of methods
+    const methodIndex = today.getDay() % sortMethods.length;
+    console.log(`Using sort method ${methodIndex + 1} of ${sortMethods.length} for today (${dateString})`);
+    
+    // Apply the selected sort method
+    const shuffledIdeas = [...allDateIdeas].sort(sortMethods[methodIndex]);
+    
+    // Only update if the order has changed
     if (JSON.stringify(shuffledIdeas.map(i => i.id)) !== JSON.stringify(allDateIdeas.map(i => i.id))) {
       setAllDateIdeas(shuffledIdeas);
     }
-  }, []);
+  }, [allDateIdeas.length]); // Only re-run when the number of ideas changes
 
   const loadMoreIdeas = () => {
     setVisibleIdeas(prev => prev + 20);
