@@ -89,7 +89,12 @@ export default function Home() {
     price: 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus';
     timeOfDay?: string;
     mood?: string;
+    experienceType?: string;
+    duration?: string;
+    setting?: string;
   }>({ city: null, price: 'all' });
+
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -443,6 +448,19 @@ export default function Home() {
         }
       }
 
+      if (activeFilters.experienceType && activeFilters.experienceType !== 'all') {
+        matchesFilter = matchesFilter && idea.category === activeFilters.experienceType;
+      }
+
+      if (activeFilters.duration && activeFilters.duration !== 'all') {
+        matchesFilter = matchesFilter && idea.duration === activeFilters.duration;
+      }
+
+      if (activeFilters.setting && activeFilters.setting !== 'all') {
+        const locationSetting = typeof idea.location === 'object' && idea.location?.setting;
+        matchesFilter = matchesFilter && locationSetting === activeFilters.setting;
+      }
+
       return matchesFilter;
     });
 
@@ -508,44 +526,124 @@ export default function Home() {
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
           <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Location</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <MapPinIcon className="h-5 w-5 text-gray-400" />
+            {/* Basic Filters */}
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Filters</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="relative group">
+                  <label className="text-gray-700 font-medium text-sm block mb-2">Location</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <MapPinIcon className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={activeFilters.city || ''}
+                      placeholder="Enter a city or area"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all duration-200"
+                      onChange={(e) => setActiveFilters({ ...activeFilters, city: e.target.value })}
+                    />
+                    {activeFilters.city && (
+                      <button
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        onClick={() => setActiveFilters({ ...activeFilters, city: null })}
+                      >
+                        <span className="text-gray-400 hover:text-gray-600">✕</span>
+                      </button>
+                    )}
                   </div>
-                  <input
-                    type="text"
-                    value={activeFilters.city || ''}
-                    placeholder="Enter a city or area"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all duration-200"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, city: e.target.value })}
-                  />
-                  {activeFilters.city && (
-                    <button
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      onClick={() => setActiveFilters({ ...activeFilters, city: null })}
-                    >
-                      <span className="text-gray-400 hover:text-gray-600">✕</span>
-                    </button>
-                  )}
+                </div>
+
+                <div className="relative group">
+                  <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
+                  <select
+                    value={activeFilters.price}
+                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                  >
+                    <option value="all">All Prices</option>
+                    <option value="free">Free</option>
+                    <option value="under-25">Under $25</option>
+                    <option value="under-50">Under $50</option>
+                    <option value="under-100">Under $100</option>
+                    <option value="100-plus">$100+</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
+                  <select
+                    value={activeFilters.timeOfDay || 'all'}
+                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
+                  >
+                    <option value="all">Any Time</option>
+                    <option value="day">Day Date</option>
+                    <option value="night">Night Date</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
+                  <select
+                    value={activeFilters.mood || 'all'}
+                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, mood: e.target.value })}
+                  >
+                    <option value="all">Any Mood</option>
+                    <option value="adventurous">Adventurous</option>
+                    <option value="cozy">Cozy</option>
+                    <option value="low-effort">Low Effort</option>
+                    <option value="romantic">Romantic</option>
+                    <option value="fun">Fun</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-
+            </div>
+            
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-white px-4 text-sm text-gray-500">Advanced Filters</span>
+              </div>
+            </div>
+            
+            {/* Advanced Filters Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* New Dropdown for Experience Type */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
+                <label className="text-gray-700 font-medium text-sm block mb-2">Experience Type</label>
                 <select
-                  value={activeFilters.price}
+                  value={activeFilters.experienceType || 'all'}
                   className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                  onChange={(e) => setActiveFilters({ ...activeFilters, experienceType: e.target.value })}
                 >
-                  <option value="all">All Prices</option>
-                  <option value="free">Free</option>
-                  <option value="under-25">Under $25</option>
-                  <option value="under-50">Under $50</option>
-                  <option value="under-100">Under $100</option>
-                  <option value="100-plus">$100+</option>
+                  <option value="all">All Experiences</option>
+                  <option value="active">Active</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="culinary">Food & Drink</option>
+                  <option value="entertainment">Entertainment</option>
+                  <option value="learning">Learning Together</option>
+                  <option value="adventure">Adventure</option>
+                  <option value="relaxing">Relaxing</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -553,17 +651,21 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-
+              
+              {/* Duration Filter */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
+                <label className="text-gray-700 font-medium text-sm block mb-2">Duration</label>
                 <select
-                  value={activeFilters.timeOfDay || 'all'}
+                  value={activeFilters.duration || 'all'}
                   className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
+                  onChange={(e) => setActiveFilters({ ...activeFilters, duration: e.target.value })}
                 >
-                  <option value="all">Any Time</option>
-                  <option value="day">Day Date</option>
-                  <option value="night">Night Date</option>
+                  <option value="all">Any Length</option>
+                  <option value="quick">Quick (Under 1 hour)</option>
+                  <option value="medium">Medium (1-3 hours)</option>
+                  <option value="half-day">Half-day (3-5 hours)</option>
+                  <option value="full-day">Full Day</option>
+                  <option value="weekend">Weekend</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -571,20 +673,23 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-
+              
+              {/* Setting Filter */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
+                <label className="text-gray-700 font-medium text-sm block mb-2">Setting</label>
                 <select
-                  value={activeFilters.mood || 'all'}
+                  value={activeFilters.setting || 'all'}
                   className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, mood: e.target.value })}
+                  onChange={(e) => setActiveFilters({ ...activeFilters, setting: e.target.value })}
                 >
-                  <option value="all">Any Mood</option>
-                  <option value="adventurous">Adventurous</option>
+                  <option value="all">Any Setting</option>
+                  <option value="indoor">Indoor</option>
+                  <option value="outdoor">Outdoor</option>
+                  <option value="urban">Urban</option>
+                  <option value="nature">Nature</option>
+                  <option value="waterfront">Waterfront</option>
+                  <option value="scenic">Scenic Views</option>
                   <option value="cozy">Cozy</option>
-                  <option value="low-effort">Low Effort</option>
-                  <option value="romantic">Romantic</option>
-                  <option value="fun">Fun</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -593,11 +698,44 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-end mt-4">
+            
+            {/* Clear Filters Button */}
+            <div className="flex items-center justify-between mt-6">
               <button
                 onClick={() => {
-                  setActiveFilters({ city: null, price: 'all', timeOfDay: 'all', mood: 'all' });
+                  // Toggle advanced filter visibility
+                  setShowAdvancedFilters(prev => !prev);
+                }}
+                className="text-rose-600 hover:text-rose-800 font-medium text-sm flex items-center transition-colors duration-200"
+              >
+                {showAdvancedFilters ? (
+                  <>
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                    Hide Advanced Filters
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Show Advanced Filters
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  setActiveFilters({ 
+                    city: null, 
+                    price: 'all', 
+                    timeOfDay: 'all', 
+                    mood: 'all',
+                    experienceType: 'all',
+                    duration: 'all',
+                    setting: 'all'
+                  });
                   setSelectedFilters({
                     categories: [],
                     locationTypes: [],
@@ -606,7 +744,7 @@ export default function Home() {
                     moodVibes: []
                   });
                 }}
-                className="text-rose-600 hover:text-rose-800 font-medium text-sm flex items-center transition-colors duration-200"
+                className="bg-rose-100 text-rose-700 hover:bg-rose-200 px-4 py-2 rounded-lg font-medium text-sm flex items-center transition-colors duration-200"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -64,6 +64,9 @@ export default function RootLayout({
       <head>
         <link rel="alternate" hrefLang="en" href="https://www.sparkus.cc/" />
         <link rel="alternate" hrefLang="de" href="https://www.sparkus.cc/de/" />
+        
+        {/* GetYourGuide Analytics */}
+        <script async defer src="https://widget.getyourguide.com/dist/pa.umd.production.min.js" data-gyg-partner-id="5QQHAHP"></script>
       </head>
       <body>
         <ThemeProvider
