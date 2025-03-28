@@ -116,7 +116,7 @@ export default function Home() {
 
   const [activeFilters, setActiveFilters] = useState<{
     city: string | null;
-    price: 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus';
+    price: 'all' | 'free' | 'affordable' | 'moderate' | 'high' | 'luxury';
     timeOfDay?: string;
     mood?: string;
     experienceType?: string;
@@ -150,6 +150,40 @@ export default function Home() {
     count += selectedFilters.locationSettings.length;
     return count;
   }, [activeFilters, selectedFilters]);
+
+  const priceLevelMap = {
+    'all': 'All Prices',
+    'free': 'Free',
+    'affordable': 'Affordable',
+    'moderate': 'Moderate',
+    'high': 'High',
+    'luxury': 'Luxury'
+  };
+
+  const timeOfDayMap = {
+    'all': 'Any Time',
+    'day': 'Day',
+    'afternoon': 'Afternoon',
+    'evening': 'Evening',
+    'night': 'Night',
+    'varies': 'Varies'
+  };
+
+  const getSelectedFiltersText = () => {
+    const count = Object.values(selectedFilters).reduce((acc, filters) => acc + filters.length, 0);
+    if (count === 0) return "Advanced Filters";
+    
+    const allSelected = [
+      ...selectedFilters.categories,
+      ...selectedFilters.locationTypes,
+      ...selectedFilters.locationSettings,
+      ...selectedFilters.moodPaces,
+      ...selectedFilters.moodVibes
+    ];
+    
+    if (allSelected.length === 1) return allSelected[0];
+    return `${allSelected.length} selected`;
+  };
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -316,7 +350,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!allDateIdeas.length) return;
-
+    
     const today = new Date().toISOString().split('T')[0];
     const seed = today.split('-').reduce((acc, val) => acc + parseInt(val), 0);
 
@@ -438,12 +472,11 @@ export default function Home() {
 
   useEffect(() => {
     if (!allDateIdeas.length) return;
-
-    console.log('Applying filters:', selectedFilters);
     
     const newFilteredIdeas = allDateIdeas.filter((idea) => {
       let matchesFilter = true;
 
+      // City filter
       if (activeFilters.city) {
         if (typeof idea.location === 'string' && idea.location) {
           matchesFilter = matchesFilter && 
@@ -452,36 +485,93 @@ export default function Home() {
           matchesFilter = matchesFilter && 
             idea.location.city.toLowerCase().includes(activeFilters.city.toLowerCase());
         } else {
-          matchesFilter = matchesFilter && true;
+          matchesFilter = false;
         }
       }
 
+      // Simple price filter - direct text matching with alternatives
       if (activeFilters.price !== 'all') {
-        const priceLevel = idea.priceLevel || 1;
-
+        const priceText = typeof idea.price === 'string' ? idea.price.toLowerCase() : '';
+        const priceLevelText = idea.priceLevel ? String(idea.priceLevel).toLowerCase() : '';
+        
         switch (activeFilters.price) {
           case 'free':
-            matchesFilter = matchesFilter && priceLevel === 1;
+            matchesFilter = matchesFilter && (
+              priceText.includes('free') || 
+              priceLevelText.includes('free') ||
+              priceText === '0' || 
+              priceText === '$' ||
+              priceLevelText === '1'
+            );
             break;
-          case 'under-25':
-            matchesFilter = matchesFilter && priceLevel <= 2;
+          case 'affordable':
+            matchesFilter = matchesFilter && (
+              priceText.includes('affordable') || 
+              priceLevelText.includes('affordable') ||
+              priceText.includes('budget') || 
+              priceText === '$$' ||
+              priceLevelText === '2'
+            );
             break;
-          case 'under-50':
-            matchesFilter = matchesFilter && priceLevel <= 3;
+          case 'moderate':
+            matchesFilter = matchesFilter && (
+              priceText.includes('moderate') || 
+              priceLevelText.includes('moderate') ||
+              priceText === '$$$' ||
+              priceLevelText === '3' 
+            );
             break;
-          case 'under-100':
-            matchesFilter = matchesFilter && priceLevel <= 4;
+          case 'high':
+            matchesFilter = matchesFilter && (
+              priceText.includes('high') || 
+              priceLevelText.includes('high') ||
+              priceText.includes('expensive') || 
+              priceText === '$$$$' ||
+              priceLevelText === '4'
+            );
             break;
-          case '100-plus':
-            matchesFilter = matchesFilter && priceLevel >= 5;
+          case 'luxury':
+            matchesFilter = matchesFilter && (
+              priceText.includes('luxury') || 
+              priceLevelText.includes('luxury') ||
+              priceText.includes('premium') || 
+              priceText.includes('$$$$$') ||
+              priceLevelText === '5'
+            );
             break;
         }
       }
 
+      // Time of day filter - simple text matching
       if (activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all') {
-        matchesFilter = matchesFilter && idea.timeOfDay === activeFilters.timeOfDay;
+        // Convert to lowercase for case-insensitive matching
+        const timeText = idea.timeOfDay ? idea.timeOfDay.toLowerCase() : '';
+        const searchTime = activeFilters.timeOfDay.toLowerCase();
+        
+        // Check if the idea has a timeOfDay property before filtering
+        if (timeText) {
+          if (searchTime === 'day') {
+            matchesFilter = matchesFilter && (
+              timeText.includes('day') || 
+              timeText.includes('morning') || 
+              timeText.includes('afternoon')
+            );
+          } else if (searchTime === 'night') {
+            matchesFilter = matchesFilter && (
+              timeText.includes('night') || 
+              timeText.includes('evening')
+            );
+          } else {
+            // For exact matches or anything containing the search term
+            matchesFilter = matchesFilter && timeText.includes(searchTime);
+          }
+        } else {
+          // If timeOfDay is not specified and we're filtering for 'varies', include it
+          matchesFilter = matchesFilter && (searchTime === 'varies');
+        }
       }
 
+      // Advanced filters (categories, locationTypes, etc.)
       if (selectedFilters.categories.length > 0) {
         matchesFilter = matchesFilter && selectedFilters.categories.includes(idea.category);
       }
@@ -545,7 +635,7 @@ export default function Home() {
       return matchesFilter;
     });
 
-    console.log('Filtered date ideas count:', newFilteredIdeas.length);
+    console.log('Filtered date ideas count:', newFilteredIdeas.length, 'out of', allDateIdeas.length);
 
     setFilteredDateIdeas(newFilteredIdeas);
     setVisibleIdeas(20); 
@@ -621,24 +711,24 @@ export default function Home() {
                 />
               </div>
 
-              {/* Price Range Filter */}
+              {/* Price Range Filter - Updated to show readable values */}
               <div className="relative group">
                 <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
                 <select
                   value={activeFilters.price}
                   className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus' })}
+                  onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
                 >
                   <option value="all">All Prices</option>
                   <option value="free">Free</option>
-                  <option value="under-25">Under $25</option>
-                  <option value="under-50">Under $50</option>
-                  <option value="under-100">Under $100</option>
-                  <option value="100-plus">$100+</option>
+                  <option value="affordable">Affordable</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="high">High</option>
+                  <option value="luxury">Luxury</option>
                 </select>
               </div>
 
-              {/* Time of Day Filter */}
+              {/* Time of Day Filter - Updated to match database values */}
               <div className="relative group">
                 <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
                 <select
@@ -647,12 +737,15 @@ export default function Home() {
                   onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
                 >
                   <option value="all">Any Time</option>
-                  <option value="day">Day Date</option>
-                  <option value="night">Night Date</option>
+                  <option value="day">Day</option>
+                  <option value="afternoon">Afternoon</option>
+                  <option value="evening">Evening</option>
+                  <option value="night">Night</option>
+                  <option value="varies">Varies</option>
                 </select>
               </div>
 
-              {/* Advanced Filters Dropdown */}
+              {/* Advanced Filters Dropdown - Updated to show selected filters */}
               <div className="relative group">
                 <label className="text-gray-700 font-medium text-sm block mb-2">Advanced Filters</label>
                 <div className="w-full">
@@ -660,10 +753,10 @@ export default function Home() {
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} 
                     className="w-full flex justify-between items-center pl-4 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-700 font-medium transition-all duration-200"
                   >
-                    Advanced Filters
+                    <span className="truncate">{getSelectedFiltersText()}</span>
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
-                      className={`h-5 w-5 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} 
+                      className={`h-5 w-5 ml-2 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} 
                       viewBox="0 0 20 20" 
                       fill="currentColor"
                     >
