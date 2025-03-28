@@ -12,10 +12,6 @@ const nextConfig = {
         ];
     },
     reactStrictMode: true,
-    swcMinify: true,
-    experimental: {
-        appDir: true
-    },
     // Add transpilePackages if needed
     transpilePackages: [],
     webpack: (config, { isServer }) => {
