@@ -189,8 +189,19 @@ export default function Page() {
       
       // Filter by city if a city is selected
       if (activeFilters.city) {
-        matchesFilter = matchesFilter && 
-          idea.location.toLowerCase().includes(activeFilters.city.toLowerCase());
+        // Check if location exists and is a string before calling toLowerCase()
+        if (typeof idea.location === 'string') {
+          matchesFilter = matchesFilter && 
+            idea.location.toLowerCase().includes(activeFilters.city.toLowerCase());
+        } else if (typeof idea.location === 'object' && idea.location) {
+          // If location is an object, try to match against city property or other available properties
+          const locationStr = idea.location.city || idea.location.name || '';
+          matchesFilter = matchesFilter && 
+            locationStr.toLowerCase().includes(activeFilters.city.toLowerCase());
+        } else {
+          // If location is null or not a string/object, it doesn't match the city filter
+          matchesFilter = false;
+        }
       }
       
       // Filter by price range
@@ -264,7 +275,17 @@ export default function Page() {
 
       // Filter by location if specified
       if (filters.location && filters.location.trim() !== "") {
-        matches = matches && idea.location.toLowerCase().includes(filters.location.toLowerCase());
+        // Handle the location check safely
+        if (typeof idea.location === 'string') {
+          matches = matches && idea.location.toLowerCase().includes(filters.location.toLowerCase());
+        } else if (typeof idea.location === 'object' && idea.location) {
+          // If location is an object, try to match against city property or other available properties
+          const locationStr = idea.location.city || idea.location.name || '';
+          matches = matches && locationStr.toLowerCase().includes(filters.location.toLowerCase());
+        } else {
+          // If location is null or not a string/object, it doesn't match the location filter
+          matches = false;
+        }
       }
 
       // Filter by search term (in title or description)
@@ -344,28 +365,41 @@ export default function Page() {
   const dateIdeasSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    "itemListElement": filteredDateIdeas.slice(0, visibleIdeas).map((idea, index) => ({
-      "@type": "ListItem",
-      "position": index + 1,
-      "item": {
-        "@type": "Event",
-        "name": idea.title,
-        "description": idea.description,
-        "image": allDateIdeaImages[idea.slug] || idea.image,
-        "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/de/date-idea/${idea.slug}`,
-        "location": {
-          "@type": "Place",
-          "name": idea.location,
-          "address": idea.location
-        },
-        "offers": idea.priceLevel ? {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "EUR",
-          "availability": "https://schema.org/InStock"
-        } : undefined
-      }
-    }))
+    "itemListElement": filteredDateIdeas.slice(0, visibleIdeas).map((idea, index) => {
+      // Helper function to get a string representation of the location
+      const getLocationString = (location: string | { [key: string]: any; } | null): string => {
+        if (typeof location === 'string') return location;
+        if (typeof location === 'object' && location) {
+          return location.city || location.name || location.address || 'Location available';
+        }
+        return 'No location specified';
+      };
+
+      const locationString = getLocationString(idea.location);
+
+      return {
+        "@type": "ListItem",
+        "position": index + 1,
+        "item": {
+          "@type": "Event",
+          "name": idea.title,
+          "description": idea.description,
+          "image": allDateIdeaImages[idea.slug] || idea.image,
+          "url": `${typeof window !== 'undefined' ? window.location.origin : ''}/de/date-idea/${idea.slug}`,
+          "location": {
+            "@type": "Place",
+            "name": locationString,
+            "address": locationString
+          },
+          "offers": idea.priceLevel ? {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+          } : undefined
+        }
+      };
+    })
   };
 
   return (
