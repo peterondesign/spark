@@ -41,6 +41,36 @@ interface DateIdea {
   longDescription?: string;
 }
 
+interface IconProps {
+  className?: string;
+  [key: string]: any;
+}
+
+export const AddNoteIcon = (props: IconProps) => {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      focusable="false"
+      height="1em"
+      role="presentation"
+      viewBox="0 0 24 24"
+      width="1em"
+      {...props}
+    >
+      <path
+        d="M7.37 22h9.25a4.87 4.87 0 0 0 4.87-4.87V8.37a4.87 4.87 0 0 0-4.87-4.87H7.37A4.87 4.87 0 0 0 2.5 8.37v8.75c0 2.7 2.18 4.88 4.87 4.88Z"
+        fill="currentColor"
+        opacity={0.4}
+      />
+      <path
+        d="M8.29 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM15.71 6.29c-.42 0-.75-.34-.75-.75V2.75a.749.749 0 1 1 1.5 0v2.78c0 .42-.33.76-.75.76ZM12 14.75h-1.69V13c0-.41-.34-.75-.75-.75s-.75.34-.75.75v1.75H7c-.41 0-.75.34-.75.75s.34.75.75.75h1.81V18c0 .41.34.75.75.75s.75-.34.75-.75v-1.75H12c.41 0 .75-.34.75-.75s-.34-.75-.75-.75Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export default function Home() {
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [allDateIdeas, setAllDateIdeas] = useState<DateIdea[]>([]);
@@ -92,9 +122,34 @@ export default function Home() {
     experienceType?: string;
     duration?: string;
     setting?: string;
-  }>({ city: null, price: 'all' });
+    locationType?: string;
+    pace?: string;
+    vibe?: string;
+  }>({ city: null, price: 'all', timeOfDay: 'all' });
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+
+  const clearAllFilters = () => {
+    setActiveFilters({ city: null, price: 'all', timeOfDay: 'all' });
+    setSelectedFilters({
+      categories: [],
+      locationTypes: [],
+      locationSettings: [],
+      moodPaces: [],
+      moodVibes: []
+    });
+  };
+
+  const appliedFiltersCount = useMemo(() => {
+    let count = 0;
+    if (activeFilters.city) count++;
+    if (activeFilters.price !== 'all') count++;
+    if (activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all') count++;
+    count += selectedFilters.categories.length;
+    count += selectedFilters.locationTypes.length;
+    count += selectedFilters.locationSettings.length;
+    return count;
+  }, [activeFilters, selectedFilters]);
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -354,18 +409,29 @@ export default function Home() {
   };
 
   const handleFilterChange = (filterType: string, value: string, isChecked: boolean) => {
-    setSelectedFilters(prev => {
+    setSelectedFilters((prev) => {
       const newFilters = { ...prev };
       const filterArray = newFilters[filterType as keyof typeof newFilters];
-      
+
       if (isChecked) {
         if (!filterArray.includes(value)) {
           newFilters[filterType as keyof typeof newFilters] = [...filterArray, value];
         }
       } else {
-        newFilters[filterType as keyof typeof newFilters] = filterArray.filter(v => v !== value);
+        newFilters[filterType as keyof typeof newFilters] = filterArray.filter((v) => v !== value);
       }
-      
+
+      return newFilters;
+    });
+  };
+
+  const handleMultiSelectChange = (filterType: string, event: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = Array.from(event.target.options);
+    const selectedValues = options.filter((option) => option.selected).map((option) => option.value);
+
+    setSelectedFilters((prev) => {
+      const newFilters = { ...prev };
+      newFilters[filterType as keyof typeof newFilters] = selectedValues;
       return newFilters;
     });
   };
@@ -461,6 +527,21 @@ export default function Home() {
         matchesFilter = matchesFilter && locationSetting === activeFilters.setting;
       }
 
+      if (activeFilters.locationType && activeFilters.locationType !== 'all') {
+        const locationType = typeof idea.location === 'object' && idea.location?.type;
+        matchesFilter = matchesFilter && locationType === activeFilters.locationType;
+      }
+
+      if (activeFilters.pace && activeFilters.pace !== 'all') {
+        const moodPace = typeof idea.mood === 'object' && idea.mood?.pace;
+        matchesFilter = matchesFilter && moodPace === activeFilters.pace;
+      }
+
+      if (activeFilters.vibe && activeFilters.vibe !== 'all') {
+        const moodVibe = typeof idea.mood === 'object' && idea.mood?.vibe;
+        matchesFilter = matchesFilter && moodVibe === activeFilters.vibe;
+      }
+
       return matchesFilter;
     });
 
@@ -526,233 +607,186 @@ export default function Home() {
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
           <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
-            {/* Basic Filters */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Filters</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="relative group">
-                  <label className="text-gray-700 font-medium text-sm block mb-2">Location</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <MapPinIcon className="h-5 w-5 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              {/* Location Filter */}
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Location</label>
+                <input
+                  type="text"
+                  value={activeFilters.city || ''}
+                  placeholder="Enter a city or area"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all duration-200"
+                  onChange={(e) => setActiveFilters({ ...activeFilters, city: e.target.value })}
+                />
+              </div>
+
+              {/* Price Range Filter */}
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
+                <select
+                  value={activeFilters.price}
+                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                  onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as 'all' | 'free' | 'under-25' | 'under-50' | 'under-100' | '100-plus' })}
+                >
+                  <option value="all">All Prices</option>
+                  <option value="free">Free</option>
+                  <option value="under-25">Under $25</option>
+                  <option value="under-50">Under $50</option>
+                  <option value="under-100">Under $100</option>
+                  <option value="100-plus">$100+</option>
+                </select>
+              </div>
+
+              {/* Time of Day Filter */}
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
+                <select
+                  value={activeFilters.timeOfDay || 'all'}
+                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                  onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
+                >
+                  <option value="all">Any Time</option>
+                  <option value="day">Day Date</option>
+                  <option value="night">Night Date</option>
+                </select>
+              </div>
+
+              {/* Advanced Filters Dropdown */}
+              <div className="relative group">
+                <label className="text-gray-700 font-medium text-sm block mb-2">Advanced Filters</label>
+                <div className="w-full">
+                  <button 
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} 
+                    className="w-full flex justify-between items-center pl-4 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-700 font-medium transition-all duration-200"
+                  >
+                    Advanced Filters
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-5 w-5 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} 
+                      viewBox="0 0 20 20" 
+                      fill="currentColor"
+                    >
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  
+                  {showAdvancedFilters && (
+                    <div className="absolute z-40 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto">
+                      <div className="p-3 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-700">Categories</h3>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {filterOptions.categories.map((category) => (
+                            <button
+                              key={category}
+                              onClick={() => handleFilterChange('categories', category, !selectedFilters.categories.includes(category))}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedFilters.categories.includes(category)
+                                  ? 'bg-rose-100 text-rose-700 font-medium'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {category}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-700">Location Types</h3>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {filterOptions.locationTypes.map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => handleFilterChange('locationTypes', type, !selectedFilters.locationTypes.includes(type))}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedFilters.locationTypes.includes(type)
+                                  ? 'bg-rose-100 text-rose-700 font-medium'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-700">Location Settings</h3>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {filterOptions.locationSettings.map((setting) => (
+                            <button
+                              key={setting}
+                              onClick={() => handleFilterChange('locationSettings', setting, !selectedFilters.locationSettings.includes(setting))}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedFilters.locationSettings.includes(setting)
+                                  ? 'bg-rose-100 text-rose-700 font-medium'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {setting}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 border-b border-gray-200">
+                        <h3 className="font-medium text-gray-700">Mood Paces</h3>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {filterOptions.moodPaces.map((pace) => (
+                            <button
+                              key={pace}
+                              onClick={() => handleFilterChange('moodPaces', pace, !selectedFilters.moodPaces.includes(pace))}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedFilters.moodPaces.includes(pace)
+                                  ? 'bg-rose-100 text-rose-700 font-medium'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {pace}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="p-3">
+                        <h3 className="font-medium text-gray-700">Mood Vibes</h3>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {filterOptions.moodVibes.map((vibe) => (
+                            <button
+                              key={vibe}
+                              onClick={() => handleFilterChange('moodVibes', vibe, !selectedFilters.moodVibes.includes(vibe))}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                selectedFilters.moodVibes.includes(vibe)
+                                  ? 'bg-rose-100 text-rose-700 font-medium'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              {vibe}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <input
-                      type="text"
-                      value={activeFilters.city || ''}
-                      placeholder="Enter a city or area"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all duration-200"
-                      onChange={(e) => setActiveFilters({ ...activeFilters, city: e.target.value })}
-                    />
-                    {activeFilters.city && (
-                      <button
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                        onClick={() => setActiveFilters({ ...activeFilters, city: null })}
-                      >
-                        <span className="text-gray-400 hover:text-gray-600">✕</span>
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
+              </div>
 
-                <div className="relative group">
-                  <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
-                  <select
-                    value={activeFilters.price}
-                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
-                  >
-                    <option value="all">All Prices</option>
-                    <option value="free">Free</option>
-                    <option value="under-25">Under $25</option>
-                    <option value="under-50">Under $50</option>
-                    <option value="under-100">Under $100</option>
-                    <option value="100-plus">$100+</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
-                  <select
-                    value={activeFilters.timeOfDay || 'all'}
-                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
-                  >
-                    <option value="all">Any Time</option>
-                    <option value="day">Day Date</option>
-                    <option value="night">Night Date</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
-                  <select
-                    value={activeFilters.mood || 'all'}
-                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, mood: e.target.value })}
-                  >
-                    <option value="all">Any Mood</option>
-                    <option value="adventurous">Adventurous</option>
-                    <option value="cozy">Cozy</option>
-                    <option value="low-effort">Low Effort</option>
-                    <option value="romantic">Romantic</option>
-                    <option value="fun">Fun</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-white px-4 text-sm text-gray-500">Advanced Filters</span>
-              </div>
-            </div>
-            
-            {/* Advanced Filters Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* New Dropdown for Experience Type */}
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Experience Type</label>
-                <select
-                  value={activeFilters.experienceType || 'all'}
-                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, experienceType: e.target.value })}
+              {/* Clear Filters and Filters Applied Indicator */}
+              <div className="relative group flex items-center space-x-2">
+                <button
+                  onClick={clearAllFilters}
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-xl font-medium transition-all duration-200"
                 >
-                  <option value="all">All Experiences</option>
-                  <option value="active">Active</option>
-                  <option value="cultural">Cultural</option>
-                  <option value="culinary">Food & Drink</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="learning">Learning Together</option>
-                  <option value="adventure">Adventure</option>
-                  <option value="relaxing">Relaxing</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  Clear
+                </button>
+                <div className="text-gray-700 font-medium">
+                  {appliedFiltersCount} Filter{appliedFiltersCount !== 1 ? 's' : ''} Applied
                 </div>
               </div>
-              
-              {/* Duration Filter */}
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Duration</label>
-                <select
-                  value={activeFilters.duration || 'all'}
-                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, duration: e.target.value })}
-                >
-                  <option value="all">Any Length</option>
-                  <option value="quick">Quick (Under 1 hour)</option>
-                  <option value="medium">Medium (1-3 hours)</option>
-                  <option value="half-day">Half-day (3-5 hours)</option>
-                  <option value="full-day">Full Day</option>
-                  <option value="weekend">Weekend</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-              
-              {/* Setting Filter */}
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Setting</label>
-                <select
-                  value={activeFilters.setting || 'all'}
-                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, setting: e.target.value })}
-                >
-                  <option value="all">Any Setting</option>
-                  <option value="indoor">Indoor</option>
-                  <option value="outdoor">Outdoor</option>
-                  <option value="urban">Urban</option>
-                  <option value="nature">Nature</option>
-                  <option value="waterfront">Waterfront</option>
-                  <option value="scenic">Scenic Views</option>
-                  <option value="cozy">Cozy</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 pt-6 text-gray-500">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            {/* Clear Filters Button */}
-            <div className="flex items-center justify-between mt-6">
-              <button
-                onClick={() => {
-                  // Toggle advanced filter visibility
-                  setShowAdvancedFilters(prev => !prev);
-                }}
-                className="text-rose-600 hover:text-rose-800 font-medium text-sm flex items-center transition-colors duration-200"
-              >
-                {showAdvancedFilters ? (
-                  <>
-                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                    </svg>
-                    Hide Advanced Filters
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                    Show Advanced Filters
-                  </>
-                )}
-              </button>
-              
-              <button
-                onClick={() => {
-                  setActiveFilters({ 
-                    city: null, 
-                    price: 'all', 
-                    timeOfDay: 'all', 
-                    mood: 'all',
-                    experienceType: 'all',
-                    duration: 'all',
-                    setting: 'all'
-                  });
-                  setSelectedFilters({
-                    categories: [],
-                    locationTypes: [],
-                    locationSettings: [],
-                    moodPaces: [],
-                    moodVibes: []
-                  });
-                }}
-                className="bg-rose-100 text-rose-700 hover:bg-rose-200 px-4 py-2 rounded-lg font-medium text-sm flex items-center transition-colors duration-200"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Clear All Filters
-              </button>
             </div>
           </div>
+
           {loading ? (
             <div className="h-96 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {[...Array(8)].map((_, i) => (

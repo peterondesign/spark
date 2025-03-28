@@ -24,6 +24,7 @@
     "@gradio/client": "^1.14.0",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@heroui/react": "^2.7.5",
     "@hookform/resolvers": "^3.9.1",
     "@mozilla/readability": "^0.6.0",
     "@portabletext/react": "^3.2.1",
