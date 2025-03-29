@@ -12,6 +12,9 @@ import FavoritesAccordion from '../components/FavoritesAccordion';
 import PageTitle from '../components/PageTitle';
 import { PAGE_TITLES } from '../utils/titleUtils';
 import Image from 'next/image';
+import { useClipboard } from 'use-clipboard-copy';
+import { gapi } from 'gapi-script';
+import { favoritesService } from '../services/favoritesService';
 
 import { DateIdea } from '../services/favoritesService';
 
@@ -29,6 +32,11 @@ const CalendarPage: React.FC = () => {
   const [myFavorites, setMyFavorites] = useState<DateIdea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const clipboard = useClipboard();
+  const [partnerId, setPartnerId] = useState('');
+  const [calendarId, setCalendarId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<DateIdea[]>([]);
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -54,6 +62,95 @@ const CalendarPage: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('calendarEvents', JSON.stringify(events));
   }, [events]);
+
+  useEffect(() => {
+    const deviceId = localStorage.getItem('device_id');
+    if (deviceId) {
+      setCalendarId(deviceId);
+    }
+  }, []);
+
+  const handleCopyId = () => {
+    clipboard.copy(calendarId);
+    alert('Calendar ID copied to clipboard!');
+  };
+
+  const handlePartnerIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPartnerId(e.target.value);
+  };
+
+  const handleGoogleCalendarExport = async () => {
+    try {
+      const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+      const SCOPES = "https://www.googleapis.com/auth/calendar.events";
+
+      gapi.load('client:auth2', async () => {
+        await gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
+          scope: SCOPES,
+        });
+
+        const authInstance = gapi.auth2.getAuthInstance();
+        if (!authInstance.isSignedIn.get()) {
+          await authInstance.signIn();
+        }
+
+        const calendarEvents = events.map(event => {
+          if (!event.start || !event.end) {
+            console.warn(`Skipping event with missing start or end time: ${event.title}`);
+            return null;
+          }
+          return {
+            summary: event.title,
+            start: { dateTime: event.start.toISOString() },
+            end: { dateTime: event.end.toISOString() },
+          };
+        }).filter(Boolean); // Filter out null values
+
+        for (const event of calendarEvents) {
+          await gapi.client.calendar.events.insert({
+            calendarId: 'primary',
+            resource: event,
+          });
+        }
+
+        alert('Events exported to Google Calendar successfully!');
+      });
+    } catch (error) {
+      console.error('Error exporting to Google Calendar:', error);
+      alert('Failed to export events to Google Calendar.');
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const results = myFavorites.filter(idea =>
+        idea.title.toLowerCase().includes(query.toLowerCase())
+      );
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error searching date ideas:', error);
+    }
+  };
+
+  const handleAddToFavorites = async (dateIdea: DateIdea) => {
+    try {
+      await favoritesService.saveFavorite(dateIdea);
+      setMyFavorites((prev) => [...prev, dateIdea]);
+      alert(`${dateIdea.title} added to favorites!`);
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+    }
+  };
 
   const EventComponent = ({ event }: { event: CalendarEvent }) => {
     const handleRemoveEvent = (e: React.MouseEvent, eventId: string) => {
@@ -127,6 +224,35 @@ const CalendarPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Date Ideas</h3>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search for date ideas..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+          />
+          {searchResults.length > 0 && (
+            <ul className="mt-4 bg-white border border-gray-200 rounded-lg shadow-md">
+              {searchResults.map((idea) => (
+                <li
+                  key={idea.id}
+                  className="px-4 py-2 hover:bg-gray-100 flex justify-between items-center"
+                >
+                  <span>{idea.title}</span>
+                  <button
+                    onClick={() => handleAddToFavorites(idea)}
+                    className="px-3 py-1 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
+                  >
+                    Add
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Left Panel - Favorites */}
           <div className="space-y-8">
@@ -154,6 +280,34 @@ const CalendarPage: React.FC = () => {
                   {/* Joint favorites component would go here */}
                 </div>
               </div>
+            </div>
+
+            {/* Calendar ID Section */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-6">
+              <h3 className="text-lg font-semibold text-gray-900">Calendar ID</h3>
+              <div className="flex items-center gap-4 mt-4">
+                <input
+                  type="text"
+                  value={calendarId}
+                  readOnly
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+                <button
+                  onClick={handleCopyId}
+                  className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
+                >
+                  Copy
+                </button>
+              </div>
+
+              <h3 className="text-lg font-semibold text-gray-900 mt-6">Partner's Calendar ID</h3>
+              <input
+                type="text"
+                value={partnerId}
+                onChange={handlePartnerIdChange}
+                placeholder="Enter partner's Calendar ID"
+                className="w-full px-4 py-2 mt-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              />
             </div>
 
             {/* Benefits Card */}
@@ -195,6 +349,15 @@ const CalendarPage: React.FC = () => {
                 }}
                 popup
               />
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleGoogleCalendarExport}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Export to Google Calendar
+              </button>
             </div>
 
             {/* How to Use Guide */}

@@ -73,10 +73,6 @@ export default function GridView({
     );
   };
   
-  // Add debug logging to help diagnose issues
-  console.log('DateIdeas received:', dateIdeas.length, dateIdeas.slice(0, 2));
-  console.log('VisibleIdeas:', visibleIdeas);
-  console.log('DateIdeaImages:', Object.keys(dateIdeaImages).length);
   
   // Check if we have any data to display
   if (dateIdeas.length === 0) {

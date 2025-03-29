@@ -18,6 +18,8 @@ import { favoritesService, FavoritesError, DateIdea as ImportedDateIdea } from '
 import type { DateIdea as GridViewDateIdea } from './components/GridView'; // Import the DateIdea type from GridView
 import FilterButtons from "./components/FilterButtons";
 import Head from 'next/head';
+import { City } from "country-state-city";
+import {DropdownMenu} from "@heroui/react"; // Import DropdownMenu component
 
 // Removed metadata export as it's not allowed in client components
 
@@ -54,6 +56,11 @@ export default function Home() {
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string | null>(null);
   const [filteredDateIdeas, setFilteredDateIdeas] = useState<DateIdea[]>([]);
+  
+  // Add search-related states
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<DateIdea[]>([]);
   
   // Add new state for advanced filters
   const [filterOptions, setFilterOptions] = useState<{
@@ -98,6 +105,66 @@ export default function Home() {
   }>({ city: null, price: 'all', timeOfDay: 'all' });
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+
+  const [cityOptions, setCityOptions] = useState<{ name: string; countryCode: string }[]>([]);
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [citySearchQuery, setCitySearchQuery] = useState(""); // State for city search query
+  const [popularCities, setPopularCities] = useState<{ name: string; countryCode: string }[]>([]); // State for popular cities
+
+  useEffect(() => {
+    // Fetch only the 20 most popular cities initially
+    const fetchPopularCities = async () => {
+      const cities = City.getAllCities();
+      // Use a different approach since population property doesn't exist on ICity
+      // Just take the first 20 cities as the popular ones
+      const popularCities = cities.slice(0, 20);
+      setPopularCities(popularCities.map(city => ({ name: city.name, countryCode: city.countryCode })));
+    };
+
+    fetchPopularCities();
+  }, []);
+    // Fetch all cities and set them as options (limit to first 100 to avoid performance issues)
+    const cities = City.getAllCities().slice(0, 100);
+    setCityOptions(cities.map(city => ({ name: city.name, countryCode: city.countryCode })));
+
+    // Set default city based on user's IP-detected city
+    const detectLocation = async () => {
+    // Set default city based on user's IP-detected city
+    const detectLocation = async () => {
+      try {
+        const response = await fetch('/api/location');
+        const data = await response.json();
+        if (data.city) {
+          setSelectedCity(data.city);
+        }
+      } catch (error) {
+        console.error('Error detecting location:', error);
+      }
+    };
+
+    detectLocation();
+  }, []);
+
+  const handleCitySearch = async (query: string) => {
+    setCitySearchQuery(query);
+
+    if (query.trim() === "") {
+      // Reset to popular cities if search query is empty
+      const cities = City.getAllCities();
+      const sortedCities = cities.sort((a, b) => b.population - a.population).slice(0, 20);
+      setCityOptions(sortedCities.map(city => ({ name: city.name, countryCode: city.countryCode })));
+      return;
+    }
+
+    // Fetch cities matching the search query
+    const cities = City.getAllCities();
+    const filteredCities = cities.filter(city => city.name.toLowerCase().includes(query.toLowerCase()));
+    setCityOptions(filteredCities.map(city => ({ name: city.name, countryCode: city.countryCode })));
+  };
+
+  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(event.target.value);
+  };
 
   const clearAllFilters = () => {
     setActiveFilters({ city: null, price: 'all', timeOfDay: 'all' });
@@ -372,7 +439,6 @@ export default function Home() {
     
     // Select sort method based on day of week (0-6) modulo number of methods
     const methodIndex = today.getDay() % sortMethods.length;
-    console.log(`Using sort method ${methodIndex + 1} of ${sortMethods.length} for today (${dateString})`);
     
     // Apply the selected sort method
     const shuffledIdeas = [...allDateIdeas].sort(sortMethods[methodIndex]);
@@ -387,45 +453,44 @@ export default function Home() {
     setVisibleIdeas(prev => prev + 20);
   };
 
-  const handleSearch = (filters: any) => {
-    setLoading(true);
-
-    const filteredIdeas = allDateIdeas.filter((idea) => {
-      let matches = true;
-
-      if (filters.category && filters.category !== "all") {
-        matches = matches && idea.category === filters.category;
-      }
-
-      if (filters.priceLevel && filters.priceLevel !== "all") {
-        const priceLevelNum = parseInt(filters.priceLevel);
-        matches = matches && idea.priceLevel === priceLevelNum;
-      }
-
-      if (filters.location && filters.location.trim() !== "") {
-        if (typeof idea.location === 'string') {
-          matches = matches && idea.location.toLowerCase().includes(filters.location.toLowerCase());
-        } else if (typeof idea.location === 'object' && idea.location?.city) {
-          matches = matches && idea.location.city.toLowerCase().includes(filters.location.toLowerCase());
-        } else {
-          matches = false;
-        }
-      }
-
-      if (filters.searchTerm && filters.searchTerm.trim() !== "") {
-        const term = filters.searchTerm.toLowerCase();
-        const titleMatch = idea.title.toLowerCase().includes(term);
-        const descMatch = idea.description.toLowerCase().includes(term);
-        matches = matches && (titleMatch || descMatch);
-      }
-
-      return matches;
-    });
-
-    setAllDateIdeas(filteredIdeas);
-    setVisibleIdeas(20);
-    setLoading(false);
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+    
+    const normalizedQuery = query.toLowerCase().trim();
+    const results = allDateIdeas.filter(idea => 
+      idea.title.toLowerCase().includes(normalizedQuery) ||
+      idea.category.toLowerCase().includes(normalizedQuery) ||
+      idea.description.toLowerCase().includes(normalizedQuery)
+    ).slice(0, 7); // Limit to 7 suggestions
+    
+    setSearchResults(results);
+    setShowSearchResults(true);
   };
+
+  const handleSelectSearchResult = (slug: string) => {
+    setSearchQuery('');
+    setShowSearchResults(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.search-container')) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const loadImagesForBatch = async (ideas: DateIdea[]) => {
     const batchSize = 5;
@@ -643,7 +708,6 @@ export default function Home() {
       return matchesFilter;
     });
 
-    console.log('Filtered date ideas count:', newFilteredIdeas.length, 'out of', allDateIdeas.length);
 
     setFilteredDateIdeas(newFilteredIdeas);
     setVisibleIdeas(20); 
@@ -719,41 +783,97 @@ export default function Home() {
       <PageTitle title={PAGE_TITLES.HOME} />
       <Header />
 
-      <section className="relative">
+      <section className="z-[60] relative">
         <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[320px] w-full"></div>
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 text-white px-4">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Date Ideas Near You
           </h1>
-          <p className="text-3xl">Personalised for you and your person</p>
+          <p className="text-3xl mb-8">Personalised for you and your person</p>
+          
+          {/* Add search input */}
+          <div className="search-container relative w-full max-w-xl mx-auto" style={{ position: 'relative', zIndex: 50 }}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search for date ideas..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full px-5 py-3 pl-12 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                <SearchIcon className="h-5 w-5 text-gray-500" />
+              </div>
+            </div>
+            
+            {/* Search dropdown results */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
+                {searchResults.map(idea => (
+                  <Link 
+                    href={`/date-idea/${idea.slug}`} 
+                    key={idea.id}
+                    onClick={() => handleSelectSearchResult(idea.slug)}
+                    className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                  >
+                    <div className="relative h-14 w-14 rounded-md overflow-hidden flex-shrink-0">
+                      <Image
+                        src={allDateIdeaImages[idea.slug] || '/placeholder.jpg'}
+                        alt={idea.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="ml-3 flex-grow">
+                      <h4 className="font-medium text-gray-800">{idea.title}</h4>
+                      <p className="text-xs text-gray-500">{idea.category}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+            
+            {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
+                <p className="text-gray-600">No date ideas found. Try a different search term.</p>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
+          <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {/* Location Filter - Modified to show IP location without filtering */}
+              {/* City Dropdown */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Your Location</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={userCity || ''}
-                    placeholder="Location not detected"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 transition-all duration-200"
-                    disabled
-                    title="Your detected location"
-                  />
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <MapPinIcon className="h-5 w-5 text-gray-400" />
-                  </div>
-                  {/* {userCity && (
-                    <div className="text-xs text-gray-500 mt-1 pl-1">
-                      This is your current detected location. Filtering is disabled.
+                <label className="text-gray-700 font-medium text-sm block mb-2">Select City</label>
+                <DropdownMenu>
+                  <DropdownTrigger className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200">
+                    {selectedCity || "Select a city"}
+                  </DropdownTrigger>
+                  <DropdownContent className="w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg">
+                    <div className="p-2">
+                      <input
+                        type="text"
+                        placeholder="Search cities..."
+                        value={citySearchQuery}
+                        onChange={(e) => handleCitySearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      />
                     </div>
-                  )} */}
-                </div>
+                    {cityOptions.map((city, index) => (
+                      <DropdownItem
+                        key={index}
+                        onSelect={() => setSelectedCity(city.name)}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      >
+                        {city.name}, {city.countryCode}
+                      </DropdownItem>
+                    ))}
+                  </DropdownContent>
+                </DropdownMenu>
               </div>
 
               {/* Price Range Filter - Updated to show readable values */}

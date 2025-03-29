@@ -23,7 +23,7 @@ interface DateIdea {
   image: string; // Changed from optional to required string
   category?: string;
   rating?: number;
-  location?: string | { [key: string]: any; } | null; // Updated to match the imported type
+  location?: string | { [key: string]: any; } | null;
   price: string; // Changed to string
   duration?: string;
   slug?: string;

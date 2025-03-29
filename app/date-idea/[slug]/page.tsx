@@ -186,7 +186,6 @@ export default function DateIdeaDetails() {
         }
         
         const data = await response.json();
-        console.log("Scraped data:", data);
         
         // Process the activity data from the scraper
         if (data && data.activities && data.activities.length > 0) {
@@ -219,7 +218,6 @@ export default function DateIdeaDetails() {
               };
             });
           
-          console.log("Processed experiences:", processedExperiences);
           
           // Add a warning message if we couldn't find relevant activities
           if (relevantActivities.length === 0 && data.activities.length > 0) {

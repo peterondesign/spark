@@ -56,12 +56,10 @@ export const favoritesService = {
       // If no localStorage or no items found, try with database
       try {
         // Debug message
-        console.log('Attempting to fetch favorites from Supabase...');
         
         // Get favorite IDs - handle potential connection issues
         try {
           const deviceId = getDeviceId();
-          console.log('Using device ID:', deviceId);
           
           const { data: favorites, error: favoritesError } = await supabase
             .from('favorites')

@@ -16,13 +16,13 @@ interface FavoritesAccordionProps {
   onDragStart?: (item: DateIdea) => void;
 }
 
-export default function FavoritesAccordion({ 
+const FavoritesAccordion: React.FC<FavoritesAccordionProps> = ({ 
   title, 
   items, 
   defaultOpen = false, 
   isLoading = false,
   onDragStart 
-}: FavoritesAccordionProps) {
+}) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [itemsWithImages, setItemsWithImages] = useState<DateIdea[]>(items);
   const [draggingItem, setDraggingItem] = useState<string | null>(null);
@@ -120,7 +120,6 @@ export default function FavoritesAccordion({
           <ChevronDownIcon className="h-5 w-5 text-gray-500" />
         </motion.div>
       </button>
-
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -195,7 +194,7 @@ export default function FavoritesAccordion({
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-4">
-                  No favorites added yet
+                  No favorites added yet. Start by searching for date ideas!
                 </p>
               )}
             </div>
@@ -204,4 +203,6 @@ export default function FavoritesAccordion({
       </AnimatePresence>
     </div>
   );
-}
+};
+
+export default FavoritesAccordion;
