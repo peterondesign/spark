@@ -1,9 +1,10 @@
-"use client";
+"use client"
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { HeartIcon, MapPinIcon, SearchIcon, StarIcon } from "./components/icons";
+// import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, CurrencyDollarIcon, MoonIcon } from "./components/icons";
+import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, DollarSign, MoonIcon } from "lucide-react";
 import SaveButton from "./components/SaveButton";
 import { getImageUrl } from "./utils/imageService";
 import { supabase } from "../utils/supabaseClient";
@@ -19,7 +20,8 @@ import type { DateIdea as GridViewDateIdea } from './components/GridView'; // Im
 import FilterButtons from "./components/FilterButtons";
 import Head from 'next/head';
 import { City } from "country-state-city";
-import {DropdownMenu} from "@heroui/react"; // Import DropdownMenu component
+import { Autocomplete, AutocompleteItem } from "@heroui/react";
+import { useAsyncList } from "@react-stately/data";
 
 // Removed metadata export as it's not allowed in client components
 
@@ -43,7 +45,70 @@ interface DateIdea {
   longDescription?: string;
 }
 
+// Update the CityItem interface to include the new properties
+interface CityItem {
+  name: string;
+  countryCode: string;
+  isPopular: boolean;
+  id: string; // Add unique ID field
+}
+
+const POPULAR_CITIES = [
+  "New York", "London", "Paris", "Tokyo", "Sydney", 
+  "Los Angeles", "Berlin", "Rome", "Dubai", "Singapore",
+  "Barcelona", "Toronto", "Amsterdam", "Hong Kong", "San Francisco"
+];
+
 export default function Home() {
+  // Move the useAsyncList hook inside the component
+  const cityList = useAsyncList<CityItem>({
+    async load({ signal, filterText = "" }) { 
+      const cities = City.getAllCities();
+      
+      // Create a unique identifier for each city by combining name and country code
+      let filteredCities = cities
+        .filter((city) => city.name.toLowerCase().includes(filterText.toLowerCase()))
+        .map(city => ({
+          name: city.name,
+          countryCode: city.countryCode,
+          isPopular: POPULAR_CITIES.includes(city.name) ? true : false,
+          id: `${city.name}-${city.countryCode}` // Create unique ID to avoid duplicate keys
+        }));
+        
+      // Remove duplicates by city name (keeping the popular one if exists)
+      const uniqueCities = new Map<string, CityItem>();
+      
+      // First add all popular cities to the map
+      filteredCities
+        .filter(city => city.isPopular)
+        .forEach(city => uniqueCities.set(city.name.toLowerCase(), city));
+      
+      // Then add non-popular cities if not already in the map
+      filteredCities
+        .filter(city => !city.isPopular)
+        .forEach(city => {
+          if (!uniqueCities.has(city.name.toLowerCase())) {
+            uniqueCities.set(city.name.toLowerCase(), city);
+          }
+        });
+      
+      // Convert back to array and sort: popular cities first, then alphabetically
+      filteredCities = Array.from(uniqueCities.values())
+        .sort((a, b) => {
+          // First sort by popularity
+          if (a.isPopular && !b.isPopular) return -1;
+          if (!a.isPopular && b.isPopular) return 1;
+          // Then alphabetically by name
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, 20); // Limit to 20 results
+
+      return {
+        items: filteredCities,
+      };
+    },
+  });
+
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [allDateIdeas, setAllDateIdeas] = useState<DateIdea[]>([]);
   const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
@@ -56,12 +121,12 @@ export default function Home() {
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [userCity, setUserCity] = useState<string | null>(null);
   const [filteredDateIdeas, setFilteredDateIdeas] = useState<DateIdea[]>([]);
-  
+
   // Add search-related states
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
   const [searchResults, setSearchResults] = useState<DateIdea[]>([]);
-  
+
   // Add new state for advanced filters
   const [filterOptions, setFilterOptions] = useState<{
     categories: string[];
@@ -76,7 +141,7 @@ export default function Home() {
     moodPaces: [],
     moodVibes: []
   });
-  
+
   const [selectedFilters, setSelectedFilters] = useState<{
     categories: string[];
     locationTypes: string[];
@@ -115,20 +180,17 @@ export default function Home() {
     // Fetch only the 20 most popular cities initially
     const fetchPopularCities = async () => {
       const cities = City.getAllCities();
-      // Use a different approach since population property doesn't exist on ICity
-      // Just take the first 20 cities as the popular ones
+      // Just use the first 20 cities since population property isn't available
       const popularCities = cities.slice(0, 20);
       setPopularCities(popularCities.map(city => ({ name: city.name, countryCode: city.countryCode })));
     };
 
     fetchPopularCities();
-  }, []);
+
     // Fetch all cities and set them as options (limit to first 100 to avoid performance issues)
     const cities = City.getAllCities().slice(0, 100);
     setCityOptions(cities.map(city => ({ name: city.name, countryCode: city.countryCode })));
 
-    // Set default city based on user's IP-detected city
-    const detectLocation = async () => {
     // Set default city based on user's IP-detected city
     const detectLocation = async () => {
       try {
@@ -151,8 +213,9 @@ export default function Home() {
     if (query.trim() === "") {
       // Reset to popular cities if search query is empty
       const cities = City.getAllCities();
-      const sortedCities = cities.sort((a, b) => b.population - a.population).slice(0, 20);
-      setCityOptions(sortedCities.map(city => ({ name: city.name, countryCode: city.countryCode })));
+      // Just use the first 20 cities instead of sorting by population which isn't available
+      const firstCities = cities.slice(0, 20);
+      setCityOptions(firstCities.map(city => ({ name: city.name, countryCode: city.countryCode })));
       return;
     }
 
@@ -209,7 +272,7 @@ export default function Home() {
   const getSelectedFiltersText = () => {
     const count = Object.values(selectedFilters).reduce((acc, filters) => acc + filters.length, 0);
     if (count === 0) return "Mood";
-    
+
     const allSelected = [
       ...selectedFilters.categories,
       ...selectedFilters.locationTypes,
@@ -217,7 +280,7 @@ export default function Home() {
       ...selectedFilters.moodPaces,
       ...selectedFilters.moodVibes
     ];
-    
+
     if (allSelected.length === 1) return allSelected[0];
     return `${allSelected.length} selected`;
   };
@@ -387,14 +450,14 @@ export default function Home() {
 
   useEffect(() => {
     if (!allDateIdeas.length) return;
-    
+
     // Get current date to use as a seed
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
-    
+
     // Create a seed that changes daily by combining the day, month, and year
     const dateSeed = today.getDate() + (today.getMonth() + 1) * 31 + today.getFullYear() * 366;
-    
+
     // Create different sort methods that will rotate daily
     const sortMethods = [
       // Method 1: Random sort using sin function with date seed
@@ -424,7 +487,7 @@ export default function Home() {
         const catA = a.category || '';
         const catB = b.category || '';
         const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-        return ((catA.charCodeAt(0) || 0) + dayOfYear) % 65536 - ((catB.charCodeAt(0) || 0) + dayOfYear) % 65536 
+        return ((catA.charCodeAt(0) || 0) + dayOfYear) % 65536 - ((catB.charCodeAt(0) || 0) + dayOfYear) % 65536
           || a.title.localeCompare(b.title);
       },
       // Method 5: By price level with daily rotation
@@ -436,13 +499,13 @@ export default function Home() {
         return dayOfWeek % 2 === 0 ? priceA - priceB : priceB - priceA;
       }
     ];
-    
+
     // Select sort method based on day of week (0-6) modulo number of methods
     const methodIndex = today.getDay() % sortMethods.length;
-    
+
     // Apply the selected sort method
     const shuffledIdeas = [...allDateIdeas].sort(sortMethods[methodIndex]);
-    
+
     // Only update if the order has changed
     if (JSON.stringify(shuffledIdeas.map(i => i.id)) !== JSON.stringify(allDateIdeas.map(i => i.id))) {
       setAllDateIdeas(shuffledIdeas);
@@ -455,20 +518,20 @@ export default function Home() {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setSearchResults([]);
       setShowSearchResults(false);
       return;
     }
-    
+
     const normalizedQuery = query.toLowerCase().trim();
-    const results = allDateIdeas.filter(idea => 
+    const results = allDateIdeas.filter(idea =>
       idea.title.toLowerCase().includes(normalizedQuery) ||
       idea.category.toLowerCase().includes(normalizedQuery) ||
       idea.description.toLowerCase().includes(normalizedQuery)
     ).slice(0, 7); // Limit to 7 suggestions
-    
+
     setSearchResults(results);
     setShowSearchResults(true);
   };
@@ -555,7 +618,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!allDateIdeas.length) return;
-    
+
     const newFilteredIdeas = allDateIdeas.filter((idea) => {
       let matchesFilter = true;
 
@@ -566,48 +629,48 @@ export default function Home() {
       if (activeFilters.price !== 'all') {
         const priceText = typeof idea.price === 'string' ? idea.price.toLowerCase() : '';
         const priceLevelText = idea.priceLevel ? String(idea.priceLevel).toLowerCase() : '';
-        
+
         switch (activeFilters.price) {
           case 'free':
             matchesFilter = matchesFilter && (
-              priceText.includes('free') || 
+              priceText.includes('free') ||
               priceLevelText.includes('free') ||
-              priceText === '0' || 
+              priceText === '0' ||
               priceText === '$' ||
               priceLevelText === '1'
             );
             break;
           case 'affordable':
             matchesFilter = matchesFilter && (
-              priceText.includes('affordable') || 
+              priceText.includes('affordable') ||
               priceLevelText.includes('affordable') ||
-              priceText.includes('budget') || 
+              priceText.includes('budget') ||
               priceText === '$$' ||
               priceLevelText === '2'
             );
             break;
           case 'moderate':
             matchesFilter = matchesFilter && (
-              priceText.includes('moderate') || 
+              priceText.includes('moderate') ||
               priceLevelText.includes('moderate') ||
               priceText === '$$$' ||
-              priceLevelText === '3' 
+              priceLevelText === '3'
             );
             break;
           case 'high':
             matchesFilter = matchesFilter && (
-              priceText.includes('high') || 
+              priceText.includes('high') ||
               priceLevelText.includes('high') ||
-              priceText.includes('expensive') || 
+              priceText.includes('expensive') ||
               priceText === '$$$$' ||
               priceLevelText === '4'
             );
             break;
           case 'luxury':
             matchesFilter = matchesFilter && (
-              priceText.includes('luxury') || 
+              priceText.includes('luxury') ||
               priceLevelText.includes('luxury') ||
-              priceText.includes('premium') || 
+              priceText.includes('premium') ||
               priceText.includes('$$$$$') ||
               priceLevelText === '5'
             );
@@ -620,18 +683,18 @@ export default function Home() {
         // Convert to lowercase for case-insensitive matching
         const timeText = idea.timeOfDay ? idea.timeOfDay.toLowerCase() : '';
         const searchTime = activeFilters.timeOfDay.toLowerCase();
-        
+
         // Check if the idea has a timeOfDay property before filtering
         if (timeText) {
           if (searchTime === 'day') {
             matchesFilter = matchesFilter && (
-              timeText.includes('day') || 
-              timeText.includes('morning') || 
+              timeText.includes('day') ||
+              timeText.includes('morning') ||
               timeText.includes('afternoon')
             );
           } else if (searchTime === 'night') {
             matchesFilter = matchesFilter && (
-              timeText.includes('night') || 
+              timeText.includes('night') ||
               timeText.includes('evening')
             );
           } else {
@@ -710,7 +773,7 @@ export default function Home() {
 
 
     setFilteredDateIdeas(newFilteredIdeas);
-    setVisibleIdeas(20); 
+    setVisibleIdeas(20);
   }, [allDateIdeas, activeFilters, selectedFilters]);
 
   const scrollToTop = () => {
@@ -748,7 +811,7 @@ export default function Home() {
   };
 
   // Define AddNoteIcon inside the Home component
-  const AddNoteIcon = (props: { className?: string; [key: string]: any }) => {
+  const AddNoteIcon = (props: { className?: string;[key: string]: any }) => {
     return (
       <svg
         aria-hidden="true"
@@ -789,7 +852,7 @@ export default function Home() {
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Date Ideas Near You
           </h1>
           <p className="text-3xl mb-8">Personalised for you and your person</p>
-          
+
           {/* Add search input */}
           <div className="search-container relative w-full max-w-xl mx-auto" style={{ position: 'relative', zIndex: 50 }}>
             <div className="relative">
@@ -804,13 +867,13 @@ export default function Home() {
                 <SearchIcon className="h-5 w-5 text-gray-500" />
               </div>
             </div>
-            
+
             {/* Search dropdown results */}
             {showSearchResults && searchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
                 {searchResults.map(idea => (
-                  <Link 
-                    href={`/date-idea/${idea.slug}`} 
+                  <Link
+                    href={`/date-idea/${idea.slug}`}
                     key={idea.id}
                     onClick={() => handleSelectSearchResult(idea.slug)}
                     className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
@@ -831,7 +894,7 @@ export default function Home() {
                 ))}
               </div>
             )}
-            
+
             {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
                 <p className="text-gray-600">No date ideas found. Try a different search term.</p>
@@ -846,89 +909,125 @@ export default function Home() {
           <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {/* City Dropdown */}
+              {/* City Autocomplete with icon - styled version */}
               <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Select City</label>
-                <DropdownMenu>
-                  <DropdownTrigger className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200">
-                    {selectedCity || "Select a city"}
-                  </DropdownTrigger>
-                  <DropdownContent className="w-full max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg">
-                    <div className="p-2">
-                      <input
-                        type="text"
-                        placeholder="Search cities..."
-                        value={citySearchQuery}
-                        onChange={(e) => handleCitySearch(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      />
-                    </div>
-                    {cityOptions.map((city, index) => (
-                      <DropdownItem
-                        key={index}
-                        onSelect={() => setSelectedCity(city.name)}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        {city.name}, {city.countryCode}
-                      </DropdownItem>
-                    ))}
-                  </DropdownContent>
-                </DropdownMenu>
+                <label className="text-gray-700 font-medium text-sm block mb-2">City</label>
+                <Autocomplete<CityItem>
+                  className="w-full"
+                  inputValue={cityList.filterText || ""}
+                  isLoading={cityList.isLoading}
+                  items={cityList.items as CityItem[]}
+                  placeholder="Search for a city..."
+                  variant="bordered"
+                  onInputChange={cityList.setFilterText}
+                  startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
+                  listboxProps={{
+                    itemClasses: {
+                      base: "data-[hover=true]:bg-rose-100 transition-colors",
+                    },
+                  }}
+                  popoverProps={{
+                    classNames: {
+                      content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
+                    }
+                  }}
+                >
+                  {(item) => (
+                    <AutocompleteItem
+                      key={item.id}
+                      onSelect={() => setSelectedCity(item.name)}
+                      className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
+                      startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span>{item.name}, {item.countryCode}</span>
+                        {item.isPopular && (
+                          <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
+                        )}
+                      </div>
+                    </AutocompleteItem>
+                  )}
+                </Autocomplete>
               </div>
 
-              {/* Price Range Filter - Updated to show readable values */}
+              {/* Price Range Filter with icon */}
               <div className="relative group">
                 <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
-                <select
-                  value={activeFilters.price}
-                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
-                >
-                  <option value="all">All Prices</option>
-                  <option value="free">Free</option>
-                  <option value="affordable">Affordable</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="high">High</option>
-                  <option value="luxury">Luxury</option>
-                </select>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <DollarSign className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <select
+                    value={activeFilters.price}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                  >
+                    <option value="all">All Prices</option>
+                    <option value="free">Free</option>
+                    <option value="affordable">Affordable</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="high">High</option>
+                    <option value="luxury">Luxury</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a 1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              {/* Time of Day Filter - Updated to match database values */}
+              {/* Time of Day Filter with icon */}
               <div className="relative group">
                 <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
-                <select
-                  value={activeFilters.timeOfDay || 'all'}
-                  className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
-                  onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
-                >
-                  <option value="all">Any Time</option>
-                  <option value="day">Day</option>
-                  <option value="afternoon">Afternoon</option>
-                  <option value="evening">Evening</option>
-                  <option value="night">Night</option>
-                  <option value="varies">Varies</option>
-                </select>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <ClockIcon className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <select
+                    value={activeFilters.timeOfDay || 'all'}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
+                  >
+                    <option value="all">Any Time</option>
+                    <option value="day">Day</option>
+                    <option value="afternoon">Afternoon</option>
+                    <option value="evening">Evening</option>
+                    <option value="night">Night</option>
+                    <option value="varies">Varies</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
               </div>
 
-              {/* Advanced Filters Dropdown - Updated to show selected filters */}
+              {/* Mood Filter with icon */}
               <div className="relative group">
                 <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
                 <div className="w-full">
-                  <button 
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} 
-                    className="w-full flex justify-between items-center pl-4 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-700 font-medium transition-all duration-200"
+                  <button
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className="w-full flex justify-between items-center pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-700 font-medium transition-all duration-200"
                   >
-                    <span className="truncate">{getSelectedFiltersText()}</span>
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className={`h-5 w-5 ml-2 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} 
-                      viewBox="0 0 20 20" 
+                    <div className="flex items-center">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <MoonIcon className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <span className="truncate">{getSelectedFiltersText()}</span>
+                    </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-5 w-5 ml-2 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}
+                      viewBox="0 0 20 20"
                       fill="currentColor"
                     >
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
-                  
+
                   {showAdvancedFilters && (
                     <div className="absolute z-40 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto">
                       <div className="p-3 border-b border-gray-200">
@@ -938,18 +1037,17 @@ export default function Home() {
                             <button
                               key={category}
                               onClick={() => handleFilterChange('categories', category, !selectedFilters.categories.includes(category))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                selectedFilters.categories.includes(category)
-                                  ? 'bg-rose-100 text-rose-700 font-medium'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.categories.includes(category)
+                                ? 'bg-rose-100 text-rose-700 font-medium'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
                             >
                               {category}
                             </button>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="p-3 border-b border-gray-200">
                         <h3 className="font-medium text-gray-700">Location Types</h3>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -957,18 +1055,17 @@ export default function Home() {
                             <button
                               key={type}
                               onClick={() => handleFilterChange('locationTypes', type, !selectedFilters.locationTypes.includes(type))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                selectedFilters.locationTypes.includes(type)
-                                  ? 'bg-rose-100 text-rose-700 font-medium'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.locationTypes.includes(type)
+                                ? 'bg-rose-100 text-rose-700 font-medium'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
                             >
                               {type}
                             </button>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="p-3 border-b border-gray-200">
                         <h3 className="font-medium text-gray-700">Location Settings</h3>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -976,18 +1073,17 @@ export default function Home() {
                             <button
                               key={setting}
                               onClick={() => handleFilterChange('locationSettings', setting, !selectedFilters.locationSettings.includes(setting))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                selectedFilters.locationSettings.includes(setting)
-                                  ? 'bg-rose-100 text-rose-700 font-medium'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.locationSettings.includes(setting)
+                                ? 'bg-rose-100 text-rose-700 font-medium'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
                             >
                               {setting}
                             </button>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="p-3 border-b border-gray-200">
                         <h3 className="font-medium text-gray-700">Mood Paces</h3>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -995,18 +1091,17 @@ export default function Home() {
                             <button
                               key={pace}
                               onClick={() => handleFilterChange('moodPaces', pace, !selectedFilters.moodPaces.includes(pace))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                selectedFilters.moodPaces.includes(pace)
-                                  ? 'bg-rose-100 text-rose-700 font-medium'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.moodPaces.includes(pace)
+                                ? 'bg-rose-100 text-rose-700 font-medium'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
                             >
                               {pace}
                             </button>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="p-3">
                         <h3 className="font-medium text-gray-700">Mood Vibes</h3>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -1014,11 +1109,10 @@ export default function Home() {
                             <button
                               key={vibe}
                               onClick={() => handleFilterChange('moodVibes', vibe, !selectedFilters.moodVibes.includes(vibe))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                                selectedFilters.moodVibes.includes(vibe)
-                                  ? 'bg-rose-100 text-rose-700 font-medium'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                              }`}
+                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.moodVibes.includes(vibe)
+                                ? 'bg-rose-100 text-rose-700 font-medium'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
                             >
                               {vibe}
                             </button>
@@ -1059,7 +1153,7 @@ export default function Home() {
                   <p>Active filters: {JSON.stringify(selectedFilters)}</p>
                 </div>
               )} */}
-              
+
               <GridView
                 dateIdeas={(filteredDateIdeas.length > 0 ? filteredDateIdeas : allDateIdeas).map(idea => ({
                   id: idea.id,
