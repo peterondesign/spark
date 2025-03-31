@@ -176,6 +176,19 @@ export default function Home() {
   const [citySearchQuery, setCitySearchQuery] = useState(""); // State for city search query
   const [popularCities, setPopularCities] = useState<{ name: string; countryCode: string }[]>([]); // State for popular cities
 
+  // Add a function to set default city to LA if IP detection fails
+  const setDefaultCity = () => {
+    const laCity = {
+      name: "Los Angeles",
+      countryCode: "US",
+      isPopular: true,
+      id: "Los Angeles-US"
+    };
+    setSelectedCity(laCity.name);
+    setActiveFilters(prev => ({ ...prev, city: laCity.name }));
+    setUserCity(laCity.name);
+  };
+
   useEffect(() => {
     // Fetch only the 20 most popular cities initially
     const fetchPopularCities = async () => {
@@ -198,9 +211,14 @@ export default function Home() {
         const data = await response.json();
         if (data.city) {
           setSelectedCity(data.city);
+          setActiveFilters(prev => ({ ...prev, city: data.city }));
+          setUserCity(data.city);
+        } else {
+          setDefaultCity();
         }
       } catch (error) {
         console.error('Error detecting location:', error);
+        setDefaultCity();
       }
     };
 
@@ -227,6 +245,13 @@ export default function Home() {
 
   const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCity(event.target.value);
+  };
+
+  // Update handleCitySelect function to properly update filters
+  const handleCitySelect = (city: CityItem) => {
+    setSelectedCity(city.name);
+    // Also update the active filters to apply the city filter
+    setActiveFilters(prev => ({ ...prev, city: city.name }));
   };
 
   const clearAllFilters = () => {
@@ -439,9 +464,12 @@ export default function Home() {
           setUserCity(data.city);
           setActiveFilters(prev => ({ ...prev, city: data.city }));
           localStorage.setItem("userCity", data.city);
+        } else {
+          setDefaultCity();
         }
       } catch (error) {
         console.error('Error detecting location:', error);
+        setDefaultCity();
       }
     };
 
@@ -908,46 +936,71 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="flex md:grid overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:grid-cols-5 gap-4">
               {/* City Autocomplete with icon - styled version */}
-              <div className="relative group">
+              <div className="relative group min-w-[200px] md:min-w-0">
                 <label className="text-gray-700 font-medium text-sm block mb-2">City</label>
-                <Autocomplete<CityItem>
-                  className="w-full"
-                  inputValue={cityList.filterText || ""}
-                  isLoading={cityList.isLoading}
-                  items={cityList.items as CityItem[]}
-                  placeholder="Search for a city..."
-                  variant="bordered"
-                  onInputChange={cityList.setFilterText}
-                  startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
-                  listboxProps={{
-                    itemClasses: {
-                      base: "data-[hover=true]:bg-rose-100 transition-colors",
-                    },
-                  }}
-                  popoverProps={{
-                    classNames: {
-                      content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
-                    }
-                  }}
-                >
-                  {(item) => (
-                    <AutocompleteItem
-                      key={item.id}
-                      onSelect={() => setSelectedCity(item.name)}
-                      className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
-                      startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
+                <div className="flex items-center gap-2">
+                  <div className="flex-grow">
+                    <Autocomplete<CityItem>
+                      className="w-full"
+                      inputValue={cityList.filterText || ""}
+                      isLoading={cityList.isLoading}
+                      items={cityList.items as CityItem[]}
+                      placeholder="Search for a city..."
+                      variant="bordered"
+                      onInputChange={cityList.setFilterText}
+                      selectedKey={selectedCity ? selectedCity : undefined}
+                      onSelectionChange={key => {
+                        const selected = cityList.items.find(item => item.id === key);
+                        if (selected) {
+                          handleCitySelect(selected);
+                        }
+                      }}
+                      startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
+                      listboxProps={{
+                        itemClasses: {
+                          base: "data-[hover=true]:bg-rose-100 transition-colors",
+                        },
+                      }}
+                      popoverProps={{
+                        classNames: {
+                          content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
+                        }
+                      }}
                     >
-                      <div className="flex items-center justify-between w-full">
-                        <span>{item.name}, {item.countryCode}</span>
-                        {item.isPopular && (
-                          <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
-                        )}
-                      </div>
-                    </AutocompleteItem>
+                      {(item) => (
+                        <AutocompleteItem
+                          key={item.id}
+                          onSelect={() => handleCitySelect(item)}
+                          className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
+                          startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span>{item.name}, {item.countryCode}</span>
+                            {item.isPopular && (
+                              <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
+                            )}
+                          </div>
+                        </AutocompleteItem>
+                      )}
+                    </Autocomplete>
+                  </div>
+                  {activeFilters.city && (
+                    <span className="inline-flex items-center px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full whitespace-nowrap">
+                      {activeFilters.city}
+                      <button 
+                        onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
+                        className="ml-1.5 text-rose-700 hover:text-rose-900"
+                        aria-label="Remove city filter"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </span>
                   )}
-                </Autocomplete>
+                </div>
               </div>
 
               {/* Price Range Filter with icon */}
@@ -1013,8 +1066,8 @@ export default function Home() {
                     className="w-full flex justify-between items-center pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-700 font-medium transition-all duration-200"
                   >
                     <div className="flex items-center">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <MoonIcon className="h-5 w-5 text-gray-500" />
+                      <div className=" inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <MoonIcon className="h-5 w-5 text-gray-500 flex-shrink-0" />
                       </div>
                       <span className="truncate">{getSelectedFiltersText()}</span>
                     </div>
@@ -1126,14 +1179,30 @@ export default function Home() {
 
               {/* Clear Filters and Filters Applied Indicator */}
               <div className="relative group flex items-center space-x-2">
+              <label className="text-gray-700 font-medium text-sm block mb-2">{" "}</label>
                 <button
                   onClick={clearAllFilters}
                   className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-xl font-medium transition-all duration-200"
                 >
                   Clear
                 </button>
-                <div className="text-gray-700 font-medium">
+                <div className="text-gray-700 font-medium flex items-center">
                   {appliedFiltersCount} Filter{appliedFiltersCount !== 1 ? 's' : ''} Applied
+                  {activeFilters.city && (
+                    <span className="ml-2 px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full flex items-center">
+                      <MapPinIcon className="h-3 w-3 mr-1" />
+                      {activeFilters.city}
+                      <button 
+                        onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
+                        className="ml-1.5 text-rose-700 hover:text-rose-900"
+                        aria-label="Remove city filter"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

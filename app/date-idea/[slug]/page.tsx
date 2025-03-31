@@ -10,6 +10,9 @@ import { supabase } from "@/utils/supabaseClient";
 import { getImageUrl } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
 import Head from 'next/head';
+import { useAsyncList } from "@react-stately/data";
+import { City, POPULAR_CITIES, CityItem } from "../../../utils/cityService";
+import { Autocomplete, AutocompleteItem } from "@heroui/react";
 
 interface Experience {
   title: string;
@@ -44,7 +47,6 @@ interface DateIdea {
   timeOfDay?: string;
 }
 
-
 export default function DateIdeaDetails() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug || '';
@@ -64,6 +66,63 @@ export default function DateIdeaDetails() {
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [loadingExperiences, setLoadingExperiences] = useState(false);
   const [experiencesWarning, setExperiencesWarning] = useState<string>("");
+
+  // Add cityList for autocomplete functionality similar to home page
+  const cityList = useAsyncList<CityItem>({
+    async load({ signal, filterText = "" }) { 
+      const cities = City.getAllCities();
+      
+      // Create a unique identifier for each city by combining name and country code
+      let filteredCities = cities
+        .filter((city) => city.name.toLowerCase().includes(filterText.toLowerCase()))
+        .map(city => ({
+          name: city.name,
+          countryCode: city.countryCode,
+          isPopular: POPULAR_CITIES.includes(city.name) ? true : false,
+          id: `${city.name}-${city.countryCode}` // Create unique ID to avoid duplicate keys
+        }));
+        
+      // Remove duplicates by city name (keeping the popular one if exists)
+      const uniqueCities = new Map<string, CityItem>();
+      
+      // First add all popular cities to the map
+      filteredCities
+        .filter(city => city.isPopular)
+        .forEach(city => uniqueCities.set(city.name.toLowerCase(), city));
+      
+      // Then add non-popular cities if not already in the map
+      filteredCities
+        .filter(city => !city.isPopular)
+        .forEach(city => {
+          if (!uniqueCities.has(city.name.toLowerCase())) {
+            uniqueCities.set(city.name.toLowerCase(), city);
+          }
+        });
+      
+      // Convert back to array and sort: popular cities first, then alphabetically
+      filteredCities = Array.from(uniqueCities.values())
+        .sort((a, b) => {
+          // First sort by popularity
+          if (a.isPopular && !b.isPopular) return -1;
+          if (!a.isPopular && b.isPopular) return 1;
+          // Then alphabetically by name
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, 20); // Limit to 20 results
+
+      return {
+        items: filteredCities,
+      };
+    },
+  });
+  
+  // Add these handlers for city selection
+  const handleCitySelect = (city: CityItem) => {
+    setUserCity(city.name);
+    localStorage.setItem("userCity", city.name);
+    setShowUserLocationBadge(true);
+    setShowLocationPrompt(false);
+  };
 
   useEffect(() => {
     const detectLocation = async () => {
@@ -593,47 +652,51 @@ function handleClickOutside(event: MouseEvent) {
                 <h3 className="text-sm font-semibold text-blue-800">Personalize Your Experience</h3>
                 <p className="text-sm text-blue-600">Add your city to see date ideas relevant to your location</p>
               </div>
-              <div className="flex w-full md:w-auto relative">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Enter your city"
-                  value={cityInput}
-                  onChange={(e) => setCityInput(e.target.value)}
-                  onFocus={() => cityInput.length > 2 && setShowSuggestions(true)}
-                  className="rounded-l-lg px-4 py-2 border-t border-b border-l border-gray-300 bg-white text-sm focus:outline-none focus:ring-rose-500 focus:border-rose-500"
-                />
-                <button
-                  onClick={saveUserCity}
-                  className="rounded-r-lg px-4 py-2 bg-rose-500 text-white text-sm font-medium border border-rose-500 hover:bg-rose-600"
-                >
-                  Save
-                </button>
-
-                {/* City suggestions dropdown */}
-                {showSuggestions && (
-                  <div
-                    ref={suggestionRef}
-                    className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto"
+              <div className="flex w-full md:w-auto">
+                <div className="relative w-full">
+                  <Autocomplete<CityItem>
+                    className="w-full"
+                    inputValue={cityList.filterText || ""}
+                    isLoading={cityList.isLoading}
+                    items={cityList.items as CityItem[]}
+                    placeholder="Search for a city..."
+                    variant="bordered"
+                    onInputChange={cityList.setFilterText}
+                    onSelectionChange={key => {
+                      const selected = cityList.items.find(item => item.id === key);
+                      if (selected) {
+                        handleCitySelect(selected);
+                      }
+                    }}
+                    startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
+                    listboxProps={{
+                      itemClasses: {
+                        base: "data-[hover=true]:bg-rose-100 transition-colors",
+                      },
+                    }}
+                    popoverProps={{
+                      classNames: {
+                        content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
+                      }
+                    }}
                   >
-                    {isLoading ? (
-                      <div className="p-3 text-center text-gray-500">Loading...</div>
-                    ) : citySuggestions.length > 0 ? (
-                      citySuggestions.map((item, index) => (
-                        <div
-                          key={index}
-                          onClick={() => handleSelectCity(item.city)}
-                          className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium">{item.city}</div>
-                          <div className="text-xs text-gray-500">{item.country}</div>
+                    {(item) => (
+                      <AutocompleteItem
+                        key={item.id}
+                        onSelect={() => handleCitySelect(item)}
+                        className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
+                        startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>{item.name}, {item.countryCode}</span>
+                          {item.isPopular && (
+                            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
+                          )}
                         </div>
-                      ))
-                    ) : cityInput.length > 2 ? (
-                      <div className="p-3 text-center text-gray-500">No cities found</div>
-                    ) : null}
-                  </div>
-                )}
+                      </AutocompleteItem>
+                    )}
+                  </Autocomplete>
+                </div>
               </div>
             </div>
           </div>
@@ -641,7 +704,7 @@ function handleClickOutside(event: MouseEvent) {
 
         {/* User Location Display */}
         {showUserLocationBadge && userCity && (
-          <div className="mb-4 flex items-center justify-between rounded-lg">
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-white">
             <div className="flex items-center">
               <MapPinIcon className="h-4 w-4 text-gray-500 mr-2" />
               <span className="text-gray-700 text-sm">Location: {userCity}</span>
