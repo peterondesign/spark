@@ -104,3 +104,38 @@ export const blogPageMetadata = generateMetadata({
   ],
   type: 'website'
 });
+
+// Added a utility function to generate metadata for blog posts dynamically
+export async function generateBlogPostMetadata({ params }: { params: { slug: string } }, getPost: Function) {
+  const post = await getPost(params.slug);
+
+  if (!post) {
+    return generateMetadata({
+      title: 'Blog Post Not Found | Spark',
+      description: 'The blog post you\'re looking for could not be found.',
+      path: `/blog/${params.slug}`
+    });
+  }
+
+  const metaDescription = post.excerpt
+    ? post.excerpt.substring(0, 155) + (post.excerpt.length > 155 ? '...' : '')
+    : `Read our article about ${post.title} and discover valuable insights for your relationship.`;
+
+  const publishDate = post.publishedAt ? new Date(post.publishedAt).toISOString() : new Date().toISOString();
+
+  return generateMetadata({
+    title: `${post.title} | Dating Advice`,
+    description: metaDescription,
+    path: `/blog/${params.slug}`,
+    image: post.mainImage?.asset?.url || '/dateideas.png',
+    publishedTime: publishDate,
+    modifiedTime: post.updatedAt || publishDate,
+    type: 'article',
+    keywords: [
+      ...(post.categories || []),
+      'dating advice',
+      'relationship tips',
+      'couple insights'
+    ]
+  });
+}
