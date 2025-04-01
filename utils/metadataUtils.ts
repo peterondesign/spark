@@ -105,6 +105,20 @@ export const blogPageMetadata = generateMetadata({
   type: 'website'
 });
 
+// Added metadata for the Terms page
+export const termsPageMetadata = generateMetadata({
+  title: 'Terms of Service & Privacy Policy | Spark',
+  description: 'Read our Terms of Service and Privacy Policy. Learn about how we collect, use, and protect your information when using our date ideas platform.',
+  path: '/terms',
+  keywords: [
+    'terms of service',
+    'privacy policy',
+    'legal information',
+    'data protection',
+    'user agreement'
+  ],
+});
+
 // Added a utility function to generate metadata for blog posts dynamically
 export async function generateBlogPostMetadata({ params }: { params: { slug: string } }, getPost: Function) {
   const post = await getPost(params.slug);
