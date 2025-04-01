@@ -23,7 +23,7 @@ import { City } from "country-state-city";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { useAsyncList } from "@react-stately/data";
 
-// Removed metadata export as it's not allowed in client components
+// DO NOT export metadata from this client component - it's now moved to metadata.ts
 
 interface DateIdea {
   id: number;

@@ -7,10 +7,16 @@ import CronitorInitializer from './components/CronitorInitializer';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
-// Default metadata that will be used as fallback when no metadata is defined in page
+// Base metadata that can be extended by individual pages
+// Each page should define its own unique title and description
 export const metadata: Metadata = {
-  title: "Date Ideas Near You - Personalised For You Two",
-  description: "Discover unique and memorable date ideas tailored just for you",
+  // Default title and description will be overridden by page-specific values
+  // These act only as a fallback and should rarely be used directly
+  title: {
+    template: '%s | Spark - Date Ideas',
+    default: 'Spark - Personalized Date Ideas For Couples',
+  },
+  description: 'Discover personalized date ideas and experiences for couples.',
   keywords: [
     "stay at home date ideas",
     "ideal first date answer",
@@ -57,18 +63,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-
-  
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="alternate" hrefLang="en" href="https://www.sparkus.cc/" />
-        <link rel="alternate" hrefLang="de" href="https://www.sparkus.cc/de/" />
-        
-        {/* GetYourGuide Analytics */}
-        <script async defer src="https://widget.getyourguide.com/dist/pa.umd.production.min.js" data-gyg-partner-id="5QQHAHP"></script>
+        {/* 
+          Proper implementation of hreflang attributes
+          Each specific page should define its own set of alternates in its metadata
+          Here we define only the root alternates
+        */}
+        <link 
+          rel="canonical" 
+          href="https://www.sparkus.cc/" 
+        />
+        {/* These will be properly extended by each page's metadata.alternates */}
       </head>
-      <body>
+      <body className={plusJakartaSans.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

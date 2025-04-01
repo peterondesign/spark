@@ -13,12 +13,23 @@ import PageTitle from '../components/PageTitle';
 import { PAGE_TITLES } from '../utils/titleUtils';
 import Image from 'next/image';
 import { useClipboard } from 'use-clipboard-copy';
-import { gapi } from 'gapi-script';
 import { favoritesService } from '../services/favoritesService';
+import { generateMetadata } from "../../utils/metadataUtils";
+
+const metadata = generateMetadata({
+  title: 'Date Night Calendar | Plan Your Perfect Dates',
+  description: 'Organize and schedule your date ideas with our interactive date night calendar. Plan ahead, share with your partner, and never miss a special moment together.',
+  path: '/calendar',
+  keywords: [
+    'date night planner',
+    'couple calendar',
+    'date scheduler',
+    'relationship planning',
+    'date night organizer'
+  ],
+});
 
 import { DateIdea } from '../services/favoritesService';
-
-// Using the imported DateIdea type directly instead of creating a local interface
 
 interface CalendarEvent extends Event {
   dateIdea?: DateIdea;
@@ -80,7 +91,10 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleGoogleCalendarExport = async () => {
+    if (typeof window === 'undefined') return; // Ensure this runs only in the browser
+
     try {
+      const { gapi } = await import('gapi-script');
       const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
       const SCOPES = "https://www.googleapis.com/auth/calendar.events";
@@ -94,7 +108,7 @@ const CalendarPage: React.FC = () => {
         });
 
         const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance.isSignedIn.get()) {
+        if (!authInstance || !authInstance.isSignedIn.get()) {
           await authInstance.signIn();
         }
 

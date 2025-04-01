@@ -6,14 +6,38 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { HeartIcon, MapPinIcon, StarIcon } from "../../components/icons";
 import SaveButton from "../../components/SaveButton";
-import { supabase } from "@/utils/supabaseClient";
 import { getImageUrl } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
 import Head from 'next/head';
 import { useAsyncList } from "@react-stately/data";
 import { City, POPULAR_CITIES, CityItem } from "../../../utils/cityService";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
+import { supabase } from "@/utils/supabaseClient";
 
+// Define DateIdea interface
+interface DateIdea {
+  id: string;
+  title: string;
+  category: string;
+  rating?: number;
+  location?: string;
+  description?: string;
+  price?: string;
+  duration?: string;
+  slug: string;
+  image: string;
+  priceLevel?: number;
+  bestForStage?: string;
+  tips?: string;
+  mood?: string;
+  timeOfDay?: string;
+  idealFor?: string;
+  relatedDateIdeas?: string[];
+  longDescription?: string;
+  images?: string[];
+}
+
+// Define Experience interface
 interface Experience {
   title: string;
   price: string;
@@ -21,30 +45,7 @@ interface Experience {
   reviewCount: string;
   imageUrl: string;
   link: string;
-  isRelevant?: boolean;
-}
-
-// Simplified DateIdea interface
-interface DateIdea {
-  id: number;
-  title: string;
-  category: string;
-  rating: number;
-  location: string;
-  description: string;
-  price: string;
-  duration: string;
-  slug: string;
-  image: string;
-  priceLevel?: number;
-  bestForStage?: string;
-  tips?: string | null;
-  idealFor?: string[];
-  relatedDateIdeas?: string[];
-  longDescription?: string;
-  images?: string[];
-  mood?: string;
-  timeOfDay?: string;
+  isRelevant: boolean;
 }
 
 export default function DateIdeaDetails() {

@@ -346,9 +346,6 @@ export default function Favorites() {
         <Header />
         <PageTitle title={PAGE_TITLES.FAVORITES} />
 
-
-
-
         {/* Favorites Content */}
         <div className="container mx-auto py-8 px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
@@ -423,9 +420,6 @@ export default function Favorites() {
             </div>
           )}
         </div>
-
-
-
       </div>
       <Footer />
     </>

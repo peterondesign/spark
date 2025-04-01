@@ -5,8 +5,20 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { generateMetadata } from "../../utils/metadataUtils";
 
-
+export const metadata = generateMetadata({
+  title: 'Terms of Service & Privacy Policy | Spark',
+  description: 'Read our Terms of Service and Privacy Policy. Learn about how we collect, use, and protect your information when using our date ideas platform.',
+  path: '/terms',
+  keywords: [
+    'terms of service',
+    'privacy policy',
+    'legal information',
+    'data protection',
+    'user agreement'
+  ],
+});
 
 export default function Terms() {
 

@@ -8,7 +8,6 @@ import Footer from '../components/Footer';
 import { getPosts } from '../../lib/sanity';
 import Head from 'next/head';
 
-
 interface Post {
   _id: string;
   title: string;

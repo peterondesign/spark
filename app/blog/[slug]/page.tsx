@@ -8,12 +8,51 @@ import Footer from '../../components/Footer';
 import { getPost, getPosts } from '../../../lib/sanity';
 import { PortableText } from '@portabletext/react';
 import Head from 'next/head';
+import { generateMetadata as generatePageMetadata } from "../../../utils/metadataUtils";
+
+// Generate dynamic metadata for each blog post
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const post = await getPost(params.slug);
+  
+  if (!post) {
+    return generatePageMetadata({
+      title: 'Blog Post Not Found | Spark',
+      description: 'The blog post you\'re looking for could not be found.',
+      path: `/blog/${params.slug}`
+    });
+  }
+  
+  // Create a dynamic meta description based on the post's excerpt
+  const metaDescription = post.excerpt 
+    ? post.excerpt.substring(0, 155) + (post.excerpt.length > 155 ? '...' : '')
+    : `Read our article about ${post.title} and discover valuable insights for your relationship.`;
+  
+  // Get publish date for structured data
+  const publishDate = post.publishedAt ? new Date(post.publishedAt).toISOString() : new Date().toISOString();
+  
+  return generatePageMetadata({
+    title: `${post.title} | Dating Advice`,
+    description: metaDescription,
+    path: `/blog/${params.slug}`,
+    image: post.mainImage?.asset?.url || '/dateideas.png',
+    publishedTime: publishDate,
+    modifiedTime: post.updatedAt || publishDate,
+    type: 'article',
+    keywords: [
+      ...(post.categories || []),
+      'dating advice',
+      'relationship tips',
+      'couple insights'
+    ]
+  });
+}
 
 interface Post {
   _id: string;
   title: string;
   slug: { current: string };
   publishedAt: string;
+  updatedAt?: string;
   excerpt: string;
   mainImage?: { asset: { url: string } }; // Ensure mainImage is an object with a URL
   body?: any;
@@ -59,7 +98,7 @@ export default function BlogPostPage() {
     "description": post.excerpt,
     "image": post.mainImage?.asset?.url || "",
     "datePublished": post.publishedAt,
-    "dateModified": post.publishedAt,
+    "dateModified": post.updatedAt || post.publishedAt,
     "author": {
       "@type": "Person",
       "name": post.author?.name || "Spark Team",
@@ -190,7 +229,7 @@ export default function BlogPostPage() {
               <div>
                 <p className="font-medium text-lg text-gray-900">{post.author?.name || 'Anonymous'}</p>
                 <p className="text-gray-500">
-                  {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                  {post.publishedAt && new Date(post.publishedAt).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',

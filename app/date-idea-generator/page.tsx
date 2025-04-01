@@ -10,6 +10,7 @@ import PageTitle from "../components/PageTitle";
 import { PAGE_TITLES } from "../utils/titleUtils";
 import Link from "next/link";
 import Head from "next/head";
+import { generateMetadata } from "../../utils/metadataUtils";
 
 // Define DateIdea type
 interface DateIdea {
