@@ -92,6 +92,25 @@ export default function RootLayout({
             `
           }}
         />
+
+        {/* Google Analytics tracking scripts */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-EG77KJZHS4"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-EG77KJZHS4');
+            `
+          }}
+        />
+
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
