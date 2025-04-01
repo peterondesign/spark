@@ -3,7 +3,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
 import { ThemeProvider } from '@/components/theme-provider';
-import CronitorInitializer from './components/CronitorInitializer';
+import CronitorScript from './components/CronitorScript';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
@@ -76,15 +76,6 @@ export default function RootLayout({
           href="https://www.sparkus.cc/"
         />
         {/* These will be properly extended by each page's metadata.alternates */}
-        {/* Cronitor RUM */}
-        <script async src="https://rum.cronitor.io/script.js"></script>
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            window.cronitor = window.cronitor || function() { (window.cronitor.q = window.cronitor.q || []).push(arguments); };
-            cronitor('config', {clientKey: 'c410217d0de023a4f93f18e5550cf62a'});
-          `
-        }} />
-
       </head>
       <body className={plusJakartaSans.className}>
         <ThemeProvider
@@ -93,7 +84,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <CronitorInitializer />
+          <CronitorScript />
           {children}
         </ThemeProvider>
       </body>
