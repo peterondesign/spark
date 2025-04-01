@@ -71,11 +71,20 @@ export default function RootLayout({
           Each specific page should define its own set of alternates in its metadata
           Here we define only the root alternates
         */}
-        <link 
-          rel="canonical" 
-          href="https://www.sparkus.cc/" 
+        <link
+          rel="canonical"
+          href="https://www.sparkus.cc/"
         />
         {/* These will be properly extended by each page's metadata.alternates */}
+        {/* Cronitor RUM */}
+        <script async src="https://rum.cronitor.io/script.js"></script>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            window.cronitor = window.cronitor || function() { (window.cronitor.q = window.cronitor.q || []).push(arguments); };
+            cronitor('config', {clientKey: 'c410217d0de023a4f93f18e5550cf62a'});
+          `
+        }} />
+
       </head>
       <body className={plusJakartaSans.className}>
         <ThemeProvider
