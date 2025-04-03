@@ -37,7 +37,7 @@ interface DateIdea {
   images?: string[];
 }
 
-// Define Experience interface
+// Define Experience interface with source information
 interface Experience {
   title: string;
   price: string;
@@ -46,6 +46,14 @@ interface Experience {
   imageUrl: string;
   link: string;
   isRelevant: boolean;
+  source: string; // Added source field to track where the experience came from
+}
+
+// Define SearchSource interface to track search progress
+interface SearchSource {
+  name: string;
+  status: 'pending' | 'searching' | 'complete' | 'error';
+  priority: number; // Lower number = higher priority
 }
 
 export default function DateIdeaDetails() {
@@ -68,30 +76,45 @@ export default function DateIdeaDetails() {
   const [loadingExperiences, setLoadingExperiences] = useState(false);
   const [experiencesWarning, setExperiencesWarning] = useState<string>("");
 
+  // Track search sources and their status
+  const [searchSources, setSearchSources] = useState<SearchSource[]>([
+    { name: 'GetYourGuide', status: 'pending', priority: 1 },
+    { name: 'Google Maps', status: 'pending', priority: 2 },
+    { name: 'Eventbrite', status: 'pending', priority: 3 },
+    { name: 'Timeout', status: 'pending', priority: 4 },
+    { name: 'Meetup', status: 'pending', priority: 5 },
+    { name: 'Fever', status: 'pending', priority: 6 },
+    { name: 'Luma', status: 'pending', priority: 7 }
+  ]);
+
+  // Track overall search progress
+  const [searchProgress, setSearchProgress] = useState({
+    currentSource: '',
+    percentComplete: 0,
+    totalSources: 7,
+    completedSources: 0
+  });
+
   // Add cityList for autocomplete functionality similar to home page
   const cityList = useAsyncList<CityItem>({
-    async load({ signal, filterText = "" }) { 
+    async load({ signal, filterText = "" }) {
       const cities = City.getAllCities();
-      
-      // Create a unique identifier for each city by combining name and country code
+
       let filteredCities = cities
         .filter((city) => city.name.toLowerCase().includes(filterText.toLowerCase()))
         .map(city => ({
           name: city.name,
           countryCode: city.countryCode,
           isPopular: POPULAR_CITIES.includes(city.name) ? true : false,
-          id: `${city.name}-${city.countryCode}` // Create unique ID to avoid duplicate keys
+          id: `${city.name}-${city.countryCode}`
         }));
-        
-      // Remove duplicates by city name (keeping the popular one if exists)
+
       const uniqueCities = new Map<string, CityItem>();
-      
-      // First add all popular cities to the map
+
       filteredCities
         .filter(city => city.isPopular)
         .forEach(city => uniqueCities.set(city.name.toLowerCase(), city));
-      
-      // Then add non-popular cities if not already in the map
+
       filteredCities
         .filter(city => !city.isPopular)
         .forEach(city => {
@@ -99,25 +122,21 @@ export default function DateIdeaDetails() {
             uniqueCities.set(city.name.toLowerCase(), city);
           }
         });
-      
-      // Convert back to array and sort: popular cities first, then alphabetically
+
       filteredCities = Array.from(uniqueCities.values())
         .sort((a, b) => {
-          // First sort by popularity
           if (a.isPopular && !b.isPopular) return -1;
           if (!a.isPopular && b.isPopular) return 1;
-          // Then alphabetically by name
           return a.name.localeCompare(b.name);
         })
-        .slice(0, 20); // Limit to 20 results
+        .slice(0, 20);
 
       return {
         items: filteredCities,
       };
     },
   });
-  
-  // Add these handlers for city selection
+
   const handleCitySelect = (city: CityItem) => {
     setUserCity(city.name);
     localStorage.setItem("userCity", city.name);
@@ -138,7 +157,6 @@ export default function DateIdeaDetails() {
         }
       } catch (error) {
         console.error('Error detecting location:', error);
-        // Fall back to manual city input if detection fails
         const savedCity = localStorage.getItem("userCity");
         if (savedCity) {
           setUserCity(savedCity);
@@ -150,14 +168,12 @@ export default function DateIdeaDetails() {
       }
     };
 
-    // Only detect location if we don't have a saved city
     if (!localStorage.getItem("userCity")) {
       detectLocation();
     }
   }, []);
 
   useEffect(() => {
-    // Check if user has set a city in localStorage
     const savedCity = localStorage.getItem("userCity");
     setUserCity(savedCity);
     setShowLocationPrompt(!savedCity);
@@ -179,7 +195,6 @@ export default function DateIdeaDetails() {
         }
 
         if (data) {
-          // Process the data
           const dateIdeaData: DateIdea = {
             id: data.id,
             title: data.title,
@@ -204,14 +219,11 @@ export default function DateIdeaDetails() {
 
           setDateIdea(dateIdeaData);
 
-          // Load the main image and all other images
           const allImages = [data.image];
           if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-            // Add additional images if they exist
             allImages.push(...data.images.filter((img: any) => img !== data.image));
           }
 
-          // Get optimized image URLs for all images
           const imageUrlPromises = allImages.map(img =>
             getImageUrl(img, `${data.title} ${data.category}`, 1200, 800)
           );
@@ -234,90 +246,140 @@ export default function DateIdeaDetails() {
   useEffect(() => {
     const fetchExperiences = async () => {
       if (!userCity || !dateIdea?.title) return;
-      
+
       setLoadingExperiences(true);
+
+      setSearchSources(prev => prev.map(source => ({ ...source, status: 'pending' })));
+      setSearchProgress({
+        currentSource: 'GetYourGuide',
+        percentComplete: 0,
+        totalSources: 7,
+        completedSources: 0
+      });
+
+      let allExperiences: Experience[] = [];
+
       try {
-        // Step 1: Scrape the search results page to get activities
-        const searchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
-        const response = await fetch(`/api/scrape?url=${encodeURIComponent(searchUrl)}&method=selenium`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.status}`);
+        setSearchSources(prev =>
+          prev.map(source => source.name === 'GetYourGuide' ? { ...source, status: 'searching' } : source)
+        );
+        setSearchProgress(prev => ({ ...prev, currentSource: 'GetYourGuide' }));
+
+        const gygSearchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
+        const gygResponse = await fetch(`/api/scrape?url=${encodeURIComponent(gygSearchUrl)}&method=selenium`);
+
+        if (!gygResponse.ok) {
+          throw new Error(`Failed to fetch from GetYourGuide: ${gygResponse.status}`);
         }
-        
-        const data = await response.json();
-        
-        // Process the activity data from the scraper
-        if (data && data.activities && data.activities.length > 0) {
-          // Filter activities to ensure they're relevant to the date idea
-          const relevantActivities = data.activities.filter((activity: any) => {
-            // Check if the activity title is relevant to the date idea
+
+        const gygData = await gygResponse.json();
+
+        setSearchSources(prev =>
+          prev.map(source => source.name === 'GetYourGuide' ? { ...source, status: 'complete' } : source)
+        );
+        setSearchProgress(prev => ({
+          ...prev,
+          completedSources: prev.completedSources + 1,
+          percentComplete: Math.round(((prev.completedSources + 1) / prev.totalSources) * 100),
+          currentSource: 'Google Maps'
+        }));
+
+        if (gygData && gygData.activities && gygData.activities.length > 0) {
+          const relevantActivities = gygData.activities.filter((activity: any) => {
             const activityTitle = activity.title?.toLowerCase() || '';
             const dateIdeaTitle = dateIdea.title.toLowerCase();
-            const dateIdeaWords = dateIdeaTitle.split(/\s+/).filter(word => word.length > 3);
-            
-            // Check if any significant words from the date idea appear in the activity title
-            const isRelevant = dateIdeaWords.some(word => activityTitle.includes(word));
+            const dateIdeaWords = dateIdeaTitle.split(/\s+/).filter((word: string) => word.length > 3);
+
+            const isRelevant = dateIdeaWords.some((word: string) => activityTitle.includes(word));
             return isRelevant;
           });
-          
-          // Map the activities to our Experience format
-          const processedExperiences: Experience[] = (relevantActivities.length > 0 ? relevantActivities : data.activities)
+
+          const gygExperiences: Experience[] = (relevantActivities.length > 0 ? relevantActivities : gygData.activities)
             .map((activity: any) => {
-              // The URLs should already be properly formatted from the Python scraper
               return {
                 title: activity.title || `${dateIdea.title} in ${userCity}`,
-                price: activity.price && activity.price !== "Price not available" 
-                  ? activity.price 
+                price: activity.price && activity.price !== "Price not available"
+                  ? activity.price
                   : "Check website for prices",
                 rating: activity.rating || "4.5",
                 reviewCount: activity.reviews || "100+",
                 imageUrl: activity.image || dateIdea.image,
                 link: activity.url || `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3?partner_id=5QQHAHP&utm_medium=online_publisher`,
-                isRelevant: relevantActivities.includes(activity)
+                isRelevant: relevantActivities.includes(activity),
+                source: 'GetYourGuide'
               };
             });
-          
-          
-          // Add a warning message if we couldn't find relevant activities
-          if (relevantActivities.length === 0 && data.activities.length > 0) {
-            setExperiencesWarning(
-              "We couldn't find activities that exactly match this date idea, but here are some alternatives."
+
+          allExperiences = [...gygExperiences];
+
+          setExperiences(allExperiences);
+        }
+
+        const otherSources = ['Google Maps', 'Eventbrite', 'Timeout', 'Meetup', 'Fever', 'Luma'];
+
+        for (const source of otherSources) {
+          try {
+            setSearchSources(prev =>
+              prev.map(s => s.name === source ? { ...s, status: 'searching' } : s)
             );
-          } else {
-            setExperiencesWarning("");
+            setSearchProgress(prev => ({ ...prev, currentSource: source }));
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            setSearchSources(prev =>
+              prev.map(s => s.name === source ? { ...s, status: 'complete' } : s)
+            );
+            setSearchProgress(prev => ({
+              ...prev,
+              completedSources: prev.completedSources + 1,
+              percentComplete: Math.round(((prev.completedSources + 1) / prev.totalSources) * 100),
+              currentSource: otherSources[otherSources.indexOf(source) + 1] || 'Complete'
+            }));
+
+          } catch (error) {
+            console.error(`Error searching ${source}:`, error);
+            setSearchSources(prev =>
+              prev.map(s => s.name === source ? { ...s, status: 'error' } : s)
+            );
           }
-          
-          setExperiences(processedExperiences);
-        } else {
-          // Fall back to a default experience if no activities were found
-          setExperiences([{
+        }
+
+        if (allExperiences.length === 0) {
+          allExperiences = [{
             title: `${dateIdea.title} in ${userCity}`,
             price: "Check website for prices",
             rating: "4.5",
             reviewCount: "100+",
             imageUrl: dateIdea.image,
             link: `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3?partner_id=5QQHAHP&utm_medium=online_publisher`,
-            isRelevant: true
-          }]);
+            isRelevant: true,
+            source: 'GetYourGuide'
+          }];
           setExperiencesWarning("We couldn't find specific activities for this date idea.");
         }
+
+        setExperiences(allExperiences);
+
       } catch (error) {
         console.error('Error fetching experiences:', error);
-        // Even on error, show a generic experience option
+
         const searchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
-        setExperiences([{
+        allExperiences = [{
           title: `${dateIdea.title} in ${userCity}`,
           price: "Check website for prices",
           rating: "4.5",
           reviewCount: "100+",
           imageUrl: dateIdea.image,
           link: `${searchUrl}?partner_id=5QQHAHP&utm_medium=online_publisher`,
-          isRelevant: true
-        }]);
+          isRelevant: true,
+          source: 'GetYourGuide'
+        }];
+        setExperiences(allExperiences);
         setExperiencesWarning("Something went wrong while fetching activities. Here's a general option.");
+
       } finally {
         setLoadingExperiences(false);
+        setSearchProgress(prev => ({ ...prev, currentSource: 'Complete', percentComplete: 100 }));
       }
     };
 
@@ -327,7 +389,7 @@ export default function DateIdeaDetails() {
   }, [userCity, dateIdea]);
 
   useEffect(() => {
-function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent) {
       if (suggestionRef.current && inputRef.current &&
         !suggestionRef.current.contains(event.target as Node) &&
         !inputRef.current.contains(event.target as Node)) {
@@ -340,7 +402,6 @@ function handleClickOutside(event: MouseEvent) {
     };
   }, []);
 
-  // Debounced city search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (cityInput.trim().length > 2) {
@@ -356,8 +417,6 @@ function handleClickOutside(event: MouseEvent) {
   const fetchCitySuggestions = async (query: string) => {
     setIsLoading(true);
     try {
-      // Using GeoNames API for city suggestions
-      // You may need to register for a free account and replace 'demo' with your username
       const response = await fetch(
         `https://secure.geonames.org/searchJSON?name_startsWith=${encodeURIComponent(query)}&featureClass=P&maxRows=5&username=startboard`
       );
@@ -401,15 +460,14 @@ function handleClickOutside(event: MouseEvent) {
     setShowUserLocationBadge(false);
   };
 
-  // Schema markup for search engines
   const dateIdeaSchema = dateIdea ? {
     "@context": "https://schema.org",
     "@type": "Event",
     "name": dateIdea.title,
     "description": dateIdea.description || dateIdea.longDescription || "",
     "image": imageUrls && imageUrls.length > 0 ? imageUrls[0] : "",
-    "startDate": new Date().toISOString().split('T')[0], // Today's date as a fallback
-    "endDate": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0], // One year from now
+    "startDate": new Date().toISOString().split('T')[0],
+    "endDate": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
     "location": {
       "@type": "Place",
       "name": dateIdea.location,
@@ -435,43 +493,36 @@ function handleClickOutside(event: MouseEvent) {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Skeleton Header */}
         <div className="bg-white shadow-sm">
           <div className="container mx-auto px-4 py-4">
             <div className="h-8 w-28 bg-gray-200 animate-pulse rounded"></div>
           </div>
         </div>
-        
-        {/* Skeleton Main Content */}
+
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Skeleton Breadcrumb */}
           <div className="mb-4 flex gap-2">
             <div className="h-4 w-12 bg-gray-200 animate-pulse rounded"></div>
             <div className="h-4 w-4 bg-gray-200 animate-pulse rounded"></div>
             <div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div>
           </div>
-          
-          {/* Skeleton Main Image */}
+
           <div className="mb-8 rounded-2xl overflow-hidden">
             <div className="h-80 md:h-96 lg:h-[500px] bg-gray-200 animate-pulse"></div>
-            
-            {/* Skeleton Thumbnails */}
+
             <div className="flex gap-2 mt-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-16 w-24 bg-gray-200 animate-pulse rounded"></div>
               ))}
             </div>
           </div>
-          
-          {/* Skeleton Title and Category */}
+
           <div className="mb-6">
             <div className="flex items-center mb-2">
               <div className="h-6 w-24 bg-gray-200 animate-pulse rounded-full"></div>
             </div>
             <div className="h-10 w-3/4 bg-gray-200 animate-pulse rounded mb-2"></div>
           </div>
-          
-          {/* Skeleton Details Card */}
+
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
             <div className="h-7 w-40 bg-gray-200 animate-pulse rounded mb-4"></div>
             <div className="space-y-2">
@@ -480,9 +531,8 @@ function handleClickOutside(event: MouseEvent) {
               <div className="h-4 w-4/6 bg-gray-200 animate-pulse rounded"></div>
             </div>
           </div>
-          
+
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Skeleton Description */}
             <div className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
               <div className="h-7 w-48 bg-gray-200 animate-pulse rounded mb-4"></div>
               <div className="space-y-2">
@@ -491,8 +541,7 @@ function handleClickOutside(event: MouseEvent) {
                 ))}
               </div>
             </div>
-            
-            {/* Skeleton Tips Section */}
+
             <div className="md:w-1/3 bg-gray-100 border border-gray-200 rounded-lg p-6 mb-8">
               <div className="h-7 w-32 bg-gray-200 animate-pulse rounded mb-4"></div>
               <div className="space-y-2">
@@ -501,8 +550,7 @@ function handleClickOutside(event: MouseEvent) {
               </div>
             </div>
           </div>
-          
-          {/* Skeleton Back Button */}
+
           <div className="text-center mt-8 mb-4">
             <div className="inline-block h-12 w-48 bg-gray-200 animate-pulse rounded-full"></div>
           </div>
@@ -548,7 +596,6 @@ function handleClickOutside(event: MouseEvent) {
     );
   };
 
-  // If we don't have any images yet, show a placeholder
   if (imageUrls.length === 0) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -566,12 +613,9 @@ function handleClickOutside(event: MouseEvent) {
           </script>
         </Head>
       )}
-      {/* Navigation - Header */}
       <Header />
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Breadcrumb */}
         <nav className="mb-4 text-sm">
           <ol className="flex items-center space-x-1">
             <li>
@@ -584,7 +628,6 @@ function handleClickOutside(event: MouseEvent) {
           </ol>
         </nav>
 
-        {/* Main Image */}
         <div className="mb-8 relative rounded-2xl overflow-hidden">
           <div className="relative h-80 md:h-96 lg:h-[500px]">
             {imageUrls[activeImage] ? (
@@ -607,7 +650,6 @@ function handleClickOutside(event: MouseEvent) {
             />
           </div>
 
-          {/* Thumbnail Navigation - Only show if we have more than one image */}
           {imageUrls.length > 1 && (
             <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
               {imageUrls.map((img, idx) => (
@@ -629,23 +671,18 @@ function handleClickOutside(event: MouseEvent) {
           )}
         </div>
 
-        {/* Title and Category */}
         <div className="mb-6">
           <div className="flex items-center mb-2">
             <span className="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-0.5 rounded">
               {dateIdea.category}
             </span>
-
           </div>
           <div className="flex items-start justify-between">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{dateIdea.title}</h1>
-            <div className="text-right">
-
-            </div>
+            <div className="text-right"></div>
           </div>
         </div>
 
-        {/* Location Prompt */}
         {showLocationPrompt && (
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
@@ -703,7 +740,6 @@ function handleClickOutside(event: MouseEvent) {
           </div>
         )}
 
-        {/* User Location Display */}
         {showUserLocationBadge && userCity && (
           <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-white">
             <div className="flex items-center">
@@ -722,29 +758,80 @@ function handleClickOutside(event: MouseEvent) {
           </div>
         )}
 
-        {/* Affiliate Link Disclosure */}
         <div className="text-xs text-gray-400 mb-4 italic">
           This page contains affiliate links
         </div>
 
-        {/* Date Details Card */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-
-          {/* GetYourGuide Experiences Section */}
           {userCity ? (
             <div>
               {loadingExperiences ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center p-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500 mr-3"></div>
-                    <div>
-                      <p className="text-gray-700 font-medium">Looking for relevant activities...</p>
-                      <p className="text-xs text-gray-500">Searching across Google, Eventbrite, Timeout, Meetup, Get Your Guide</p>
+                  <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                    <div className="flex items-center mb-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500 mr-3"></div>
+                      <div>
+                        <p className="text-gray-700 font-medium">Looking for relevant activities...</p>
+                        <p className="text-xs text-gray-500">
+                          Searching across GetYourGuide, Google Maps, Eventbrite, Timeout, Meetup, Fever, Luma
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                      <div
+                        className="bg-rose-500 h-2.5 rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${searchProgress.percentComplete}%` }}
+                      ></div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs text-gray-500">
+                      <span>Now searching: {searchProgress.currentSource}</span>
+                      <span>{searchProgress.percentComplete}% complete</span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {searchSources.sort((a, b) => a.priority - b.priority).map(source => (
+                        <div
+                          key={source.name}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            ${source.status === 'complete' ? 'bg-green-100 text-green-800' :
+                              source.status === 'searching' ? 'bg-blue-100 text-blue-800' :
+                                source.status === 'error' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'}`}
+                        >
+                          {source.name}
+                          {source.status === 'complete' && (
+                            <svg className="ml-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {source.status === 'searching' && (
+                            <svg className="ml-1 h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          {source.status === 'error' && (
+                            <svg className="ml-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
+
                   <div className="animate-pulse space-y-4">
-                    {[1, 2].map((i) => (
-                      <div key={i} className="bg-gray-100 rounded-lg p-4 h-24"></div>
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex gap-4 bg-gray-50 rounded-lg p-4">
+                        <div className="bg-gray-200 h-24 w-24 rounded-lg"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -752,9 +839,21 @@ function handleClickOutside(event: MouseEvent) {
                 <div className="space-y-4">
                   {experiencesWarning && (
                     <div className="text-sm bg-amber-50 text-amber-700 p-3 rounded-md mb-3">
-                      We couldn't find a direct match at this time, but here are similar events you will love
+                      {experiencesWarning}
                     </div>
                   )}
+
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {Array.from(new Set(experiences.map(exp => exp.source))).map(source => (
+                      <span
+                        key={source}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                      >
+                        Results from {source}
+                      </span>
+                    ))}
+                  </div>
+
                   {experiences.map((exp, index) => (
                     <a
                       key={index}
@@ -775,7 +874,12 @@ function handleClickOutside(event: MouseEvent) {
                           </div>
                         )}
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-800 mb-2">{exp.title}</h3>
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-800 mb-2">{exp.title}</h3>
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                              via {exp.source}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-4">
                             <span className="text-green-600 font-semibold">{exp.price}</span>
                             {exp.rating && (
@@ -822,7 +926,6 @@ function handleClickOutside(event: MouseEvent) {
 
         <div className="flex flex-col md:flex-row gap-8">
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-            {/* Description */}
             <h2 className="text-xl font-bold text-gray-800 mb-4">About This Date Idea</h2>
             <p className="text-gray-700 mb-6">{dateIdea.description}</p>
 
@@ -832,7 +935,6 @@ function handleClickOutside(event: MouseEvent) {
             )}
           </div>
 
-          {/* Tips Section */}
           {dateIdea.tips && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-8">
               <h2 className="text-lg font-bold text-amber-800 mb-4">
@@ -846,8 +948,6 @@ function handleClickOutside(event: MouseEvent) {
           )}
         </div>
 
-
-        {/* Back to Browse Button */}
         <div className="text-center mt-8 mb-4">
           <Link
             href="/"
