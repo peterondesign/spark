@@ -22,6 +22,8 @@ import Head from 'next/head';
 import { City } from "country-state-city";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { useAsyncList } from "@react-stately/data";
+import CountryCitySelector, { CityItem } from "./components/CountryCitySelector";
+import { POPULAR_CITIES } from "../utils/cityService";
 
 // DO NOT export metadata from this client component - it's now moved to metadata.ts
 
@@ -45,70 +47,7 @@ interface DateIdea {
   longDescription?: string;
 }
 
-// Update the CityItem interface to include the new properties
-interface CityItem {
-  name: string;
-  countryCode: string;
-  isPopular: boolean;
-  id: string; // Add unique ID field
-}
-
-const POPULAR_CITIES = [
-  "New York", "London", "Paris", "Tokyo", "Sydney", 
-  "Los Angeles", "Berlin", "Rome", "Dubai", "Singapore",
-  "Barcelona", "Toronto", "Amsterdam", "Hong Kong", "San Francisco"
-];
-
-export default function Home() {
-  // Move the useAsyncList hook inside the component
-  const cityList = useAsyncList<CityItem>({
-    async load({ signal, filterText = "" }) { 
-      const cities = City.getAllCities();
-      
-      // Create a unique identifier for each city by combining name and country code
-      let filteredCities = cities
-        .filter((city) => city.name.toLowerCase().includes(filterText.toLowerCase()))
-        .map(city => ({
-          name: city.name,
-          countryCode: city.countryCode,
-          isPopular: POPULAR_CITIES.includes(city.name) ? true : false,
-          id: `${city.name}-${city.countryCode}` // Create unique ID to avoid duplicate keys
-        }));
-        
-      // Remove duplicates by city name (keeping the popular one if exists)
-      const uniqueCities = new Map<string, CityItem>();
-      
-      // First add all popular cities to the map
-      filteredCities
-        .filter(city => city.isPopular)
-        .forEach(city => uniqueCities.set(city.name.toLowerCase(), city));
-      
-      // Then add non-popular cities if not already in the map
-      filteredCities
-        .filter(city => !city.isPopular)
-        .forEach(city => {
-          if (!uniqueCities.has(city.name.toLowerCase())) {
-            uniqueCities.set(city.name.toLowerCase(), city);
-          }
-        });
-      
-      // Convert back to array and sort: popular cities first, then alphabetically
-      filteredCities = Array.from(uniqueCities.values())
-        .sort((a, b) => {
-          // First sort by popularity
-          if (a.isPopular && !b.isPopular) return -1;
-          if (!a.isPopular && b.isPopular) return 1;
-          // Then alphabetically by name
-          return a.name.localeCompare(b.name);
-        })
-        .slice(0, 20); // Limit to 20 results
-
-      return {
-        items: filteredCities,
-      };
-    },
-  });
-
+const Home = () => {
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [allDateIdeas, setAllDateIdeas] = useState<DateIdea[]>([]);
   const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
@@ -947,23 +886,21 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right column: Placeholder video */}
+              {/* Right column: Video */}
               <div className="hidden md:block relative h-[350px] rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
-                  <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                    </svg>
-                  </div>
                 </div>
                 <div className="relative h-full w-full">
-                  <Image 
-                    src="/placeholder.jpg" 
-                    alt="Date ideas video preview" 
-                    fill
-                    className="object-cover"
-                    priority
-                  />
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="object-cover h-full w-full"
+                  >
+                    <source src="/SparkIntro.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
               </div>
             </div>
@@ -977,54 +914,15 @@ export default function Home() {
             <div className="flex md:grid overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:grid-cols-5 gap-4">
               {/* City Autocomplete with icon - styled version */}
               <div className="relative group min-w-[200px] md:min-w-0">
-                <label className="text-gray-700 font-medium text-sm block mb-2">City</label>
                 <div className="flex items-center gap-2">
                   <div className="flex-grow">
-                    <Autocomplete<CityItem>
-                      className="w-full"
-                      inputValue={cityList.filterText || ""}
-                      isLoading={cityList.isLoading}
-                      items={cityList.items as CityItem[]}
-                      placeholder="Search for a city..."
-                      variant="bordered"
-                      onInputChange={cityList.setFilterText}
-                      selectedKey={selectedCity ? selectedCity : undefined}
-                      onSelectionChange={key => {
-                        const selected = cityList.items.find(item => item.id === key);
-                        if (selected) {
-                          handleCitySelect(selected);
-                        }
-                      }}
-                      startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
-                      listboxProps={{
-                        itemClasses: {
-                          base: "data-[hover=true]:bg-rose-100 transition-colors",
-                        },
-                      }}
-                      popoverProps={{
-                        classNames: {
-                          content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
-                        }
-                      }}
-                    >
-                      {(item) => (
-                        <AutocompleteItem
-                          key={item.id}
-                          onSelect={() => handleCitySelect(item)}
-                          className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
-                          startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span>{item.name}, {item.countryCode}</span>
-                            {item.isPopular && (
-                              <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
-                            )}
-                          </div>
-                        </AutocompleteItem>
-                      )}
-                    </Autocomplete>
+                    <CountryCitySelector 
+                      onCitySelect={(city) => handleCitySelect(city)}
+                      defaultCity={userCity || undefined}
+                    />
                   </div>
-                  {activeFilters.city && (
+
+                  {/* {activeFilters.city && (
                     <span className="inline-flex items-center px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full whitespace-nowrap">
                       {activeFilters.city}
                       <button 
@@ -1037,7 +935,8 @@ export default function Home() {
                         </svg>
                       </button>
                     </span>
-                  )}
+                  )} */}
+
                 </div>
               </div>
 
@@ -1112,9 +1011,7 @@ export default function Home() {
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className={`h-5 w-5 ml-2 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
+                      viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
@@ -1389,3 +1286,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default Home;

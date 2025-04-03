@@ -6,93 +6,53 @@ import Footer from "../components/Footer";
 import PageTitle from "../components/PageTitle";
 import CityEvents from "../components/CityEvents";
 import { PAGE_TITLES } from "../utils/titleUtils";
-import { City } from "country-state-city";
-import { Autocomplete, AutocompleteItem } from "@heroui/react";
-import { MapPinIcon, StarIcon } from "lucide-react";
-
-// CityItem interface for the autocomplete
-interface CityItem {
-  name: string;
-  countryCode: string;
-  isPopular: boolean;
-  id: string;
-}
-
-// Popular cities list
-const POPULAR_CITIES = [
-  "New York", "London", "Paris", "Tokyo", "Sydney", 
-  "Los Angeles", "Berlin", "Rome", "Dubai", "Singapore",
-  "Barcelona", "Toronto", "Amsterdam", "Hong Kong", "San Francisco"
-];
+import CountryCitySelector from '../components/CountryCitySelector';
+import { CityItem } from '../../utils/cityService';
+import { StarIcon } from "lucide-react";
 
 export default function DateIdeasNearMePage() {
   const [selectedCity, setSelectedCity] = useState<string>("");
+  const [selectedCityInfo, setSelectedCityInfo] = useState<CityItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("romantic activities");
   const [userCity, setUserCity] = useState<string | null>(null);
+  const [userCountry, setUserCountry] = useState<string | null>("US"); // Default to US
   const [locationDetected, setLocationDetected] = useState<boolean>(false);
-  const [popularCities, setPopularCities] = useState<CityItem[]>([]);
   
-  // For the city autocomplete
-  const [cityList, setCityList] = useState<{
-    items: CityItem[];
-    filterText: string;
-    isLoading: boolean;
-  }>({
-    items: [],
-    filterText: '',
-    isLoading: false
-  });
-
   // Set default city to LA if IP detection fails
   const setDefaultCity = () => {
-    const laCity = {
-      name: "Los Angeles",
-      countryCode: "US",
-      isPopular: true,
-      id: "Los Angeles-US"
-    };
-    setSelectedCity(laCity.name);
-    setUserCity(laCity.name);
+    setUserCity("Los Angeles");
+    setUserCountry("US");
+    setSelectedCity("Los Angeles");
   };
-
-  // Initialize cities and detect user location
+  
+  // Initialize and detect user location
   useEffect(() => {
-    // Initialize with popular cities
-    const cities = City.getAllCities().filter(city => 
-      POPULAR_CITIES.includes(city.name)
-    ).map(city => ({
-      name: city.name,
-      countryCode: city.countryCode,
-      isPopular: true,
-      id: `${city.name}-${city.countryCode}`
-    }));
-    
-    setPopularCities(cities);
-    setCityList({
-      items: cities,
-      filterText: '',
-      isLoading: false
-    });
-
     // Detect user location
     const detectLocation = async () => {
       try {
         const savedCity = localStorage.getItem("userCity");
+        const savedCountry = localStorage.getItem("userCountry") || "US";
+        
         if (savedCity) {
           setUserCity(savedCity);
+          setUserCountry(savedCountry);
           setSelectedCity(savedCity);
           setLocationDetected(true);
           return;
         }
-
+        
         const response = await fetch('/api/location');
         const data = await response.json();
         
         if (data.city) {
           setUserCity(data.city);
+          setUserCountry(data.countryCode || "US");
           setSelectedCity(data.city);
           setLocationDetected(true);
           localStorage.setItem("userCity", data.city);
+          if (data.countryCode) {
+            localStorage.setItem("userCountry", data.countryCode);
+          }
         } else {
           setDefaultCity();
         }
@@ -101,72 +61,31 @@ export default function DateIdeasNearMePage() {
         setDefaultCity();
       }
     };
-
+    
     detectLocation();
   }, []);
-
-  // Handle city search
-  const handleCitySearch = async (query: string) => {
-    setCityList(prev => ({ ...prev, filterText: query, isLoading: true }));
-    
-    if (query.trim() === "") {
-      setCityList({
-        items: popularCities,
-        filterText: query,
-        isLoading: false
-      });
-      return;
-    }
-
-    // Filter cities based on the search query
-    const cities = City.getAllCities().filter(city => 
-      city.name.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    // Create a unique identifier for each city
-    const filteredCities = cities.map(city => ({
-      name: city.name,
-      countryCode: city.countryCode,
-      isPopular: POPULAR_CITIES.includes(city.name),
-      id: `${city.name}-${city.countryCode}`
-    }));
-
-    // Remove duplicates
-    const uniqueCities = filteredCities.filter((city, index, self) =>
-      index === self.findIndex(c => c.name === city.name)
-    );
-
-    // Sort by popularity then name
-    const sortedCities = uniqueCities.sort((a, b) => {
-      if (a.isPopular && !b.isPopular) return -1;
-      if (!a.isPopular && b.isPopular) return 1;
-      return a.name.localeCompare(b.name);
-    }).slice(0, 20); // Limit to 20 results
-
-    setCityList({
-      items: sortedCities,
-      filterText: query,
-      isLoading: false
-    });
-  };
-
+  
   // Handle city selection
   const handleCitySelect = (city: CityItem) => {
     setSelectedCity(city.name);
+    setSelectedCityInfo(city);
+    // Store the user's selection
+    localStorage.setItem("userCity", city.name);
+    localStorage.setItem("userCountry", city.countryCode);
   };
-
+  
   // Handle category changes
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCategory(e.target.value);
   };
-
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <PageTitle title={PAGE_TITLES.DATE_IDEAS_NEAR_ME || "Date Ideas Near Me"} />
       
       <Header />
       
-      {/* Hero Section with City Search */}
+      {/* Hero Section with Country-City Search */}
       <section className="relative bg-cover bg-center py-20" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-rose-600/90 to-purple-800/90"></div>
         
@@ -175,62 +94,18 @@ export default function DateIdeasNearMePage() {
             <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Date Ideas Near You</h1>
             <p className="text-xl mb-8">Discover amazing experiences for your next date night</p>
             
-            {/* City Selection */}
+            {/* Country-City Selection */}
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-xl">
-              <div className="mb-4">
-                <label className="block text-white text-left text-sm font-semibold mb-2">City</label>
-                <Autocomplete<CityItem>
-                  className="w-full"
-                  inputValue={cityList.filterText}
-                  isLoading={cityList.isLoading}
-                  items={cityList.items}
-                  placeholder="Search for a city..."
-                  variant="bordered"
-                  onInputChange={handleCitySearch}
-                  selectedKey={selectedCity ? selectedCity : undefined}
-                  onSelectionChange={key => {
-                    const selected = cityList.items.find(item => item.id === key);
-                    if (selected) {
-                      handleCitySelect(selected);
-                    }
-                  }}
-                  startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
-                  listboxProps={{
-                    itemClasses: {
-                      base: "data-[hover=true]:bg-rose-100 transition-colors",
-                    },
-                  }}
-                  classNames={{
-                    base: "max-w-full",
-                  }}
-                  inputProps={{
-                    className: "text-black",
-                  }}
-                  popoverProps={{
-                    classNames: {
-                      content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
-                    }
-                  }}
-                >
-                  {(item) => (
-                    <AutocompleteItem
-                      key={item.id}
-                      className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
-                      startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span>{item.name}, {item.countryCode}</span>
-                        {item.isPopular && (
-                          <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
-                        )}
-                      </div>
-                    </AutocompleteItem>
-                  )}
-                </Autocomplete>
-              </div>
+              <CountryCitySelector
+                onCitySelect={handleCitySelect}
+                selectedCity={selectedCity}
+                defaultCity={userCity || undefined}
+                label="City"
+                className="mb-4"
+              />
               
               {/* Category Selection */}
-              <div className="mb-6">
+              <div className="mb-6 mt-5">
                 <label className="block text-white text-left text-sm font-semibold mb-2">Category</label>
                 <select 
                   value={selectedCategory} 
@@ -249,7 +124,7 @@ export default function DateIdeasNearMePage() {
                 </select>
               </div>
               
-              {locationDetected && (
+              {locationDetected && userCity && (
                 <div className="text-sm text-green-200 mb-4">
                   📍 We detected you're in {userCity}. Showing date ideas near you!
                 </div>

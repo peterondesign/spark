@@ -13,6 +13,7 @@ import { useAsyncList } from "@react-stately/data";
 import { City, POPULAR_CITIES, CityItem } from "../../../utils/cityService";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { supabase } from "@/utils/supabaseClient";
+import CountryCitySelector from "@/app/components/CountryCitySelector";
 
 // Define DateIdea interface
 interface DateIdea {
@@ -65,12 +66,6 @@ export default function DateIdeaDetails() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [userCity, setUserCity] = useState<string | null>(null);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [cityInput, setCityInput] = useState("");
-  const [citySuggestions, setCitySuggestions] = useState<Array<{ city: string, country: string }>>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestionRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [showUserLocationBadge, setShowUserLocationBadge] = useState(false);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [loadingExperiences, setLoadingExperiences] = useState(false);
@@ -105,6 +100,7 @@ export default function DateIdeaDetails() {
         .map(city => ({
           name: city.name,
           countryCode: city.countryCode,
+          countryName: 'Unknown', // Adding required field
           isPopular: POPULAR_CITIES.includes(city.name) ? true : false,
           id: `${city.name}-${city.countryCode}`
         }));
@@ -139,7 +135,14 @@ export default function DateIdeaDetails() {
 
   const handleCitySelect = (city: CityItem) => {
     setUserCity(city.name);
+    // Store both city name and additional information to ensure we display the correct city
     localStorage.setItem("userCity", city.name);
+    localStorage.setItem("userCityData", JSON.stringify({
+      name: city.name,
+      countryCode: city.countryCode,
+      countryName: city.countryName,
+      id: city.id
+    }));
     setShowUserLocationBadge(true);
     setShowLocationPrompt(false);
   };
@@ -147,6 +150,26 @@ export default function DateIdeaDetails() {
   useEffect(() => {
     const detectLocation = async () => {
       try {
+        // First check if we have stored city data
+        const savedCityData = localStorage.getItem("userCityData");
+        if (savedCityData) {
+          const cityData = JSON.parse(savedCityData);
+          setUserCity(cityData.name);
+          setShowUserLocationBadge(true);
+          setShowLocationPrompt(false);
+          return;
+        }
+        
+        // Fall back to just the city name if no city data is stored
+        const savedCity = localStorage.getItem("userCity");
+        if (savedCity) {
+          setUserCity(savedCity);
+          setShowUserLocationBadge(true);
+          setShowLocationPrompt(false);
+          return;
+        }
+
+        // If no saved city, try to detect location
         const response = await fetch('/api/location');
         const data = await response.json();
         if (data.city) {
@@ -168,17 +191,10 @@ export default function DateIdeaDetails() {
       }
     };
 
-    if (!localStorage.getItem("userCity")) {
-      detectLocation();
-    }
+    detectLocation();
   }, []);
 
   useEffect(() => {
-    const savedCity = localStorage.getItem("userCity");
-    setUserCity(savedCity);
-    setShowLocationPrompt(!savedCity);
-    setShowUserLocationBadge(!!savedCity);
-
     const fetchDateIdea = async () => {
       setLoading(true);
       try {
@@ -388,74 +404,11 @@ export default function DateIdeaDetails() {
     }
   }, [userCity, dateIdea]);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (suggestionRef.current && inputRef.current &&
-        !suggestionRef.current.contains(event.target as Node) &&
-        !inputRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (cityInput.trim().length > 2) {
-        fetchCitySuggestions(cityInput);
-      } else {
-        setCitySuggestions([]);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [cityInput]);
-
-  const fetchCitySuggestions = async (query: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://secure.geonames.org/searchJSON?name_startsWith=${encodeURIComponent(query)}&featureClass=P&maxRows=5&username=startboard`
-      );
-      const data = await response.json();
-
-      if (data.geonames) {
-        setCitySuggestions(
-          data.geonames.map((item: any) => ({
-            city: item.name,
-            country: item.countryName
-          }))
-        );
-        setShowSuggestions(true);
-      }
-    } catch (error) {
-      console.error("Error fetching city suggestions:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSelectCity = (city: string) => {
-    setCityInput(city);
-    setShowSuggestions(false);
-  };
-
-  const saveUserCity = () => {
-    if (cityInput.trim()) {
-      localStorage.setItem("userCity", cityInput.trim());
-      setUserCity(cityInput.trim());
-      setShowLocationPrompt(false);
-      setShowUserLocationBadge(true);
-    }
-  };
 
   const clearUserCity = () => {
     localStorage.removeItem("userCity");
+    localStorage.removeItem("userCityData");
     setUserCity(null);
-    setCityInput("");
     setShowLocationPrompt(true);
     setShowUserLocationBadge(false);
   };
@@ -691,50 +644,11 @@ export default function DateIdeaDetails() {
                 <p className="text-sm text-blue-600">Add your city to see date ideas relevant to your location</p>
               </div>
               <div className="flex w-full md:w-auto">
-                <div className="relative w-full">
-                  <Autocomplete<CityItem>
-                    className="w-full"
-                    inputValue={cityList.filterText || ""}
-                    isLoading={cityList.isLoading}
-                    items={cityList.items as CityItem[]}
-                    placeholder="Search for a city..."
-                    variant="bordered"
-                    onInputChange={cityList.setFilterText}
-                    onSelectionChange={key => {
-                      const selected = cityList.items.find(item => item.id === key);
-                      if (selected) {
-                        handleCitySelect(selected);
-                      }
-                    }}
-                    startContent={<MapPinIcon className="h-5 w-5 text-gray-500" />}
-                    listboxProps={{
-                      itemClasses: {
-                        base: "data-[hover=true]:bg-rose-100 transition-colors",
-                      },
-                    }}
-                    popoverProps={{
-                      classNames: {
-                        content: "bg-white rounded-xl shadow-lg p-1 border border-gray-200"
-                      }
-                    }}
-                  >
-                    {(item) => (
-                      <AutocompleteItem
-                        key={item.id}
-                        onSelect={() => handleCitySelect(item)}
-                        className={`capitalize ${item.isPopular ? 'font-medium' : ''}`}
-                        startContent={item.isPopular ? <StarIcon className="h-4 w-4 text-amber-400 mr-1" /> : null}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span>{item.name}, {item.countryCode}</span>
-                          {item.isPopular && (
-                            <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
-                          )}
-                        </div>
-                      </AutocompleteItem>
-                    )}
-                  </Autocomplete>
-                </div>
+                <CountryCitySelector 
+                  onCitySelect={handleCitySelect}
+                  defaultCountry="US"
+                  className="w-full md:w-auto" 
+                />
               </div>
             </div>
           </div>
