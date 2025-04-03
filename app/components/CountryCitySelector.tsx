@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Select, { StylesConfig } from 'react-select';
 import { MapPinIcon, SearchIcon } from "lucide-react";
 import { City, CountryService, POPULAR_CITIES } from "../../utils/cityService";
+
+// Maximum time to wait for IP detection before falling back to popular cities
+const LOCATION_DETECTION_TIMEOUT = 4000; // 4 seconds
 
 export interface CityItem {
   name: string;
@@ -52,6 +55,28 @@ const WELL_KNOWN_CITIES: Record<string, string> = {
 // How often to check/refresh localStorage (24 hours in milliseconds)
 const STORAGE_REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
 
+// Check if we already have location data in localStorage
+const hasStoredLocationData = () => {
+  try {
+    const timestamp = localStorage.getItem("locationDataTimestamp");
+    if (!timestamp) return false;
+    
+    const lastUpdate = parseInt(timestamp, 10);
+    if (isNaN(lastUpdate)) return false;
+    
+    // Check if data is still fresh (less than 24 hours old)
+    if (Date.now() - lastUpdate > STORAGE_REFRESH_INTERVAL) return false;
+    
+    // Verify we have the actual city data
+    const cityData = localStorage.getItem("userCityData");
+    if (!cityData) return false;
+    
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 export default function CountryCitySelector({
   onCitySelect,
   selectedCity,
@@ -68,25 +93,58 @@ export default function CountryCitySelector({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOption, setSelectedOption] = useState<OptionType | null>(null);
   const [ipLocationAttempted, setIpLocationAttempted] = useState(false);
+  const [ipLocationFailed, setIpLocationFailed] = useState(false);
+  const [detectionTimeout, setDetectionTimeout] = useState(false);
 
-  // Initialize component - detect IP location and/or load popular cities
+  // Memoize the renderOptionLabel to prevent unnecessary re-renders
+  const renderOptionLabel = useCallback((city: CityItem) => (
+    <div className="flex items-start justify-between w-full">
+      <div className="flex items-start">
+        <MapPinIcon className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
+        <div>
+          <div>{city.name}</div>
+          <div className="text-xs text-gray-500">{city.countryName}</div>
+        </div>
+      </div>
+      {city.isPopular && (
+        <span className="ml-auto px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
+      )}
+    </div>
+  ), []);
+
+  // Initialize component - detect IP location as the highest priority
   useEffect(() => {
     // Check if localStorage needs to be refreshed
     checkAndClearLocalStorage();
     
-    if (prioritizeIpLocation) {
-      detectIpLocation();
+    // Always attempt to get the IP location first - Airbnb style
+    // Unless we already have fresh data stored
+    if (hasStoredLocationData()) {
+      loadStoredLocation();
     } else {
-      loadPopularCities();
+      detectIpLocation();
+      
+      // Set timeout to prevent hanging if IP detection is slow
+      const timeoutId = setTimeout(() => {
+        setDetectionTimeout(true);
+        // If we haven't loaded anything yet, load popular cities
+        if (isLoading && !selectedOption) {
+          console.log('Location detection timed out after 4s, loading popular cities');
+          loadPopularCities();
+          setIsLoading(false);
+        }
+      }, LOCATION_DETECTION_TIMEOUT);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [prioritizeIpLocation]);
+  }, []);
 
-  // Set default city if provided
+  // Set default city if provided and no IP-based location is set
   useEffect(() => {
-    if (defaultCity && !selectedOption) {
+    if (defaultCity && !selectedOption && (ipLocationFailed || detectionTimeout)) {
       handleCitySearch(defaultCity);
     }
-  }, [defaultCity, selectedOption]);
+  }, [defaultCity, selectedOption, ipLocationFailed, detectionTimeout]);
 
   // Check if localStorage data is stale and clear if needed
   const checkAndClearLocalStorage = () => {
@@ -114,48 +172,64 @@ export default function CountryCitySelector({
     }
   };
 
+  // Load location from localStorage
+  const loadStoredLocation = async () => {
+    try {
+      const savedCityData = localStorage.getItem("userCityData");
+      
+      if (savedCityData) {
+        const cityData = JSON.parse(savedCityData);
+        if (cityData && cityData.name) {
+          console.log('Loading location from localStorage:', cityData.name);
+          // Load existing location
+          const cityOption = {
+            value: cityData.id || `${cityData.name}-${cityData.countryCode}`,
+            label: renderOptionLabel(cityData),
+            data: cityData
+          };
+          
+          setSelectedOption(cityOption);
+          onCitySelect(cityData);
+          setInputValue(cityData.name);
+          
+          // Still load popular cities as options
+          await loadPopularCities();
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // No valid data, continue with detection
+      detectIpLocation();
+    } catch (error) {
+      console.error("Error loading stored location:", error);
+      detectIpLocation();
+    }
+  };
+
   // Detect location from IP address
   const detectIpLocation = async () => {
     setIsLoading(true);
     setIpLocationAttempted(true);
     
     try {
-      // First check if we have a cached location that isn't stale
-      const savedCityData = localStorage.getItem("userCityData");
+      console.log('Attempting to detect location from IP...');
       
-      if (savedCityData) {
-        try {
-          const cityData = JSON.parse(savedCityData);
-          if (cityData && cityData.name) {
-            // Load existing location
-            const cityOption = {
-              value: cityData.id || `${cityData.name}-${cityData.countryCode}`,
-              label: renderOptionLabel(cityData),
-              data: cityData
-            };
-            
-            setSelectedOption(cityOption);
-            onCitySelect(cityData);
-            setInputValue(cityData.name);
-            
-            // Still load popular cities as options
-            await loadPopularCities();
-            return;
-          }
-        } catch (error) {
-          console.error("Error parsing stored city data:", error);
-        }
-      }
+      // No valid cached data, fetch from API with cache control
+      const response = await fetch('/api/location', { 
+        cache: 'no-store',
+        headers: { 'Pragma': 'no-cache' }
+      });
       
-      // No valid cached data, fetch from API
-      const response = await fetch('/api/location');
       if (!response.ok) {
         throw new Error(`Location API error: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Location API response:', data);
       
       if (data.city) {
+        console.log('City detected from IP:', data.city);
         // We have a city from IP detection, find it in our data
         const allCities = City.getAllCities();
         const allCountries = CountryService.getAllCountries();
@@ -201,7 +275,41 @@ export default function CountryCitySelector({
           
           // Save to localStorage with timestamp
           saveToLocalStorage(cityItem);
+          console.log('Location set from IP:', cityItem.name);
+        } else {
+          console.log('No exact city match found, creating approximate city item');
+          // If no exact city match, create a best-effort city item
+          const countryName = data.country || data.country_name || 'Unknown';
+          const countryCode = data.country_code || 'US';
+          
+          const cityItem: CityItem = {
+            name: data.city,
+            countryCode: countryCode,
+            countryName: countryName,
+            isPopular: false,
+            id: `${data.city}-${countryCode}-ip-approx`
+          };
+          
+          // Select this city
+          const cityOption = {
+            value: cityItem.id,
+            label: renderOptionLabel(cityItem),
+            data: cityItem
+          };
+          
+          setSelectedOption(cityOption);
+          onCitySelect(cityItem);
+          setInputValue(cityItem.name);
+          
+          // Save to localStorage with timestamp
+          saveToLocalStorage(cityItem);
+          console.log('Approximate location set from IP:', cityItem.name);
         }
+      } else {
+        // IP detection didn't return a city
+        console.log('IP detection failed: No city in response');
+        setIpLocationFailed(true);
+        throw new Error("IP detection didn't return a city");
       }
       
       // Load popular cities as options (regardless of IP detection success)
@@ -210,6 +318,7 @@ export default function CountryCitySelector({
     } catch (error) {
       console.error('Error detecting IP location:', error);
       // Fall back to popular cities if IP detection fails
+      setIpLocationFailed(true);
       await loadPopularCities();
     } finally {
       setIsLoading(false);
@@ -346,22 +455,6 @@ export default function CountryCitySelector({
     }
   };
 
-  // Render option label with city and country name
-  const renderOptionLabel = (city: CityItem) => (
-    <div className="flex items-start justify-between w-full">
-      <div className="flex items-start">
-        <MapPinIcon className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
-        <div>
-          <div>{city.name}</div>
-          <div className="text-xs text-gray-500">{city.countryName}</div>
-        </div>
-      </div>
-      {city.isPopular && (
-        <span className="ml-auto px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Popular</span>
-      )}
-    </div>
-  );
-
   // Handle city search filtering
   const handleCitySearch = (query: string) => {
     setInputValue(query);
@@ -472,6 +565,23 @@ export default function CountryCitySelector({
     saveToLocalStorage(option.data);
   };
 
+  // Force a reload of IP detection
+  const retryIpDetection = () => {
+    setIsLoading(true);
+    setIpLocationFailed(false);
+    setDetectionTimeout(false);
+    setIpLocationAttempted(false);
+    
+    // Clear existing data
+    localStorage.removeItem("userCity");
+    localStorage.removeItem("userCountry");
+    localStorage.removeItem("userCityData");
+    localStorage.removeItem("locationDataTimestamp");
+    
+    // Retry detection
+    detectIpLocation();
+  };
+
   // Custom styles for react-select
   const customStyles: StylesConfig = {
     control: (base) => ({
@@ -507,11 +617,11 @@ export default function CountryCitySelector({
     }),
   };
 
-  // Render component with auto-detection notice if trying IP location
+  // Render component with auto-detection notice and retry button
   return (
     <div className={`${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="text-xs text-gray-500 block mb-1">
           {label}
         </label>
       )}
@@ -529,7 +639,7 @@ export default function CountryCitySelector({
           inputValue={inputValue}
           isLoading={isLoading}
           isSearchable={true}
-          placeholder={prioritizeIpLocation && !ipLocationAttempted ? "Detecting your location..." : "Search for a city..."}
+          placeholder={isLoading && !inputValue ? "Detecting your location..." : "Search for a city..."}
           noOptionsMessage={() => "No cities found"}
           styles={customStyles}
           className="react-select"
@@ -540,9 +650,22 @@ export default function CountryCitySelector({
             ),
           }}
         />
-        {prioritizeIpLocation && isLoading && !selectedOption && (
+        
+        {isLoading && !selectedOption && !inputValue && (
           <div className="text-xs text-gray-500 mt-1 ml-1">
-            Attempting to detect your location...
+            Using your current location
+          </div>
+        )}
+        
+        {(ipLocationFailed || detectionTimeout) && !selectedOption && (
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+            <span>Unable to detect your location</span>
+            <button 
+              onClick={retryIpDetection}
+              className="text-rose-500 hover:text-rose-600 font-medium"
+            >
+              Retry
+            </button>
           </div>
         )}
       </div>

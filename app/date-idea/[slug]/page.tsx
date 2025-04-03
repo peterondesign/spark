@@ -152,44 +152,81 @@ export default function DateIdeaDetails() {
   useEffect(() => {
     const detectLocation = async () => {
       try {
-        // First check if we have stored city data
+        setShowLocationPrompt(false); // Hide prompt initially while detecting
+
+        // Try to detect location with IP first
+        const response = await fetch('/api/location');
+        if (!response.ok) {
+          throw new Error(`Location API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.city) {
+          console.log('📍 Location detected from IP:', data.city);
+          setUserCity(data.city);
+          
+          // Save both city name and country code
+          localStorage.setItem("userCity", data.city);
+          localStorage.setItem("userCountry", data.country_code || "");
+          localStorage.setItem("userCityData", JSON.stringify({
+            name: data.city,
+            countryCode: data.country_code || "",
+            countryName: data.country || data.country_name || "",
+            id: `${data.city}-${data.country_code || ""}-ip`
+          }));
+          
+          localStorage.setItem("locationDataTimestamp", Date.now().toString());
+          setShowUserLocationBadge(true);
+          return;
+        }
+        
+        // If IP detection failed, try localStorage
         const savedCityData = localStorage.getItem("userCityData");
         if (savedCityData) {
           const cityData = JSON.parse(savedCityData);
+          console.log('📍 Location loaded from storage:', cityData.name);
           setUserCity(cityData.name);
           setShowUserLocationBadge(true);
-          setShowLocationPrompt(false);
           return;
         }
         
         // Fall back to just the city name if no city data is stored
         const savedCity = localStorage.getItem("userCity");
         if (savedCity) {
+          console.log('📍 City name loaded from storage:', savedCity);
           setUserCity(savedCity);
           setShowUserLocationBadge(true);
-          setShowLocationPrompt(false);
           return;
         }
-
-        // If no saved city, try to detect location
-        const response = await fetch('/api/location');
-        const data = await response.json();
-        if (data.city) {
-          setUserCity(data.city);
-          localStorage.setItem("userCity", data.city);
-          setShowUserLocationBadge(true);
-          setShowLocationPrompt(false);
-        }
+        
+        // If we get here, we couldn't detect location
+        console.log('📍 No location detected, showing prompt');
+        setShowLocationPrompt(true);
       } catch (error) {
         console.error('Error detecting location:', error);
+        
+        // Try localStorage as fallback after error
+        const savedCityData = localStorage.getItem("userCityData");
+        if (savedCityData) {
+          try {
+            const cityData = JSON.parse(savedCityData);
+            setUserCity(cityData.name);
+            setShowUserLocationBadge(true);
+            return;
+          } catch (e) {
+            console.error('Error parsing saved city data:', e);
+          }
+        }
+        
         const savedCity = localStorage.getItem("userCity");
         if (savedCity) {
           setUserCity(savedCity);
           setShowUserLocationBadge(true);
-          setShowLocationPrompt(false);
-        } else {
-          setShowLocationPrompt(true);
+          return;
         }
+        
+        setShowLocationPrompt(true);
       }
     };
 
@@ -742,7 +779,8 @@ export default function DateIdeaDetails() {
                 <CountryCitySelector 
                   onCitySelect={handleCitySelect}
                   defaultCountry="US"
-                  className="w-full md:w-auto" 
+                  className="w-full md:w-auto"
+                  prioritizeIpLocation={true} 
                 />
               </div>
             </div>

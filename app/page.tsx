@@ -821,7 +821,7 @@ const Home = () => {
               <div className="flex flex-col items-start justify-center">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">Date Ideas Near You</h1>
                 <p className="text-3xl mb-8">Personalised for you and your person</p>
-                
+
                 {/* Steps */}
                 <div className="mb-8">
                   <div className="flex items-center mb-3">
@@ -837,7 +837,7 @@ const Home = () => {
                     <p className="text-xl">We share links with the best things happening near you</p>
                   </div>
                 </div>
-                
+
                 {/* Search input */}
                 <div className="search-container relative w-full max-w-xl" style={{ position: 'relative', zIndex: 50 }}>
                   <div className="relative">
@@ -910,46 +910,104 @@ const Home = () => {
 
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-          <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
-            <div className="flex md:grid overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:grid-cols-5 gap-4">
-              {/* City Autocomplete with icon - styled version */}
-              <div className="relative group min-w-[200px] md:min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className="flex-grow">
-                    <CountryCitySelector 
-                      onCitySelect={(city) => handleCitySelect(city)}
-                      defaultCity={userCity || undefined}
-                    />
-                  </div>
 
-                  {/* {activeFilters.city && (
-                    <span className="inline-flex items-center px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full whitespace-nowrap">
-                      {activeFilters.city}
-                      <button 
-                        onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
-                        className="ml-1.5 text-rose-700 hover:text-rose-900"
-                        aria-label="Remove city filter"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </span>
-                  )} */}
-
-                </div>
+          {/* Filters */}
+          <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
+            {/* Active filters chips - visible on mobile */}
+            {appliedFiltersCount > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3 md:hidden">
+                {activeFilters.city && (
+                  <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
+                    {activeFilters.city}
+                    <button 
+                      onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
+                      className="ml-1 text-rose-800"
+                      aria-label="Remove city filter"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {activeFilters.price !== 'all' && (
+                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    {priceLevelMap[activeFilters.price]}
+                    <button 
+                      onClick={() => setActiveFilters(prev => ({ ...prev, price: 'all' }))}
+                      className="ml-1 text-green-800"
+                      aria-label="Remove price filter"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all' && (
+                  <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {timeOfDayMap[activeFilters.timeOfDay as keyof typeof timeOfDayMap]}
+                    <button 
+                      onClick={() => setActiveFilters(prev => ({ ...prev, timeOfDay: 'all' }))}
+                      className="ml-1 text-blue-800"
+                      aria-label="Remove time filter"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                )}
+                {selectedFilters.categories.map(category => (
+                  <span key={category} className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                    {category}
+                    <button 
+                      onClick={() => handleFilterChange('categories', category, false)}
+                      className="ml-1 text-purple-800"
+                      aria-label={`Remove ${category} filter`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+                {/* Show "more filters" badge if there are other advanced filters applied */}
+                {(selectedFilters.locationTypes.length > 0 || 
+                  selectedFilters.locationSettings.length > 0 || 
+                  selectedFilters.moodPaces.length > 0 || 
+                  selectedFilters.moodVibes.length > 0) && (
+                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                    +{selectedFilters.locationTypes.length + 
+                      selectedFilters.locationSettings.length + 
+                      selectedFilters.moodPaces.length + 
+                      selectedFilters.moodVibes.length} more
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {/* Main filter controls */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
+              {/* City filter - compact on mobile */}
+              <div className="col-span-2 md:col-span-1">
+                <CountryCitySelector
+                  onCitySelect={(city) => handleCitySelect(city)}
+                  defaultCity={userCity || undefined}
+                  label="City"
+                />
               </div>
 
-              {/* Price Range Filter with icon */}
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Price Range</label>
+              {/* Price Range Filter - compact design */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Price</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                    <DollarSign className="h-5 w-5 text-gray-500" />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+                    <DollarSign className="h-4 w-4 text-gray-400" />
                   </div>
                   <select
                     value={activeFilters.price}
-                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
                     onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
                   >
                     <option value="all">All Prices</option>
@@ -959,24 +1017,24 @@ const Home = () => {
                     <option value="high">High</option>
                     <option value="luxury">Luxury</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a 1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              {/* Time of Day Filter with icon */}
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Time of Day</label>
+              {/* Time of Day Filter - compact design */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Time</label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                    <ClockIcon className="h-5 w-5 text-gray-500" />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+                    <ClockIcon className="h-4 w-4 text-gray-400" />
                   </div>
                   <select
                     value={activeFilters.timeOfDay || 'all'}
-                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 appearance-none transition-all duration-200"
+                    className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
                     onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
                   >
                     <option value="all">Any Time</option>
@@ -986,46 +1044,44 @@ const Home = () => {
                     <option value="night">Night</option>
                     <option value="varies">Varies</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              {/* Mood Filter with icon */}
-              <div className="relative group">
-                <label className="text-gray-700 font-medium text-sm block mb-2">Mood</label>
-                <div className="w-full">
+              {/* Mood Filter - compact popover */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Mood</label>
+                <div className="relative">
                   <button
                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className="w-full flex justify-between items-center pl-10 pr-3 py-3 border border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-700 font-medium transition-all duration-200"
+                    className="w-full flex justify-between items-center pl-7 pr-2 py-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
                   >
                     <div className="flex items-center">
-                      <div className=" inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <MoonIcon className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                      </div>
+                      <MoonIcon className="absolute left-2 h-4 w-4 text-gray-400" />
                       <span className="truncate">{getSelectedFiltersText()}</span>
                     </div>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`h-5 w-5 ml-2 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}
+                      className={`h-4 w-4 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}
                       viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
 
                   {showAdvancedFilters && (
-                    <div className="absolute z-40 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-y-auto">
-                      <div className="p-3 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-700">Categories</h3>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="absolute z-40 mt-1 right-0 w-64 md:w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                      <div className="p-2 border-b border-gray-100">
+                        <h3 className="text-xs font-medium text-gray-700">Categories</h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
                           {filterOptions.categories.map((category) => (
                             <button
                               key={category}
                               onClick={() => handleFilterChange('categories', category, !selectedFilters.categories.includes(category))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.categories.includes(category)
+                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.categories.includes(category)
                                 ? 'bg-rose-100 text-rose-700 font-medium'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
@@ -1036,14 +1092,14 @@ const Home = () => {
                         </div>
                       </div>
 
-                      <div className="p-3 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-700">Location Types</h3>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="p-2 border-b border-gray-100">
+                        <h3 className="text-xs font-medium text-gray-700">Location Types</h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
                           {filterOptions.locationTypes.map((type) => (
                             <button
                               key={type}
                               onClick={() => handleFilterChange('locationTypes', type, !selectedFilters.locationTypes.includes(type))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.locationTypes.includes(type)
+                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.locationTypes.includes(type)
                                 ? 'bg-rose-100 text-rose-700 font-medium'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
@@ -1054,14 +1110,14 @@ const Home = () => {
                         </div>
                       </div>
 
-                      <div className="p-3 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-700">Location Settings</h3>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="p-2 border-b border-gray-100">
+                        <h3 className="text-xs font-medium text-gray-700">Location Settings</h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
                           {filterOptions.locationSettings.map((setting) => (
                             <button
                               key={setting}
                               onClick={() => handleFilterChange('locationSettings', setting, !selectedFilters.locationSettings.includes(setting))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.locationSettings.includes(setting)
+                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.locationSettings.includes(setting)
                                 ? 'bg-rose-100 text-rose-700 font-medium'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
@@ -1072,14 +1128,14 @@ const Home = () => {
                         </div>
                       </div>
 
-                      <div className="p-3 border-b border-gray-200">
-                        <h3 className="font-medium text-gray-700">Mood Paces</h3>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="p-2 border-b border-gray-100">
+                        <h3 className="text-xs font-medium text-gray-700">Mood Paces</h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
                           {filterOptions.moodPaces.map((pace) => (
                             <button
                               key={pace}
                               onClick={() => handleFilterChange('moodPaces', pace, !selectedFilters.moodPaces.includes(pace))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.moodPaces.includes(pace)
+                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.moodPaces.includes(pace)
                                 ? 'bg-rose-100 text-rose-700 font-medium'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
@@ -1090,14 +1146,14 @@ const Home = () => {
                         </div>
                       </div>
 
-                      <div className="p-3">
-                        <h3 className="font-medium text-gray-700">Mood Vibes</h3>
-                        <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="p-2">
+                        <h3 className="text-xs font-medium text-gray-700">Mood Vibes</h3>
+                        <div className="mt-1 flex flex-wrap gap-1">
                           {filterOptions.moodVibes.map((vibe) => (
                             <button
                               key={vibe}
                               onClick={() => handleFilterChange('moodVibes', vibe, !selectedFilters.moodVibes.includes(vibe))}
-                              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${selectedFilters.moodVibes.includes(vibe)
+                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.moodVibes.includes(vibe)
                                 ? 'bg-rose-100 text-rose-700 font-medium'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
@@ -1112,22 +1168,28 @@ const Home = () => {
                 </div>
               </div>
 
-              {/* Clear Filters and Filters Applied Indicator */}
-              <div className="relative group flex items-center space-x-2">
-              <label className="text-gray-700 font-medium text-sm block mb-2">{" "}</label>
+              {/* Clear button with counter */}
+              <div className="flex items-end">
                 <button
                   onClick={clearAllFilters}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-xl font-medium transition-all duration-200"
+                  disabled={appliedFiltersCount === 0}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    appliedFiltersCount > 0 
+                      ? 'bg-rose-100 text-rose-800 hover:bg-rose-200' 
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
                 >
-                  Clear
+                  <span>Clear</span>
+                  {appliedFiltersCount > 0 && (
+                    <span className="ml-1.5 flex items-center justify-center bg-rose-200 text-rose-800 rounded-full h-5 w-5 text-xs">
+                      {appliedFiltersCount}
+                    </span>
+                  )}
                 </button>
-                <div className="text-gray-700 font-medium flex items-center">
-                  {appliedFiltersCount} Filter{appliedFiltersCount !== 1 ? 's' : ''} Applied
-                </div>
               </div>
             </div>
           </div>
-
+          {/* end of Filters */}
           {loading ? (
             <div className="h-96 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {[...Array(8)].map((_, i) => (
