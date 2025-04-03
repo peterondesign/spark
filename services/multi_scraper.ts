@@ -212,12 +212,10 @@ async function scrapeViator(city: string, category: string, limit: number): Prom
   }
 }
 
-// Google Maps scraper using OpenAPI
+// Google Maps scraper using LLM and OpenAI
 async function scrapeGoogleMaps(city: string, category: string, limit: number): Promise<Experience[]> {
   try {
-    console.log(`[GoogleMaps] Starting scrape for ${city}, ${category}`);
-
-    // Step 1: Initial browser scrape to get place IDs
+    console.log(`[GoogleMaps] Starting LLM-based scrape for ${city}, ${category}`);
     const searchQuery = `${category} in ${city}`;
     const targetUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&tbm=lcl`;
     console.log(`[GoogleMaps] Fetching URL: ${targetUrl}`);
@@ -232,208 +230,94 @@ async function scrapeGoogleMaps(city: string, category: string, limit: number): 
     const html = await response.text();
     console.log(`[GoogleMaps] Received HTML length: ${html.length} characters`);
     
-    const $ = cheerio.load(html);
-    const placeIds: string[] = [];
-    
-    // Extract potential place IDs from the HTML
-    const scriptTags = $('script');
-    scriptTags.each((_, script) => {
-      const content = $(script).html() || '';
-      const placeIdRegex = /"data-place-id":"([^"]+)"/g;
-      let match;
-      
-      while ((match = placeIdRegex.exec(content)) !== null) {
-        if (match[1] && placeIds.length < limit) {
-          placeIds.push(match[1]);
-        }
-      }
+    // Initialize OpenAI client
+    const openai = new (await import('openai')).OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
     
-    // Alternative place ID extraction if the above method doesn't work
-    if (placeIds.length === 0) {
-      $('[data-place-id]').each((i, elem) => {
-        const placeId = $(elem).attr('data-place-id');
-        if (placeId && placeIds.length < limit) {
-          placeIds.push(placeId);
-        }
-      });
+    // Clean the HTML with cheerio to remove unnecessary elements
+    const $ = (await import('cheerio')).load(html);
+    // Remove script tags, styles, and other non-content elements
+    $('script, style, noscript, iframe').remove();
+    
+    // Get the main content area with local results
+    const mainContent = $('#search').html() || $('body').html();
+    
+    if (!mainContent) {
+      throw new Error('No content found to parse');
     }
     
-    console.log(`[GoogleMaps] Found ${placeIds.length} potential place IDs`);
+    console.log(`[GoogleMaps] Sending ${Math.min(mainContent.length, 15000)} characters to OpenAI for parsing`);
+    
+    // Use OpenAI to extract structured data from the HTML content
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // Using a smaller, faster model for cost efficiency
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert web scraper that extracts structured data from HTML content.
+          Extract places from Google Maps search results HTML. Focus only on the local business/place listings.
+          For each place, extract: 
+          - name (required)
+          - address or location (if available)
+          - description or category (if available)
+          - rating (numeric value if available)
+          - number of reviews (numeric value if available)
+          - any other relevant details
 
-    // If we couldn't extract place IDs, fall back to the text-based approach
-    if (placeIds.length === 0) {
-      return fallbackGoogleMapsScrape(cheerio, $, city, category, limit);
-    }
-    
-    // Step 2: Use the Place Details API to get structured data
-    const experiences: Experience[] = [];
-    
-    // For demonstration, use a small number of requests
-    const placeDetailsPromises = placeIds.slice(0, limit).map(async (placeId) => {
-      try {
-        // Note: In a real implementation, you would call your backend API endpoint
-        // that uses the official Google Places API with a proper API key
-        const openApiUrl = `/api/proxy?url=${encodeURIComponent(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,rating,formatted_address,photos,website,user_ratings_total&key=USE_YOUR_SERVER_API_KEY`
-        )}`;
-        
-        // Since we're using proxy and don't want to expose real API keys,
-        // we'll simulate a response instead for demonstration purposes
-        const placeDetails = await simulatePlaceDetailsResponse(placeId, city, category);
-        
-        const experience: Experience = {
-          id: `gm-${placeId}`,
-          title: placeDetails.name,
-          description: placeDetails.formatted_address || `${category} in ${city}`,
-          imageUrl: placeDetails.photo_url || '/placeholder.jpg',
-          url: placeDetails.url || `https://www.google.com/maps/search/${encodeURIComponent(placeDetails.name + ' ' + city)}`,
-          rating: placeDetails.rating,
-          reviewCount: placeDetails.user_ratings_total,
-          source: 'Google Maps'
-        };
-        
-        experiences.push(experience);
-        console.log(`[GoogleMaps] Successfully processed place: ${placeDetails.name}`);
-        
-        return experience;
-      } catch (error) {
-        console.error(`[GoogleMaps] Error fetching place details for ID ${placeId}:`, error);
-        return null;
-      }
+          Return the data in JSON format with an array of places, each containing the extracted fields.
+          `
+        },
+        {
+          role: "user",
+          content: `Extract places from these Google Maps search results for "${category} in ${city}":\n\n${mainContent.substring(0, 15000)}`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
     });
     
-    await Promise.all(placeDetailsPromises);
+    // Parse the response
+    const responseContent = completion.choices[0].message.content;
+    if (!responseContent) {
+      throw new Error('Empty response from OpenAI');
+    }
     
-    // Filter out any null results
-    const validExperiences = experiences.filter(Boolean);
+    const parsedData = JSON.parse(responseContent);
+    console.log(`[GoogleMaps] Extracted ${parsedData.places?.length || 0} places using LLM parsing`);
     
-    console.log(`[GoogleMaps] Successfully fetched ${validExperiences.length} places using OpenAPI`);
-    console.log('[GoogleMaps] Sample result:', JSON.stringify(validExperiences[0], null, 2));
+    // Log a sample result for debugging
+    if (parsedData.places?.length > 0) {
+      console.log('[GoogleMaps] Sample place data:', JSON.stringify(parsedData.places[0], null, 2));
+    }
     
-    return validExperiences;
+    // Convert to Experience format
+    const experiences = (parsedData.places || []).map((place: any, index: number) => {
+      // Create a better description by combining details
+      let description = place.description || place.category || '';
+      if (place.address && !description.includes(place.address)) {
+        description = description ? `${description} - ${place.address}` : place.address;
+      }
+      
+      return {
+        id: `gm-${index}-${Date.now()}`,
+        title: place.name || `${category} in ${city}`,
+        description: description || `${category} location in ${city}`,
+        imageUrl: place.imageUrl || '/placeholder.jpg',
+        url: place.url || `https://www.google.com/maps/search/${encodeURIComponent(place.name + ' ' + city)}`,
+        rating: place.rating ? parseFloat(place.rating) : undefined,
+        reviewCount: place.reviews ? parseInt(place.reviews.toString().replace(/[^0-9]/g, '')) : undefined,
+        source: 'Google Maps'
+      };
+    });
+    
+    console.log(`[GoogleMaps] Successfully processed ${experiences.length} places`);
+    return experiences.slice(0, limit);
+    
   } catch (error) {
-    console.error('[GoogleMaps] Error scraping with OpenAPI:', error);
+    console.error('[GoogleMaps] Error with LLM scraping:', error);
     return [];
   }
-}
-
-// Fallback Google Maps scraper using purely HTML approach
-async function fallbackGoogleMapsScrape(cheerioModule: typeof cheerio, $: cheerio.Root, city: string, category: string, limit: number): Promise<Experience[]> {
-  console.log('[GoogleMaps] Using fallback HTML scraping method');
-  const experiences: Experience[] = [];
-  
-  // Targeting the local results in Google search
-  $('.rllt__details, .VkpGBb').slice(0, limit).each((i, element) => {
-    const item = $(element);
-    
-    // Extract information from the search result
-    const title = item.find('.OSrXXb, .dbg0pd').first().text().trim();
-    const description = item.find('.rllt__details div:nth-child(3), .rllt__wrapped-text').first().text().trim() || 
-                        item.find('.wqtdDd').text().trim();
-    const ratingText = item.find('.BTtC6e, .YDIN4c, span[aria-hidden="true"]').first().text().trim();
-    const rating = parseFloat(ratingText) || undefined;
-    const reviewCountText = item.find('.RDApEe, .dmP6be, .z3HNkc').first().text().trim();
-    const reviewCount = parseInt(reviewCountText.replace(/[^0-9]/g, '')) || undefined;
-    
-    // Using a placeholder image as Google might not expose images directly
-    const imageUrl = '/placeholder.jpg';
-    
-    // Create link to Google Maps search for this place
-    const placeUrl = `https://www.google.com/maps/search/${encodeURIComponent(title + ' ' + city)}`;
-    
-    if (title) {
-      experiences.push({
-        id: `gm-fallback-${i}-${Date.now()}`,
-        title,
-        description: description || `${title} - ${category} in ${city}`,
-        imageUrl,
-        url: placeUrl,
-        rating,
-        reviewCount,
-        source: 'Google Maps (Fallback)'
-      });
-    }
-  });
-  
-  // Another fallback if the primary selectors didn't work
-  if (experiences.length === 0) {
-    $('.cXedhc, .uMdZh').slice(0, limit).each((i, element) => {
-      const item = $(element);
-      
-      const title = item.find('h3, .qBF1Pd').first().text().trim();
-      const description = item.find('.dXnVAb, .nTzKEc').first().text().trim();
-      const ratingText = item.find('.MW4etd, .KFi5wf').first().text().trim();
-      const rating = parseFloat(ratingText) || undefined;
-      
-      if (title) {
-        experiences.push({
-          id: `gm-fallback-alt-${i}-${Date.now()}`,
-          title,
-          description: description || `${title} - ${category} in ${city}`,
-          imageUrl: '/placeholder.jpg',
-          url: `https://www.google.com/maps/search/${encodeURIComponent(title + ' ' + city)}`,
-          rating,
-          source: 'Google Maps (Fallback)'
-        });
-      }
-    });
-  }
-  
-  console.log(`[GoogleMaps] Scraped ${experiences.length} experiences using fallback method`);
-  return experiences;
-}
-
-// Function to simulate Place Details API response for demonstration
-async function simulatePlaceDetailsResponse(placeId: string, city: string, category: string): Promise<any> {
-  // In a real implementation, you would call the Google Places API with your API key
-  // This is just a simulation for demonstration purposes
-  console.log(`[GoogleMaps] Simulating Place Details API response for place ID: ${placeId}`);
-  
-  // Generate a deterministic but unique place based on the place ID
-  const hashCode = (s: string) => s.split('').reduce((a, b) => (((a << 5) - a) + b.charCodeAt(0))|0, 0);
-  const hash = Math.abs(hashCode(placeId)) % 1000;
-  
-  // Popular categories to generate realistic sounding business names
-  const categoryPrefixes: Record<string, string[]> = {
-    restaurants: ['Cafe', 'Restaurant', 'Bistro', 'Grill', 'Eatery', 'Diner'],
-    cafes: ['Coffee House', 'Cafe', 'Espresso Bar', 'Tea Room', 'Bakery'],
-    bars: ['Pub', 'Bar', 'Tavern', 'Brewery', 'Lounge', 'Cocktail Bar'],
-    activities: ['Adventure Center', 'Activity Hub', 'Fun Zone', 'Recreation Center'],
-    museums: ['Museum', 'Gallery', 'Exhibition', 'Collection', 'Heritage Center']
-  };
-  
-  // Select prefixes based on category or use default
-  const prefixes = categoryPrefixes[category.toLowerCase()] || 
-                  categoryPrefixes.activities;
-  
-  // Generate random name components
-  const prefix = prefixes[hash % prefixes.length];
-  const nameOptions = ['Royal', 'Golden', 'Blue', 'Green', 'Silver', 'City', 'Urban',
-                      'Downtown', 'Uptown', 'Riverside', 'Seaside', 'Modern', 'Classic'];
-  const name = nameOptions[hash % nameOptions.length] + ' ' + prefix;
-  
-  // Generate a rating between 3.5 and 5.0
-  const rating = 3.5 + (hash % 30) / 20; // Between 3.5 and 5.0
-  
-  // Generate a review count between 50 and 1000
-  const reviewCount = 50 + hash % 950;
-  
-  // Address components
-  const streetNumbers = [hash % 200 + 1];
-  const streets = ['Main St', 'Oak Avenue', 'Park Road', 'Broadway', 'Market Street', 'River Lane'];
-  const street = streets[hash % streets.length];
-  
-  return {
-    place_id: placeId,
-    name: name,
-    rating: rating,
-    user_ratings_total: reviewCount,
-    formatted_address: `${streetNumbers[0]} ${street}, ${city}`,
-    photo_url: '/placeholder.jpg',
-    url: `https://maps.google.com/?cid=${hash}`,
-    website: `https://example.com/${placeId}`
-  };
 }
 
 // Other scrapers kept for reference but using mock data by default

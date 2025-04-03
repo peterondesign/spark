@@ -20,6 +20,7 @@ export interface CountryCitySelectorProps {
   defaultCountry?: string;
   label?: string;
   className?: string;
+  prioritizeIpLocation?: boolean;
 }
 
 // Option type for react-select
@@ -48,13 +49,17 @@ const WELL_KNOWN_CITIES: Record<string, string> = {
   "Rio de Janeiro": "BR"
 };
 
+// How often to check/refresh localStorage (24 hours in milliseconds)
+const STORAGE_REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
+
 export default function CountryCitySelector({
   onCitySelect,
   selectedCity,
   defaultCity,
   defaultCountry = "US",
   label = "City",
-  className = ""
+  className = "",
+  prioritizeIpLocation = true
 }: CountryCitySelectorProps) {
   // States for city selection
   const [cities, setCities] = useState<CityItem[]>([]);
@@ -62,33 +67,182 @@ export default function CountryCitySelector({
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedOption, setSelectedOption] = useState<OptionType | null>(null);
+  const [ipLocationAttempted, setIpLocationAttempted] = useState(false);
 
-  // Initialize popular cities on component mount
+  // Initialize component - detect IP location and/or load popular cities
   useEffect(() => {
-    loadPopularCities();
-  }, []);
+    // Check if localStorage needs to be refreshed
+    checkAndClearLocalStorage();
+    
+    if (prioritizeIpLocation) {
+      detectIpLocation();
+    } else {
+      loadPopularCities();
+    }
+  }, [prioritizeIpLocation]);
 
   // Set default city if provided
   useEffect(() => {
     if (defaultCity && !selectedOption) {
       handleCitySearch(defaultCity);
     }
-  }, [defaultCity]);
+  }, [defaultCity, selectedOption]);
+
+  // Check if localStorage data is stale and clear if needed
+  const checkAndClearLocalStorage = () => {
+    try {
+      const lastRefreshed = localStorage.getItem("locationDataTimestamp");
+      
+      if (lastRefreshed) {
+        const timestamp = parseInt(lastRefreshed, 10);
+        const now = Date.now();
+        
+        if (isNaN(timestamp) || now - timestamp > STORAGE_REFRESH_INTERVAL) {
+          // Clear location data if it's older than the refresh interval
+          localStorage.removeItem("userCity");
+          localStorage.removeItem("userCountry");
+          localStorage.removeItem("userCityData");
+          localStorage.removeItem("locationDataTimestamp");
+          console.log("Location data cleared due to age");
+        }
+      } else {
+        // Set initial timestamp if it doesn't exist
+        localStorage.setItem("locationDataTimestamp", Date.now().toString());
+      }
+    } catch (error) {
+      console.error("Error handling localStorage:", error);
+    }
+  };
+
+  // Detect location from IP address
+  const detectIpLocation = async () => {
+    setIsLoading(true);
+    setIpLocationAttempted(true);
+    
+    try {
+      // First check if we have a cached location that isn't stale
+      const savedCityData = localStorage.getItem("userCityData");
+      
+      if (savedCityData) {
+        try {
+          const cityData = JSON.parse(savedCityData);
+          if (cityData && cityData.name) {
+            // Load existing location
+            const cityOption = {
+              value: cityData.id || `${cityData.name}-${cityData.countryCode}`,
+              label: renderOptionLabel(cityData),
+              data: cityData
+            };
+            
+            setSelectedOption(cityOption);
+            onCitySelect(cityData);
+            setInputValue(cityData.name);
+            
+            // Still load popular cities as options
+            await loadPopularCities();
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing stored city data:", error);
+        }
+      }
+      
+      // No valid cached data, fetch from API
+      const response = await fetch('/api/location');
+      if (!response.ok) {
+        throw new Error(`Location API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.city) {
+        // We have a city from IP detection, find it in our data
+        const allCities = City.getAllCities();
+        const allCountries = CountryService.getAllCountries();
+        
+        // Create a map for faster country lookup
+        const countryMap = new Map();
+        allCountries.forEach(country => {
+          countryMap.set(country.isoCode, country.name);
+        });
+        
+        // Find matching city - prioritize matching both city and country if available
+        const matchingCities = allCities.filter(city => {
+          const cityMatches = city.name.toLowerCase() === data.city.toLowerCase();
+          if (data.country_code) {
+            return cityMatches && city.countryCode === data.country_code;
+          }
+          return cityMatches;
+        });
+        
+        if (matchingCities.length > 0) {
+          // Use the first match (should be most relevant based on IP)
+          const detectedCity = matchingCities[0];
+          const countryName = countryMap.get(detectedCity.countryCode) || detectedCity.countryCode;
+          
+          const cityItem: CityItem = {
+            name: detectedCity.name,
+            countryCode: detectedCity.countryCode,
+            countryName: countryName,
+            isPopular: POPULAR_CITIES.includes(detectedCity.name),
+            id: `${detectedCity.name}-${detectedCity.countryCode}-ip`
+          };
+          
+          // Select this city
+          const cityOption = {
+            value: cityItem.id,
+            label: renderOptionLabel(cityItem),
+            data: cityItem
+          };
+          
+          setSelectedOption(cityOption);
+          onCitySelect(cityItem);
+          setInputValue(cityItem.name);
+          
+          // Save to localStorage with timestamp
+          saveToLocalStorage(cityItem);
+        }
+      }
+      
+      // Load popular cities as options (regardless of IP detection success)
+      await loadPopularCities();
+      
+    } catch (error) {
+      console.error('Error detecting IP location:', error);
+      // Fall back to popular cities if IP detection fails
+      await loadPopularCities();
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Generate a unique ID for each city
   const generateUniqueId = (city: any, countryName: string, index: number) => {
     return `${city.name}-${city.countryCode}-${countryName}-${index}`;
   };
 
-  // Process cities list to prioritize well-known instances
+  // Process cities list to prioritize well-known instances and remove duplicates
   const processCitiesList = (cityItems: CityItem[]): CityItem[] => {
     const prioritizedCities: CityItem[] = [];
     const otherCities: CityItem[] = [];
+    
+    // Track unique city-country combinations to eliminate duplicates
+    const uniqueCitiesMap = new Map<string, CityItem>();
     
     // Group cities by name
     const cityGroups = new Map<string, CityItem[]>();
     
     cityItems.forEach(city => {
+      // Create a unique key for this city-country combination
+      const uniqueKey = `${city.name.toLowerCase()}-${city.countryCode}`;
+      
+      // Skip if we already have this exact city-country combination
+      if (uniqueCitiesMap.has(uniqueKey)) return;
+      
+      // Add to unique cities map
+      uniqueCitiesMap.set(uniqueKey, city);
+      
+      // Group by city name for prioritization
       if (!cityGroups.has(city.name)) {
         cityGroups.set(city.name, []);
       }
@@ -173,7 +327,7 @@ export default function CountryCitySelector({
         });
       }
 
-      // Process cities list to prioritize well-known instances
+      // Process cities list to prioritize well-known instances and remove duplicates
       const processedCities = processCitiesList(popularCityItems);
       setCities(processedCities);
       
@@ -230,6 +384,9 @@ export default function CountryCitySelector({
         countryMap.set(country.isoCode, country.name);
       });
       
+      // Track unique city-country combinations to eliminate duplicates
+      const uniqueCitiesMap = new Map<string, CityItem>();
+      
       // Filter cities based on search text
       const filteredCities = allCities
         .filter(city => city.name.toLowerCase().includes(query.toLowerCase()))
@@ -242,6 +399,15 @@ export default function CountryCitySelector({
             isPopular: POPULAR_CITIES.includes(city.name),
             id: generateUniqueId(city, countryName, index)
           };
+        })
+        .filter(city => {
+          // Deduplicate by city name + country code
+          const key = `${city.name.toLowerCase()}-${city.countryCode}`;
+          if (uniqueCitiesMap.has(key)) {
+            return false; // Skip duplicates
+          }
+          uniqueCitiesMap.set(key, city);
+          return true;
         });
       
       // Process to prioritize well-known cities
@@ -279,14 +445,20 @@ export default function CountryCitySelector({
 
   // Save city and country to localStorage
   const saveToLocalStorage = (city: CityItem) => {
-    localStorage.setItem("userCity", city.name);
-    localStorage.setItem("userCountry", city.countryCode);
-    localStorage.setItem("userCityData", JSON.stringify({
-      name: city.name,
-      countryCode: city.countryCode,
-      countryName: city.countryName,
-      id: city.id
-    }));
+    try {
+      localStorage.setItem("userCity", city.name);
+      localStorage.setItem("userCountry", city.countryCode);
+      localStorage.setItem("userCityData", JSON.stringify({
+        name: city.name,
+        countryCode: city.countryCode,
+        countryName: city.countryName,
+        id: city.id
+      }));
+      // Update timestamp
+      localStorage.setItem("locationDataTimestamp", Date.now().toString());
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
   };
 
   // Handle city selection
@@ -335,6 +507,7 @@ export default function CountryCitySelector({
     }),
   };
 
+  // Render component with auto-detection notice if trying IP location
   return (
     <div className={`${className}`}>
       {label && (
@@ -356,7 +529,7 @@ export default function CountryCitySelector({
           inputValue={inputValue}
           isLoading={isLoading}
           isSearchable={true}
-          placeholder="Search for a city..."
+          placeholder={prioritizeIpLocation && !ipLocationAttempted ? "Detecting your location..." : "Search for a city..."}
           noOptionsMessage={() => "No cities found"}
           styles={customStyles}
           className="react-select"
@@ -367,6 +540,11 @@ export default function CountryCitySelector({
             ),
           }}
         />
+        {prioritizeIpLocation && isLoading && !selectedOption && (
+          <div className="text-xs text-gray-500 mt-1 ml-1">
+            Attempting to detect your location...
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,61 +1,50 @@
-import { NextResponse } from 'next/server';
-import { fetchMultiSourceExperiences, Experience } from '../../../services/multi_scraper';
+import { fetchMultiSourceExperiences } from '@/services/multi_scraper';
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const city = searchParams.get('city');
-  const category = searchParams.get('category');
-  const limit = searchParams.get('limit');
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-  if (!city) {
-    return NextResponse.json({ error: 'City parameter is required' }, { status: 400 });
-  }
-
-  console.log(`[DEBUG] Fetching experiences for city: ${city}, category: ${category || 'activities'}`);
-  
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const city = searchParams.get('city');
+    const category = searchParams.get('category');
+    const source = searchParams.get('source');
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 10;
+
+    console.log(`[API:multiSourceEvents] Received request:`, { city, category, source, limit });
+    
+    if (!city || !category) {
+      return NextResponse.json(
+        { success: false, message: "Missing required parameters: city and category" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch experiences based on the provided parameters
     const experiences = await fetchMultiSourceExperiences({
       city,
-      category: category || 'activities',
-      limit: limit ? parseInt(limit) : 12
+      category,
+      limit: source ? Math.min(limit, 20) : limit // Limit to 20 if fetching from a specific source
     });
+
+    console.log(`[API:multiSourceEvents] Fetched ${experiences.length} experiences`);
     
-    console.log(`[DEBUG] Total experiences fetched: ${experiences.length}`);
+    // If a specific source was requested, filter the results
+    const filteredExperiences = source
+      ? experiences.filter(exp => exp.source.toLowerCase() === source.toLowerCase())
+      : experiences;
     
-    // Group experiences by source for easier display
-    const groupedExperiences = experiences.reduce<Record<string, Experience[]>>((acc, experience) => {
-      const source = experience.source;
-      if (!acc[source]) {
-        acc[source] = [];
-      }
-      acc[source].push(experience);
-      return acc;
-    }, {});
-    
-    // Log sources and counts
-    const sources = Object.keys(groupedExperiences);
-    console.log(`[DEBUG] Sources with results: ${sources.join(', ')}`);
-    
-    sources.forEach(source => {
-      console.log(`[DEBUG] ${source}: ${groupedExperiences[source].length} results`);
-    });
+    console.log(`[API:multiSourceEvents] Returning ${filteredExperiences.length} filtered experiences for source: ${source || 'all'}`);
     
     return NextResponse.json({
-      events: experiences,
-      groupedEvents: groupedExperiences,
-      sources: sources,
-      debug: {
-        sourceCounts: Object.fromEntries(
-          sources.map(source => [source, groupedExperiences[source].length])
-        )
-      }
+      success: true,
+      experiences: filteredExperiences,
     });
   } catch (error) {
-    console.error('Error fetching multi-source experiences:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events';
-    
+    console.error('[API:multiSourceEvents] Error:', error);
     return NextResponse.json(
-      { error: errorMessage },
+      { success: false, message: "Failed to fetch experiences", error: (error as Error).message },
       { status: 500 }
     );
   }

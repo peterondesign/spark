@@ -8,12 +8,14 @@ import { HeartIcon, MapPinIcon, StarIcon } from "../../components/icons";
 import SaveButton from "../../components/SaveButton";
 import { getImageUrl } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
+import Footer from "@/app/components/Footer";
 import Head from 'next/head';
 import { useAsyncList } from "@react-stately/data";
 import { City, POPULAR_CITIES, CityItem } from "../../../utils/cityService";
 import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { supabase } from "@/utils/supabaseClient";
 import CountryCitySelector from "@/app/components/CountryCitySelector";
+import RelatedDateIdea from "../../components/RelatedDateIdea";
 
 // Define DateIdea interface
 interface DateIdea {
@@ -265,6 +267,8 @@ export default function DateIdeaDetails() {
 
       setLoadingExperiences(true);
 
+      console.log('🔍 DEBUG: Starting to fetch experiences', { userCity, dateIdeaTitle: dateIdea.title });
+
       setSearchSources(prev => prev.map(source => ({ ...source, status: 'pending' })));
       setSearchProgress({
         currentSource: 'GetYourGuide',
@@ -282,13 +286,21 @@ export default function DateIdeaDetails() {
         setSearchProgress(prev => ({ ...prev, currentSource: 'GetYourGuide' }));
 
         const gygSearchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
+        console.log('🔍 DEBUG: Fetching from GetYourGuide', { gygSearchUrl });
+        
         const gygResponse = await fetch(`/api/scrape?url=${encodeURIComponent(gygSearchUrl)}&method=selenium`);
+        console.log('🔍 DEBUG: GetYourGuide response status:', gygResponse.status);
 
         if (!gygResponse.ok) {
+          console.error('❌ DEBUG: GetYourGuide request failed', { status: gygResponse.status });
           throw new Error(`Failed to fetch from GetYourGuide: ${gygResponse.status}`);
         }
 
         const gygData = await gygResponse.json();
+        console.log('🔍 DEBUG: GetYourGuide data received', { 
+          hasData: !!gygData, 
+          activitiesCount: gygData?.activities?.length || 0 
+        });
 
         setSearchSources(prev =>
           prev.map(source => source.name === 'GetYourGuide' ? { ...source, status: 'complete' } : source)
@@ -309,6 +321,12 @@ export default function DateIdeaDetails() {
             const isRelevant = dateIdeaWords.some((word: string) => activityTitle.includes(word));
             return isRelevant;
           });
+          
+          console.log('🔍 DEBUG: Filtered activities', { 
+            total: gygData.activities.length, 
+            relevant: relevantActivities.length,
+            relevantTitles: relevantActivities.map((a: any) => a.title)
+          });
 
           const gygExperiences: Experience[] = (relevantActivities.length > 0 ? relevantActivities : gygData.activities)
             .map((activity: any) => {
@@ -326,15 +344,70 @@ export default function DateIdeaDetails() {
               };
             });
 
+          console.log('🔍 DEBUG: Created GYG experiences', { count: gygExperiences.length });
           allExperiences = [...gygExperiences];
 
           setExperiences(allExperiences);
+          console.log('🔍 DEBUG: Set experiences state', { count: allExperiences.length });
+        } else {
+          console.log('🔍 DEBUG: No activities found in GYG data');
         }
 
-        const otherSources = ['Google Maps', 'Eventbrite', 'Timeout', 'Meetup', 'Fever', 'Luma'];
+        // Debug the multi_scraper approach for Google Maps
+        try {
+          console.log('🔍 DEBUG: Starting Google Maps scraper');
+          setSearchSources(prev =>
+            prev.map(s => s.name === 'Google Maps' ? { ...s, status: 'searching' } : s)
+          );
+          
+          // Make a direct call to the api endpoint for multiSourceEvents
+          const mapsResponse = await fetch(`/api/multiSourceEvents?city=${encodeURIComponent(userCity)}&category=${encodeURIComponent(dateIdea.title)}&source=googlemaps`);
+          console.log('🔍 DEBUG: Google Maps scraper response status:', mapsResponse.status);
+          
+          if (mapsResponse.ok) {
+            const mapsData = await mapsResponse.json();
+            console.log('🔍 DEBUG: Google Maps data received', { 
+              success: mapsData.success, 
+              resultsCount: mapsData.experiences?.length || 0 
+            });
+            
+            if (mapsData.success && mapsData.experiences?.length > 0) {
+              // Add these to our experiences
+              const googleMapsExperiences: Experience[] = mapsData.experiences.map((item: any) => ({
+                title: item.title,
+                price: item.price || "Check website for prices",
+                rating: item.rating?.toString() || "4.5",
+                reviewCount: item.reviewCount?.toString() || "100+",
+                imageUrl: item.imageUrl || dateIdea.image,
+                link: item.url,
+                isRelevant: true,
+                source: 'Google Maps'
+              }));
+              
+              console.log('🔍 DEBUG: Adding Google Maps experiences', { count: googleMapsExperiences.length });
+              allExperiences = [...allExperiences, ...googleMapsExperiences];
+              setExperiences(allExperiences);
+            }
+          }
+        } catch (mapsError) {
+          console.error('❌ DEBUG: Google Maps scraper error', mapsError);
+        }
+        
+        setSearchSources(prev =>
+          prev.map(s => s.name === 'Google Maps' ? { ...s, status: 'complete' } : s)
+        );
+        setSearchProgress(prev => ({
+          ...prev,
+          completedSources: prev.completedSources + 1,
+          percentComplete: Math.round(((prev.completedSources + 1) / prev.totalSources) * 100),
+          currentSource: 'Eventbrite'
+        }));
+
+        const otherSources = ['Eventbrite', 'Timeout', 'Meetup', 'Fever', 'Luma'];
 
         for (const source of otherSources) {
           try {
+            console.log(`🔍 DEBUG: Processing source ${source}`);
             setSearchSources(prev =>
               prev.map(s => s.name === source ? { ...s, status: 'searching' } : s)
             );
@@ -353,7 +426,7 @@ export default function DateIdeaDetails() {
             }));
 
           } catch (error) {
-            console.error(`Error searching ${source}:`, error);
+            console.error(`❌ DEBUG: Error searching ${source}:`, error);
             setSearchSources(prev =>
               prev.map(s => s.name === source ? { ...s, status: 'error' } : s)
             );
@@ -361,6 +434,7 @@ export default function DateIdeaDetails() {
         }
 
         if (allExperiences.length === 0) {
+          console.log('🔍 DEBUG: No experiences found, creating fallback');
           allExperiences = [{
             title: `${dateIdea.title} in ${userCity}`,
             price: "Check website for prices",
@@ -374,10 +448,11 @@ export default function DateIdeaDetails() {
           setExperiencesWarning("We couldn't find specific activities for this date idea.");
         }
 
+        console.log('🔍 DEBUG: Final experiences count', { count: allExperiences.length });
         setExperiences(allExperiences);
 
       } catch (error) {
-        console.error('Error fetching experiences:', error);
+        console.error('❌ DEBUG: Error in main fetchExperiences try/catch:', error);
 
         const searchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
         allExperiences = [{
@@ -390,20 +465,24 @@ export default function DateIdeaDetails() {
           isRelevant: true,
           source: 'GetYourGuide'
         }];
+        console.log('🔍 DEBUG: Created fallback experience');
         setExperiences(allExperiences);
         setExperiencesWarning("Something went wrong while fetching activities. Here's a general option.");
 
       } finally {
         setLoadingExperiences(false);
         setSearchProgress(prev => ({ ...prev, currentSource: 'Complete', percentComplete: 100 }));
+        console.log('🔍 DEBUG: Fetch experiences completed');
       }
     };
 
     if (userCity && dateIdea) {
+      console.log('🔍 DEBUG: Calling fetchExperiences with', { userCity, dateIdeaTitle: dateIdea.title });
       fetchExperiences();
+    } else {
+      console.log('🔍 DEBUG: Not fetching experiences yet', { hasUserCity: !!userCity, hasDateIdea: !!dateIdea });
     }
   }, [userCity, dateIdea]);
-
 
   const clearUserCity = () => {
     localStorage.removeItem("userCity");
@@ -569,6 +648,22 @@ export default function DateIdeaDetails() {
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Debug info at top of page for development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+            <details>
+              <summary className="cursor-pointer text-gray-600 font-bold">Debug Info</summary>
+              <pre className="mt-2 overflow-auto">
+                {`City: ${userCity || 'Not set'}\n`}
+                {`Date idea: ${dateIdea?.title || 'Not loaded'}\n`}
+                {`Experiences: ${experiences.length}\n`}
+                {`Loading: ${loadingExperiences ? 'Yes' : 'No'}\n`}
+                {`Data sources: ${searchSources.map(s => `${s.name}: ${s.status}`).join(', ')}`}
+              </pre>
+            </details>
+          </div>
+        )}
+        
         <nav className="mb-4 text-sm">
           <ol className="flex items-center space-x-1">
             <li>
@@ -671,10 +766,6 @@ export default function DateIdeaDetails() {
             </button>
           </div>
         )}
-
-        <div className="text-xs text-gray-400 mb-4 italic">
-          This page contains affiliate links
-        </div>
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
           {userCity ? (
@@ -838,6 +929,10 @@ export default function DateIdeaDetails() {
           )}
         </div>
 
+        <div className="text-xs text-gray-400 mb-4 italic">
+          This page contains affiliate links
+        </div>
+
         <div className="flex flex-col md:flex-row gap-8">
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">About This Date Idea</h2>
@@ -862,6 +957,18 @@ export default function DateIdeaDetails() {
           )}
         </div>
 
+        {/* Related Date Ideas Section */}
+        {dateIdea.relatedDateIdeas && dateIdea.relatedDateIdeas.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">You Might Also Like</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dateIdea.relatedDateIdeas.map((relatedSlug, index) => (
+                <RelatedDateIdea key={index} slug={relatedSlug} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="text-center mt-8 mb-4">
           <Link
             href="/"
@@ -874,6 +981,7 @@ export default function DateIdeaDetails() {
           </Link>
         </div>
       </main>
+      <Footer/>
     </div>
   );
 }
