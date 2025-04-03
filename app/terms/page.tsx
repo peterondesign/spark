@@ -89,8 +89,23 @@ export default function Terms() {
                     <h2 className="text-2xl font-semibold mt-8 mb-4">4. Data Collection & Privacy</h2>
                     <p>We collect data for personalized recommendations and service delivery.</p>
                     <p className="my-3">WhatsApp & Email communications comply with privacy laws.</p>
-                
-
+                    
+                    <h3 className="text-xl font-medium mt-6 mb-2">4.1 Microsoft Clarity and Microsoft Advertising</h3>
+                    <p>
+                        We partner with Microsoft Clarity and Microsoft Advertising to capture how you use and interact with our website through behavioral metrics, 
+                        heatmaps, and session replay to improve and market our products/services.
+                    </p>
+                    <p className="my-3">
+                        Website usage data is captured using first and third-party cookies and other tracking technologies to determine the popularity of products/services 
+                        and online activity. Additionally, we use this information for site optimization, fraud/security purposes, and advertising.
+                    </p>
+                    <p className="my-3">
+                        For more information about how Microsoft collects and uses your data, please visit the 
+                        <Link href="https://www.microsoft.com/privacy/privacystatement" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline mx-1">
+                            Microsoft Privacy Statement
+                        </Link>.
+                    </p>
+                    
                     <h2 className="text-2xl font-semibold mt-8 mb-4">5. Refunds & Disputes</h2>
                     <p>No refunds are issued once a payment is processed unless legally required.</p>
                     <p className="my-3">Affiliate purchases and third-party bookings are subject to their own refund policies—please check their terms.</p>

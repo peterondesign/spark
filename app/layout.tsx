@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
+import ClientPrivacyNotice from './components/ClientPrivacyNotice';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
@@ -118,6 +119,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <ClientPrivacyNotice />
         </ThemeProvider>
       </body>
     </html>

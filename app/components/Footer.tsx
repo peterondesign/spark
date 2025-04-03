@@ -27,7 +27,7 @@ export default function Footer() {
                         <p className="mt-2 text-sm text-gray-600">@sparkuscc</p>
                     </div>
 
-                    {/* New Navigation Links */}
+                    {/* Quick Links */}
                     <div>
                         <h3 className="text-gray-800 font-bold mb-4">Quick Links</h3>
                         <ul className="space-y-2">
@@ -37,7 +37,15 @@ export default function Footer() {
                             <li><Link href="/date-night-box-subscription" className="text-gray-600 hover:text-gray-900">Date Night Box Subscription</Link></li>
                             <li><Link href="/date-ideas-near-me" className="text-gray-600 hover:text-gray-900">Date Ideas Near Me</Link></li>
                             <li><Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
-                            <li><Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link></li>
+                        </ul>
+                    </div>
+
+                    {/* Tools Section */}
+                    <div>
+                        <h3 className="text-gray-800 font-bold mb-4">Tools</h3>
+                        <ul className="space-y-2">
+                            <li><Link href="/alphabet-dating" className="text-gray-600 hover:text-gray-900">Alphabet Dating</Link></li>
+                            <li><Link href="/spin-the-wheel" className="text-gray-600 hover:text-gray-900">Spin the Wheel</Link></li>
                         </ul>
                     </div>
 
@@ -47,6 +55,11 @@ export default function Footer() {
                             <li>
                                 <Link href="/terms" className="text-gray-600 hover:text-gray-900">
                                     Terms and Conditions
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">
+                                    Contact Us
                                 </Link>
                             </li>
                         </ul>
