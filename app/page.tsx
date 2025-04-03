@@ -812,7 +812,7 @@ const Home = () => {
       </Head>
       <PageTitle title={PAGE_TITLES.HOME} />
       <Header />
-      <section className="z-[60] relative">
+      <section className="z-[30] relative">
         <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[540px] w-full"></div>
         <div className="absolute inset-0 flex items-center justify-center z-20 text-white px-4">
           <div className="container mx-auto">
@@ -912,7 +912,7 @@ const Home = () => {
         <div className="container mx-auto px-4">
 
           {/* Filters */}
-          <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
+          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
             {/* Active filters chips - visible on mobile */}
             {appliedFiltersCount > 0 && (
               <div className="flex flex-wrap gap-2 mb-3 md:block hidden">

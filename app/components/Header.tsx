@@ -18,9 +18,15 @@ export default function Header() {
             }
         };
         
-        const handleClickOutside = () => {
+        const handleClickOutside = (e: MouseEvent) => {
+            // Check if the click was outside the dropdown
+            const dropdown = document.getElementById('tools-dropdown');
+            const toolsButton = document.getElementById('tools-button');
+            if (dropdown && !dropdown.contains(e.target as Node) && 
+                toolsButton && !toolsButton.contains(e.target as Node)) {
+                setIsToolsMenuOpen(false);
+            }
             setIsMenuOpen(false);
-            setIsToolsMenuOpen(false);
         };
         
         if (isMenuOpen || isToolsMenuOpen) {
@@ -69,28 +75,35 @@ export default function Header() {
                     This is a demo prototype - expect mistakes and unfinished work.
                 </p>
             </div> */}
-            <header className="top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-                <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            <header className="top-0 z-40 bg-white border-b border-gray-200 shadow-sm sticky">
+                <div className="container mx-auto px-4 py-1 flex items-center justify-between">
                     <Link href="/" className="flex items-center">
                         <Image src="/dateideas.png" alt="Date Ideas Logo" width={32} height={32} className="mr-2" />
                         <span className="text-xl font-bold text-gray-900">Date Ideas</span>
                     </Link>
                     {/* Desktop Navigation */}
-                    <div className="hidden xl:flex items-center space-x-4">
+                    <div className="hidden xl:flex items-center space-x-4 text-sm">
                         <Link href="/" className={getLinkStyle('/')}>Home</Link>
                         <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
-                        <Link href="/calendar" className={getLinkStyle('/calendar')}>Shared Date Calendar</Link>
+                        <Link href="/calendar" className={getLinkStyle('/calendar')}>Date Calendar</Link>
                         <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
                         
                         {/* Tools Dropdown */}
                         <div className="relative" onMouseLeave={() => setIsToolsMenuOpen(false)}>
                             <button 
-                                className={`flex items-center space-x-1 ${isToolActive() ? 'text-rose-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}
+                                id="tools-button"
+                                className={`flex items-center space-x-1 px-3 py-2 rounded-md ${
+                                    isToolActive() || isToolsMenuOpen 
+                                    ? 'bg-gray-100 text-rose-600 font-medium' 
+                                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                                }`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setIsToolsMenuOpen(!isToolsMenuOpen);
                                 }}
                                 onMouseEnter={() => setIsToolsMenuOpen(true)}
+                                aria-expanded={isToolsMenuOpen}
+                                aria-controls="tools-dropdown"
                             >
                                 <span>Tools</span>
                                 <svg 
@@ -105,7 +118,8 @@ export default function Header() {
                             
                             {isToolsMenuOpen && (
                                 <div 
-                                    className="absolute mt-2 py-2 w-48 bg-white rounded-md shadow-lg z-50"
+                                    id="tools-dropdown"
+                                    className="absolute mt-1 py-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <Link 
@@ -148,7 +162,7 @@ export default function Header() {
                 
                 {/* Mobile Menu */}
                 <div 
-                    className={`fixed top-0 right-0 h-full w-full bg-black bg-opacity-50 z-40 transition-opacity duration-300 xl:hidden ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                    className={`fixed top-0 right-0 h-full w-full bg-black bg-opacity-50 z-50 transition-opacity duration-300 xl:hidden ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div 
@@ -158,13 +172,13 @@ export default function Header() {
                         <div className="p-6 flex flex-col space-y-6 pt-16">
                             <Link href="/" className={getMobileLinkStyle('/')}>Home</Link>
                             <Link href="/favorites" className={getMobileLinkStyle('/favorites')}>Favorites</Link>
-                            <Link href="/calendar" className={getMobileLinkStyle('/calendar')}>Shared Date Calendar</Link>
+                            <Link href="/calendar" className={getMobileLinkStyle('/calendar')}>Date Calendar</Link>
                             <Link href="/date-idea-generator" className={getMobileLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
                             
                             {/* Mobile Tools Section */}
                             <div className="py-2 border-b border-gray-100">
                                 <p className="text-gray-800 font-medium mb-2">Tools</p>
-                                <div className="pl-4 flex flex-col space-y-2">
+                                <div className="pl-4 flex flex-col space-y-2 bg-gray-50 rounded-lg p-2">
                                     <Link href="/alphabet-dating" className={getMobileLinkStyle('/alphabet-dating')}>
                                         Alphabet Dating
                                     </Link>
