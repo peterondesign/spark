@@ -873,61 +873,100 @@ export default function Home() {
       </Head>
       <PageTitle title={PAGE_TITLES.HOME} />
       <Header />
-
       <section className="z-[60] relative">
-        <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[320px] w-full"></div>
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 text-white px-4">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">Date Ideas Near You
-          </h1>
-          <p className="text-3xl mb-8">Personalised for you and your person</p>
+        <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[450px] w-full"></div>
+        <div className="absolute inset-0 flex items-center justify-center z-20 text-white px-4">
+          <div className="container mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
+              {/* Left column: Title and search */}
+              <div className="flex flex-col items-start justify-center">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">Date Ideas Near You</h1>
+                <p className="text-3xl mb-8">Personalised for you and your person</p>
+                
+                {/* Steps */}
+                <div className="mb-8">
+                  <div className="flex items-center mb-3">
+                    <div className="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center mr-3">
+                      <span className="text-white font-bold">1</span>
+                    </div>
+                    <p className="text-xl">We research things to do</p>
+                  </div>
+                  <div className="flex items-center mb-3">
+                    <div className="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center mr-3">
+                      <span className="text-white font-bold">2</span>
+                    </div>
+                    <p className="text-xl">We share links with the best things happening near you</p>
+                  </div>
+                </div>
+                
+                {/* Search input */}
+                <div className="search-container relative w-full max-w-xl" style={{ position: 'relative', zIndex: 50 }}>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search for date ideas..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="w-full px-5 py-3 pl-12 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                      <SearchIcon className="h-5 w-5 text-gray-500" />
+                    </div>
+                  </div>
+                  {/* Search dropdown results */}
+                  {showSearchResults && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
+                      {searchResults.map(idea => (
+                        <Link
+                          href={`/date-idea/${idea.slug}`}
+                          key={idea.id}
+                          onClick={() => handleSelectSearchResult(idea.slug)}
+                          className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                        >
+                          <div className="relative h-14 w-14 rounded-md overflow-hidden flex-shrink-0">
+                            <Image
+                              src={allDateIdeaImages[idea.slug] || '/placeholder.jpg'}
+                              alt={idea.title}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="ml-3 flex-grow">
+                            <h4 className="font-medium text-gray-800">{idea.title}</h4>
+                            <p className="text-xs text-gray-500">{idea.category}</p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                  {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
+                      <p className="text-gray-600">No date ideas found. Try a different search term.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          {/* Add search input */}
-          <div className="search-container relative w-full max-w-xl mx-auto" style={{ position: 'relative', zIndex: 50 }}>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search for date ideas..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full px-5 py-3 pl-12 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-              />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                <SearchIcon className="h-5 w-5 text-gray-500" />
+              {/* Right column: Placeholder video */}
+              <div className="hidden md:block relative h-[350px] rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+                  <div className="h-16 w-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="relative h-full w-full">
+                  <Image 
+                    src="/placeholder.jpg" 
+                    alt="Date ideas video preview" 
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Search dropdown results */}
-            {showSearchResults && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
-                {searchResults.map(idea => (
-                  <Link
-                    href={`/date-idea/${idea.slug}`}
-                    key={idea.id}
-                    onClick={() => handleSelectSearchResult(idea.slug)}
-                    className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                  >
-                    <div className="relative h-14 w-14 rounded-md overflow-hidden flex-shrink-0">
-                      <Image
-                        src={allDateIdeaImages[idea.slug] || '/placeholder.jpg'}
-                        alt={idea.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="ml-3 flex-grow">
-                      <h4 className="font-medium text-gray-800">{idea.title}</h4>
-                      <p className="text-xs text-gray-500">{idea.category}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
-                <p className="text-gray-600">No date ideas found. Try a different search term.</p>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -935,7 +974,6 @@ export default function Home() {
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
           <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-5 px-6 mb-8 rounded-2xl">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Filters</h3>
             <div className="flex md:grid overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:grid-cols-5 gap-4">
               {/* City Autocomplete with icon - styled version */}
               <div className="relative group min-w-[200px] md:min-w-0">
@@ -1188,21 +1226,6 @@ export default function Home() {
                 </button>
                 <div className="text-gray-700 font-medium flex items-center">
                   {appliedFiltersCount} Filter{appliedFiltersCount !== 1 ? 's' : ''} Applied
-                  {activeFilters.city && (
-                    <span className="ml-2 px-3 py-1 bg-rose-100 text-rose-700 text-sm rounded-full flex items-center">
-                      <MapPinIcon className="h-3 w-3 mr-1" />
-                      {activeFilters.city}
-                      <button 
-                        onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
-                        className="ml-1.5 text-rose-700 hover:text-rose-900"
-                        aria-label="Remove city filter"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
@@ -1216,13 +1239,6 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* {process.env.NODE_ENV === 'development' && (
-                <div className="mb-4 p-4 bg-gray-100 rounded-lg">
-                  <p>Data stats: {filteredDateIdeas.length} filtered ideas, {allDateIdeas.length} total ideas</p>
-                  <p>Active filters: {JSON.stringify(selectedFilters)}</p>
-                </div>
-              )} */}
-
               <GridView
                 dateIdeas={(filteredDateIdeas.length > 0 ? filteredDateIdeas : allDateIdeas).map(idea => ({
                   id: idea.id,
