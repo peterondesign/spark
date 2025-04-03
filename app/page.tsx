@@ -813,7 +813,7 @@ const Home = () => {
       <PageTitle title={PAGE_TITLES.HOME} />
       <Header />
       <section className="z-[60] relative">
-        <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[450px] w-full"></div>
+        <div className="bg-gradient-to-r from-rose-800/80 to-purple-800/80 h-[540px] w-full"></div>
         <div className="absolute inset-0 flex items-center justify-center z-20 text-white px-4">
           <div className="container mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
@@ -915,7 +915,7 @@ const Home = () => {
           <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
             {/* Active filters chips - visible on mobile */}
             {appliedFiltersCount > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3 md:hidden">
+              <div className="flex flex-wrap gap-2 mb-3 md:block hidden">
                 {activeFilters.city && (
                   <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
                     {activeFilters.city}
@@ -931,7 +931,7 @@ const Home = () => {
                   </span>
                 )}
                 {activeFilters.price !== 'all' && (
-                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                     {priceLevelMap[activeFilters.price]}
                     <button 
                       onClick={() => setActiveFilters(prev => ({ ...prev, price: 'all' }))}
@@ -1026,7 +1026,7 @@ const Home = () => {
               </div>
 
               {/* Time of Day Filter - compact design */}
-              <div>
+              <div className="hidden lg:block">
                 <label className="text-xs text-gray-500 block mb-1">Time</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-2">
@@ -1053,7 +1053,7 @@ const Home = () => {
               </div>
 
               {/* Mood Filter - compact popover */}
-              <div>
+              <div className="hidden lg:block">
                 <label className="text-xs text-gray-500 block mb-1">Mood</label>
                 <div className="relative">
                   <button

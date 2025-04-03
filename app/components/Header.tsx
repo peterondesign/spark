@@ -76,7 +76,7 @@ export default function Header() {
                         <span className="text-xl font-bold text-gray-900">Date Ideas</span>
                     </Link>
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center space-x-4">
+                    <div className="hidden xl:flex items-center space-x-4">
                         <Link href="/" className={getLinkStyle('/')}>Home</Link>
                         <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
                         <Link href="/calendar" className={getLinkStyle('/calendar')}>Shared Date Calendar</Link>
@@ -133,7 +133,7 @@ export default function Header() {
                     
                     {/* Mobile Hamburger Button */}
                     <button 
-                        className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1.5 z-50"
+                        className="xl:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1.5 z-50"
                         onClick={(e) => {
                             e.stopPropagation();
                             setIsMenuOpen(!isMenuOpen);
@@ -148,7 +148,7 @@ export default function Header() {
                 
                 {/* Mobile Menu */}
                 <div 
-                    className={`fixed top-0 right-0 h-full w-full bg-black bg-opacity-50 z-40 transition-opacity duration-300 md:hidden ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                    className={`fixed top-0 right-0 h-full w-full bg-black bg-opacity-50 z-40 transition-opacity duration-300 xl:hidden ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div 
