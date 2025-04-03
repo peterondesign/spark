@@ -1,13 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { HeartIcon, MapPinIcon, SearchIcon, StarIcon } from "../components/icons";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
     const pathname = usePathname();
+    const toolsMenuRef = useRef<HTMLDivElement>(null);
     
     // Close menu when clicking outside or pressing escape
     useEffect(() => {
@@ -19,22 +20,31 @@ export default function Header() {
         };
         
         const handleClickOutside = (e: MouseEvent) => {
-            // Check if the click was outside the dropdown
-            const dropdown = document.getElementById('tools-dropdown');
-            const toolsButton = document.getElementById('tools-button');
-            if (dropdown && !dropdown.contains(e.target as Node) && 
-                toolsButton && !toolsButton.contains(e.target as Node)) {
-                setIsToolsMenuOpen(false);
+            // For tools dropdown, check if the click was outside both the dropdown and its toggle button
+            if (isToolsMenuOpen && toolsMenuRef.current) {
+                const dropdown = toolsMenuRef.current;
+                const toolsButton = document.getElementById('tools-button');
+                
+                if (dropdown && !dropdown.contains(e.target as Node) && 
+                    toolsButton && !toolsButton.contains(e.target as Node)) {
+                    setIsToolsMenuOpen(false);
+                }
             }
-            setIsMenuOpen(false);
+            
+            // Always close main mobile menu on any click outside
+            if (isMenuOpen) {
+                const mobileMenu = document.getElementById('mobile-menu');
+                const hamburgerButton = document.getElementById('hamburger-button');
+                
+                if (mobileMenu && !mobileMenu.contains(e.target as Node) && 
+                    hamburgerButton && !hamburgerButton.contains(e.target as Node)) {
+                    setIsMenuOpen(false);
+                }
+            }
         };
         
-        if (isMenuOpen || isToolsMenuOpen) {
-            document.addEventListener('keydown', handleEscape);
-            setTimeout(() => {
-                document.addEventListener('click', handleClickOutside);
-            }, 100);
-        }
+        document.addEventListener('keydown', handleEscape);
+        document.addEventListener('click', handleClickOutside);
         
         return () => {
             document.removeEventListener('keydown', handleEscape);
@@ -88,8 +98,8 @@ export default function Header() {
                         <Link href="/calendar" className={getLinkStyle('/calendar')}>Date Calendar</Link>
                         <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
                         
-                        {/* Tools Dropdown */}
-                        <div className="relative" onMouseLeave={() => setIsToolsMenuOpen(false)}>
+                        {/* Tools Dropdown - Simplified to only toggle on click */}
+                        <div className="relative" ref={toolsMenuRef}>
                             <button 
                                 id="tools-button"
                                 className={`flex items-center space-x-1 px-3 py-2 rounded-md ${
@@ -101,7 +111,6 @@ export default function Header() {
                                     e.stopPropagation();
                                     setIsToolsMenuOpen(!isToolsMenuOpen);
                                 }}
-                                onMouseEnter={() => setIsToolsMenuOpen(true)}
                                 aria-expanded={isToolsMenuOpen}
                                 aria-controls="tools-dropdown"
                             >
@@ -147,6 +156,7 @@ export default function Header() {
                     
                     {/* Mobile Hamburger Button */}
                     <button 
+                        id="hamburger-button"
                         className="xl:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1.5 z-50"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -163,11 +173,10 @@ export default function Header() {
                 {/* Mobile Menu */}
                 <div 
                     className={`fixed top-0 right-0 h-full w-full bg-black bg-opacity-50 z-50 transition-opacity duration-300 xl:hidden ${isMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-                    onClick={(e) => e.stopPropagation()}
                 >
                     <div 
+                        id="mobile-menu"
                         className={`fixed top-0 right-0 h-full w-3/4 max-w-sm bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
-                        onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6 flex flex-col space-y-6 pt-16">
                             <Link href="/" className={getMobileLinkStyle('/')}>Home</Link>

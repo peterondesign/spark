@@ -11,6 +11,7 @@ import { PAGE_TITLES } from "../utils/titleUtils";
 import Link from "next/link";
 import Head from "next/head";
 import { generateMetadata } from "../../utils/metadataUtils";
+import { Heart, Brain, Shuffle, Tag } from "lucide-react";
 
 // Define DateIdea type
 interface DateIdea {
@@ -97,7 +98,7 @@ export default function DateIdeaGenerator() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-cover bg-center h-[500px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
+      <section className="relative bg-cover bg-center h-[270px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-rose-500/80 to-purple-600/80"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
           <h1 className="text-5xl font-extrabold mb-4">Discover Your Perfect Date</h1>
@@ -146,22 +147,22 @@ export default function DateIdeaGenerator() {
           <h2 className="text-3xl font-bold text-center mb-8">Why Use Our Generator?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-6 rounded-lg shadow-md text-center">
-              <img src="/placeholder.svg" alt="Couples" className="h-16 mx-auto mb-4" />
+              <Heart className="h-16 w-16 mx-auto mb-4 text-rose-500" />
               <h3 className="text-xl font-semibold mb-2">Perfect for Couples</h3>
               <p className="text-gray-600">Creative ideas for every relationship stage.</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md text-center">
-              <img src="/placeholder.svg" alt="AI Suggestions" className="h-16 mx-auto mb-4" />
+              <Brain className="h-16 w-16 mx-auto mb-4 text-purple-600" />
               <h3 className="text-xl font-semibold mb-2">AI-Powered</h3>
               <p className="text-gray-600">Personalized suggestions based on your preferences.</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md text-center">
-              <img src="/placeholder.svg" alt="Randomizer" className="h-16 mx-auto mb-4" />
+              <Shuffle className="h-16 w-16 mx-auto mb-4 text-cyan-500" />
               <h3 className="text-xl font-semibold mb-2">Randomizer</h3>
               <p className="text-gray-600">Discover unexpected and delightful experiences.</p>
             </div>
             <div className="bg-white p-6 rounded-lg shadow-md text-center">
-              <img src="/placeholder.svg" alt="Free" className="h-16 mx-auto mb-4" />
+              <Tag className="h-16 w-16 mx-auto mb-4 text-emerald-500" />
               <h3 className="text-xl font-semibold mb-2">Free to Use</h3>
               <p className="text-gray-600">Plan your next date night without any cost.</p>
             </div>

@@ -161,7 +161,7 @@ export default function Favorites() {
                 </div>
                 <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
                   <Image
-                    src="/placeholder.jpg"
+                    src="/bikeriding.webp"
                     alt="Couple enjoying a date"
                     fill
                     className="object-cover transition-transform duration-700 hover:scale-105"
@@ -200,15 +200,15 @@ export default function Favorites() {
                 <div className="order-2 lg:order-1">
                   <div className="grid grid-cols-2 gap-4">
                     <Image
-                      src="/placeholder.jpg"
-                      alt="Romantic dinner"
+                      src="/romanticpaint.jpg"
+                      alt="Romantic paint night"
                       width={300}
                       height={400}
                       className="rounded-xl object-cover w-full h-[200px] md:h-[300px]"
                     />
                     <Image
-                      src="/placeholder.jpg"
-                      alt="Outdoor adventure"
+                      src="/couplegokart.webp"
+                      alt="Couple go-karting"
                       width={300}
                       height={400}
                       className="rounded-xl object-cover w-full h-[200px] md:h-[300px] mt-8"

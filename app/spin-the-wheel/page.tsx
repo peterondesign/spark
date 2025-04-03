@@ -22,6 +22,37 @@ interface DateIdea {
   image: string;
 }
 
+// Loading skeleton for SpinWheel
+const SpinWheelSkeleton = () => (
+  <div className="flex flex-col md:flex-row w-full justify-between items-center md:items-start gap-8">
+    {/* Left column skeleton (wheel) */}
+    <div className="w-full md:w-1/2 flex flex-col items-center">
+      <div className="relative w-[300px] h-[300px] md:w-[350px] md:h-[350px] mb-8 animate-pulse">
+        <div className="absolute inset-0 bg-gray-200 rounded-full"></div>
+      </div>
+      <div className="w-40 h-12 bg-gray-200 rounded-full animate-pulse"></div>
+    </div>
+    
+    {/* Right column skeleton (result card) */}
+    <div className="w-full md:w-1/2 flex justify-center">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+        <div className="h-48 bg-gray-200 animate-pulse"></div>
+        <div className="p-6">
+          <div className="h-8 bg-gray-200 rounded w-3/4 mb-4 animate-pulse"></div>
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-full mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 mb-6 animate-pulse"></div>
+          <div className="flex justify-between">
+            <div className="h-10 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+            <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function SpinTheWheelPage() {
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
@@ -34,16 +65,16 @@ export default function SpinTheWheelPage() {
           .from('date_ideas')
           .select('*')
           .limit(12); // Limiting to 12 items for the wheel
-
+          
         if (error) {
           console.error("Supabase Error:", error);
           throw error;
         }
-
+        
         // Shuffle the date ideas to make it more interesting
         const shuffledData = data ? [...data].sort(() => Math.random() - 0.5) : [];
         setDateIdeas(shuffledData);
-
+        
         // Load images for all date ideas
         if (data) {
           const imagesPromises = data.map(async (idea: { slug: string; image: string | { url?: string; }; title: string; category: string; }) => ({
@@ -53,12 +84,14 @@ export default function SpinTheWheelPage() {
           const imagesResolved = Object.assign({}, ...(await Promise.all(imagesPromises)));
           setAllDateIdeaImages(imagesResolved);
         }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching date ideas:', error);
         setLoading(false);
       }
     };
+    
     fetchDateIdeas();
   }, []);
 
@@ -69,27 +102,26 @@ export default function SpinTheWheelPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-cover bg-center h-[400px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
+      <section className="relative bg-cover bg-center h-[350px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/80 to-purple-600/80"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Spin the Wheel - Date Idea Randomizer</h1>
           <p className="text-xl max-w-2xl">Can't decide what to do? Let fate choose your next date adventure!</p>
         </div>
       </section>
-
+      
       {/* Spin Wheel Section */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
-                <p className="mt-4 text-gray-600">Loading date ideas...</p>
-              </div>
-            ) : (
+          {loading ? (
+            <div className="max-w-6xl mx-auto">
+              <SpinWheelSkeleton />
+            </div>
+          ) : (
+            <div className="max-w-6xl mx-auto">
               <SpinWheel dateIdeas={dateIdeas} dateIdeaImages={allDateIdeaImages} />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
       
@@ -116,7 +148,7 @@ export default function SpinTheWheelPage() {
           </div>
         </div>
       </section>
-
+      
       {/* Other Tools Section */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">

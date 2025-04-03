@@ -404,7 +404,7 @@ const CalendarPage: React.FC = () => {
                 </div>
                 <div className="relative h-48 md:h-full min-h-[200px] rounded-xl overflow-hidden">
                   <Image
-                    src="/placeholder.jpg"
+                    src="/bikeriding.webp"
                     alt="Couple enjoying a date"
                     fill
                     className="object-cover"
