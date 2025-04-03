@@ -115,7 +115,7 @@ export default function AlphabetDatingPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-cover bg-center h-[400px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
+      <section className="relative bg-cover bg-center h-[320px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-rose-500/80 to-amber-600/80"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Alphabet Dating Challenge</h1>

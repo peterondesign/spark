@@ -81,7 +81,7 @@ const DateNightBoxSubscription = () => {
             <Header />
             <main className="w-full">
                 {/* Hero Section with Parallax-like effect */}
-                <section className="relative h-screen flex items-center justify-center overflow-hidden bg-black">
+                <section className="relative h-[480px] flex items-center justify-center overflow-hidden bg-black">
                     <div className="absolute inset-0">
                         <Image
                             src="/placeholder.jpg"
@@ -95,8 +95,8 @@ const DateNightBoxSubscription = () => {
                     </div>
                     <div className="absolute inset-0 opacity-80 bg-gradient-to-b from-purple-900 to-black"></div>
                     <div className="relative z-10 text-center text-white px-4">
-                        <h1 className="text-6xl md:text-8xl font-bold mb-6 tracking-tight">More than a box.</h1>
-                        <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">Join an exclusive community of couples who believe in making every moment extraordinary.</p>
+                        <h1 className="text-6xl md:text-6xl font-bold mb-6 tracking-tight">This is your sign to spoil your person</h1>
+                        <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">Get surprise gifts just for date night</p>
                         <Button
                             variant="secondary"
                             size="lg"
@@ -107,7 +107,7 @@ const DateNightBoxSubscription = () => {
                                 });
                             }}
                         >
-                            View Pricing Options
+                            Get a Box
                         </Button>
                     </div>
                 </section>
@@ -121,7 +121,7 @@ const DateNightBoxSubscription = () => {
                                 <div className="aspect-square rounded-3xl overflow-hidden mb-6 transform group-hover:scale-105 transition-transform duration-500">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
                                     <Image
-                                        src="/placeholder.jpg"
+                                        src="/forhimgift.webp"
                                         alt="Curated box for him"
                                         layout="fill"
                                         objectFit="cover"
@@ -142,7 +142,7 @@ const DateNightBoxSubscription = () => {
                                 <div className="aspect-square rounded-3xl overflow-hidden mb-6 transform group-hover:scale-105 transition-transform duration-500">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
                                     <Image
-                                        src="/placeholder.jpg"
+                                        src="/forhergift.webp"
                                         alt="Curated box for her"
                                         layout="fill"
                                         objectFit="cover"
@@ -162,7 +162,7 @@ const DateNightBoxSubscription = () => {
                                 <div className="aspect-square rounded-3xl overflow-hidden mb-6 transform group-hover:scale-105 transition-transform duration-500">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
                                     <Image
-                                        src="/placeholder.jpg"
+                                        src="/couplegift.webp"
                                         alt="Monthly couple box"
                                         layout="fill"
                                         objectFit="cover"
@@ -196,7 +196,7 @@ const DateNightBoxSubscription = () => {
                                     <span className="text-2xl font-bold">1</span>
                                 </div>
                                 <h3 className="text-xl font-bold mb-4">Choose Your Box</h3>
-                                <p className="text-gray-300">Select the experience that resonates with your story</p>
+                                <p className="text-gray-300">Choose a box tailored for him, her, or both of you</p>
                                 <div className="absolute top-8 right-0 transform translate-x-1/2 hidden md:block">
                                     <svg className="w-24 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path d="M17 8l4 4m0 0l-4 4m4-4H3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
