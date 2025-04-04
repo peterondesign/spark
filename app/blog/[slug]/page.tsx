@@ -12,12 +12,12 @@ const query = groq`*[_type == "blog" && slug.current == $slug][0] {
   extract
 }`;
 
-type PageParams = {
+// Fix the params type to match Next.js expected structure
+export default async function BlogPostPage({ 
+  params 
+}: { 
   params: { slug: string }
-  searchParams?: { [key: string]: string | string[] | undefined }
-}
-
-export default async function BlogPostPage({ params }: PageParams) {
+}) {
   const post = await client.fetch(query, { slug: params.slug });
 
   if (!post) {
