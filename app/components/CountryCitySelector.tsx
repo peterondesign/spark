@@ -117,11 +117,10 @@ export default function CountryCitySelector({
     // Check if localStorage needs to be refreshed
     checkAndClearLocalStorage();
     
-    // Always attempt to get the IP location first - Airbnb style
-    // Unless we already have fresh data stored
+    // Only attempt to get the IP location if prioritizeIpLocation is true
     if (hasStoredLocationData()) {
       loadStoredLocation();
-    } else {
+    } else if (prioritizeIpLocation) {
       detectIpLocation();
       
       // Set timeout to prevent hanging if IP detection is slow
@@ -136,6 +135,11 @@ export default function CountryCitySelector({
       }, LOCATION_DETECTION_TIMEOUT);
       
       return () => clearTimeout(timeoutId);
+    } else {
+      // Skip IP detection and just load popular cities
+      console.log('Skipping IP detection as prioritizeIpLocation is false');
+      loadPopularCities();
+      setIsLoading(false);
     }
   }, []);
 
