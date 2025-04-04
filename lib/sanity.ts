@@ -12,7 +12,7 @@ export const client = createClient({
 // Create a second Sanity client for the local dataset
 export const localClient = createClient({
   projectId: 'dyrlcvtu',
-  dataset: 'local',
+  dataset: 'production',
   useCdn: false, // Avoid caching for local development
   apiVersion: '2023-05-03',
   token: process.env.SANITY_API_TOKEN,

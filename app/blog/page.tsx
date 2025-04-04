@@ -84,7 +84,7 @@ export default function BlogPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative h-[70vh] min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[20vh] min-h-[400px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-900/90 to-rose-900/90 mix-blend-multiply" />
         <div className="absolute inset-0">
           {posts[0]?.mainImage?.asset?.url && (
@@ -97,12 +97,9 @@ export default function BlogPage() {
         </div>
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <h1 className="text-5xl md:text-7xl font-light mb-6 tracking-tight">
-            Stories to Inspire<br/>
-            <span className="font-medium">Your Next Adventure</span>
+            Discover Date Ideas<br/>
+            <span className="font-medium">and Stories</span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 max-w-2xl mx-auto font-light">
-            Discover date ideas, relationship insights, and romantic inspiration
-          </p>
         </div>
       </section>
 
@@ -206,22 +203,15 @@ export default function BlogPage() {
         <section className="mt-24 bg-gradient-to-br from-purple-50 to-rose-50 rounded-3xl p-12 md:p-16">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-medium mb-4">Stay Inspired</h2>
-            <p className="text-gray-600 mb-8">
-              Get fresh date ideas, gift idea suggestions and relationship tips delivered to your inbox weekly.
-            </p>
-            <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-6 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button
-                type="submit"
-                className="px-8 py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-              >
-                Subscribe
-              </button>
-            </form>
+            <p className="text-gray-600 mb-6">Subscribe to receive the latest date night ideas, gift idea suggestions and relationship tips delivered to your inbox.</p>
+            <iframe
+              src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true"
+              data-test-id="beehiiv-embed"
+              height="52"
+              frameBorder="0"
+              scrolling="no"
+              style={{ margin: 0, borderRadius: 0, backgroundColor: 'transparent', width: '100%' }}
+            />
           </div>
         </section>
       </main>
