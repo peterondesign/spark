@@ -207,7 +207,7 @@ export default function BlogPage() {
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-medium mb-4">Stay Inspired</h2>
             <p className="text-gray-600 mb-8">
-              Get fresh date ideas and relationship tips delivered to your inbox weekly.
+              Get fresh date ideas, gift idea suggestions and relationship tips delivered to your inbox weekly.
             </p>
             <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
               <input

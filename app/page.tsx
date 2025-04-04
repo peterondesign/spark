@@ -1240,7 +1240,7 @@ const Home = () => {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Fresh Date Ideas Every Week</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Fresh Date Ideas & Gift Idea Suggestions Every Week</h2>
             <p className="text-gray-600 mb-6">Subscribe to receive the latest date night ideas and relationship tips delivered to your inbox.</p>
             <iframe
               src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true"

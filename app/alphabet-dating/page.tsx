@@ -45,6 +45,46 @@ export default function AlphabetDatingPage() {
         }
 
         if (data) {
+          // Add our nature date examples to ensure they're included
+          const natureScavengerHunt = {
+            id: 30001, // Using a high ID to avoid conflicts
+            title: "Nature Scavenger Hunt",
+            category: "Outdoor",
+            rating: 5,
+            location: "Park",
+            description: "Search for items in nature on a guided hunt.",
+            price: "Free",
+            duration: "2 hours",
+            slug: "nature-scavenger-hunt",
+            image: "/bikeriding.webp"
+          };
+
+          const naturePhotography = {
+            id: 30002, // Using a high ID to avoid conflicts
+            title: "Nature Photography Workshop",
+            category: "Outdoor",
+            rating: 5,
+            location: "Park",
+            description: "Learn to take stunning nature photos.",
+            price: "$30",
+            duration: "3 hours",
+            slug: "nature-photography-workshop",
+            image: "/romanticpaint.jpg"
+          };
+
+          // Make sure these show up under N for Nature
+          const enhancedData = [...data];
+          const hasScavengerHunt = enhancedData.some(idea => idea.slug === "nature-scavenger-hunt");
+          const hasPhotography = enhancedData.some(idea => idea.slug === "nature-photography-workshop");
+
+          if (!hasScavengerHunt) {
+            enhancedData.push(natureScavengerHunt);
+          }
+          
+          if (!hasPhotography) {
+            enhancedData.push(naturePhotography);
+          }
+
           // Organize date ideas by first letter of title
           const alphabetized: AlphabetDatingIdeas = {};
           const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -55,7 +95,7 @@ export default function AlphabetDatingPage() {
           });
 
           // Sort date ideas by first letter of title
-          data.forEach((idea: DateIdea) => {
+          enhancedData.forEach((idea: DateIdea) => {
             const firstLetter = idea.title.charAt(0).toUpperCase();
             if (alphabet.includes(firstLetter)) {
               // Add the idea to the corresponding letter's array
@@ -138,9 +178,31 @@ export default function AlphabetDatingPage() {
           </div>
         </div>
       </section>
+
+       {/* Other Tools Section */}
+       <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-8">Try Our Other Date Tools</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link href="/date-idea-generator" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold mb-2 text-blue-600">Date Idea Generator</h3>
+              <p className="text-gray-600">Get personalized date ideas based on your preferences.</p>
+            </Link>
+            <Link href="/spin-the-wheel" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold mb-2 text-purple-600">Spin the Wheel</h3>
+              <p className="text-gray-600">Let fate choose your next date adventure with our random wheel.</p>
+            </Link>
+            <Link href="/date-ideas-near-me" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold mb-2 text-pink-600">Date Ideas Near Me</h3>
+              <p className="text-gray-600">Discover date ideas based on your location.</p>
+            </Link>
+          </div>
+        </div>
+      </section>
+  
       
       {/* How It Works Section */}
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">How Alphabet Dating Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -163,26 +225,7 @@ export default function AlphabetDatingPage() {
         </div>
       </section>
 
-      {/* Other Tools Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Try Our Other Date Tools</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link href="/date-idea-generator" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold mb-2 text-blue-600">Date Idea Generator</h3>
-              <p className="text-gray-600">Get personalized date ideas based on your preferences.</p>
-            </Link>
-            <Link href="/spin-the-wheel" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold mb-2 text-purple-600">Spin the Wheel</h3>
-              <p className="text-gray-600">Let fate choose your next date adventure with our random wheel.</p>
-            </Link>
-            <Link href="/date-ideas-near-me" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold mb-2 text-pink-600">Date Ideas Near Me</h3>
-              <p className="text-gray-600">Discover date ideas based on your location.</p>
-            </Link>
-          </div>
-        </div>
-      </section>
+     
       
       <Footer />
     </div>

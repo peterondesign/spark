@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaTiktok } from 'react-icons/fa';
+import { FaTiktok, FaPinterest } from 'react-icons/fa';
 
 export default function Footer() {
     return (
@@ -23,8 +23,11 @@ export default function Footer() {
                                 <FaTiktok size={24} color="black" />
                                 <span className="sr-only">TikTok: @sparkuscc</span>
                             </Link>
+                            <Link href="https://www.pinterest.com/dateideacc" className="text-gray-600 hover:text-gray-900">
+                                <FaPinterest size={24} color="black" />
+                            </Link>
                         </div>
-                        <p className="mt-2 text-sm text-gray-600">@sparkuscc</p>
+                        <p className="mt-2 text-sm text-gray-600">@dateideacc</p>
                     </div>
 
                     {/* Quick Links */}

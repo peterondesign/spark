@@ -194,6 +194,9 @@ export default function Header() {
                                     <Link href="/spin-the-wheel" className={getMobileLinkStyle('/spin-the-wheel')}>
                                         Spin the Wheel
                                     </Link>
+                                    <Link href="/nature-date-ideas" className={getMobileLinkStyle('/nature-date-ideas')}>
+                                        Nature Date Tracker
+                                    </Link>
                                 </div>
                             </div>
                             

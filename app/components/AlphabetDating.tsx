@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import SaveButton from "./SaveButton";
 import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
+import { cn } from "@/lib/utils";
 
 interface DateIdea {
   id: number;
@@ -30,8 +31,8 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
   const [completedLetters, setCompletedLetters] = useState<string[]>([]);
   const [selectedLetterIdeas, setSelectedLetterIdeas] = useState<{ letter: string; ideas: DateIdea[] } | null>(null);
   const [selectedDateIdeas, setSelectedDateIdeas] = useState<Record<string, DateIdea>>({});
+  const [showCelebration, setShowCelebration] = useState<boolean>(false);
 
-  // Load saved state from localStorage on component mount
   useEffect(() => {
     try {
       const savedRevealed = localStorage.getItem('alphabetDatingRevealed');
@@ -53,32 +54,12 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
     }
   }, []);
 
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    if (Object.keys(revealedLetters).length > 0) {
-      localStorage.setItem('alphabetDatingRevealed', JSON.stringify(revealedLetters));
-    }
-  }, [revealedLetters]);
-
-  useEffect(() => {
-    if (completedLetters.length > 0) {
-      localStorage.setItem('alphabetDatingCompleted', JSON.stringify(completedLetters));
-    }
-  }, [completedLetters]);
-
-  useEffect(() => {
-    if (Object.keys(selectedDateIdeas).length > 0) {
-      localStorage.setItem('alphabetDatingSelected', JSON.stringify(selectedDateIdeas));
-    }
-  }, [selectedDateIdeas]);
-
   const revealLetter = (letter: string) => {
     setRevealedLetters(prev => ({
       ...prev,
       [letter]: true
     }));
 
-    // Show date ideas modal for this letter
     if (dateIdeas[letter] && dateIdeas[letter].length > 0) {
       setSelectedLetterIdeas({ letter, ideas: dateIdeas[letter] });
     }
@@ -89,12 +70,41 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
       ...prev,
       [letter]: idea
     }));
-    setSelectedLetterIdeas(null); // Close the modal
+    setSelectedLetterIdeas(null);
   };
 
   const markAsCompleted = (letter: string) => {
     if (!completedLetters.includes(letter)) {
       setCompletedLetters(prev => [...prev, letter]);
+      
+      const duration = 2000;
+      const end = Date.now() + duration;
+      
+      setShowCelebration(true);
+      
+      (function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+        });
+        
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+      
+      setTimeout(() => {
+        setShowCelebration(false);
+      }, duration);
     }
   };
 
@@ -114,7 +124,6 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
       return selectedDateIdeas[letter];
     }
     
-    // If no idea is selected yet, use the first one from the array
     if (dateIdeas[letter] && dateIdeas[letter].length > 0) {
       return dateIdeas[letter][0];
     }
@@ -126,19 +135,26 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
     <div className="flex flex-col items-center">
       <div className="mb-8 text-center">
         <h2 className="text-3xl font-bold mb-4">A-Z Dating Challenge</h2>
-        <p className="text-gray-600 mb-6">Reveal one letter at a time for your next date night adventure. Complete the alphabet for a year of amazing dates!</p>
+        <p className="text-gray-600 mb-6">Reveal letter cards to find fun date ideas!</p>
         <div className="text-lg mb-6">
-          <span className="font-bold">{Object.keys(revealedLetters).length}</span> of <span className="font-bold">26</span> letters revealed
-          <span className="mx-2">•</span>
-          <span className="font-bold">{completedLetters.length}</span> dates completed
+          <div className="flex justify-center gap-4">
+            <div className="bg-blue-100 p-3 rounded-lg text-center min-w-[120px]">
+              <div className="font-bold text-2xl text-blue-700">{Object.keys(revealedLetters).length}</div>
+              <div className="text-xs text-blue-600">Revealed</div>
+            </div>
+            <div className="bg-green-100 p-3 rounded-lg text-center min-w-[120px]">
+              <div className="font-bold text-2xl text-green-700">{completedLetters.length}</div>
+              <div className="text-xs text-green-600">Completed</div>
+            </div>
+          </div>
         </div>
         <Button 
           onClick={resetAllCards} 
           variant="outline"
           size="sm"
-          className="bg-gray-100 text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+          className="bg-red-100 text-red-600 hover:text-red-700 hover:bg-red-200 border-red-300"
         >
-          Reset All Cards
+          Start Over
         </Button>
       </div>
 
@@ -164,58 +180,84 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
                         src={idea?.slug ? dateIdeaImages[idea.slug] : '/placeholder.jpg'}
                         alt={idea?.title || `Letter ${letter}`}
                         fill
-                        className="object-cover"
+                        className={cn(
+                          "object-cover",
+                          isCompleted ? "opacity-70" : ""
+                        )}
                       />
-                      {isCompleted && (
-                        <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                          <div className="bg-green-100 text-green-800 px-2 py-1 rounded-md font-bold text-sm transform rotate-[-15deg] shadow-lg border border-green-200">
-                            COMPLETED
-                          </div>
-                        </div>
-                      )}
-                      <div className="absolute top-2 right-2">
-                        {idea && idea.id > 0 && (
-                          <SaveButton 
-                            itemSlug={idea.slug}
-                            item={idea}
-                            onToggle={() => {}}
-                          />
+                      
+                      {/* Completion checkmark */}
+                      <div 
+                        className={cn(
+                          "absolute top-2 right-2 w-10 h-10 rounded-full cursor-pointer transition-all duration-300", 
+                          "flex items-center justify-center shadow-md border-2", 
+                          isCompleted 
+                            ? "bg-green-500 border-white text-white" 
+                            : "bg-white/80 border-gray-300 text-gray-400 hover:bg-green-100 hover:border-green-300 hover:text-green-500"
+                        )}
+                        onClick={() => markAsCompleted(letter)}
+                        role="checkbox"
+                        aria-checked={isCompleted}
+                        tabIndex={0}
+                        title={isCompleted ? "Completed!" : "Mark as completed"}
+                      >
+                        {isCompleted ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
                         )}
                       </div>
 
+                      {isCompleted && (
+                        <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
+                          <div className="bg-green-100 text-green-800 px-4 py-2 rounded-full font-bold text-sm transform rotate-[-15deg] shadow-lg border-2 border-green-300">
+                            DONE!
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Letter badge */}
+                      <div className="absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-pink-500 text-white w-8 h-8 flex items-center justify-center font-bold rounded-bl-lg rounded-tr-lg shadow-md">
+                        {letter}
+                      </div>
+                      
                       {hasMultipleIdeas && !isCompleted && (
                         <button 
                           onClick={() => setSelectedLetterIdeas({ letter, ideas: dateIdeas[letter] })}
-                          className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-amber-600 p-1 rounded-full shadow-md"
+                          className="absolute bottom-2 right-2 bg-white/90 hover:bg-white text-blue-600 p-1.5 rounded-full shadow-md hover:shadow-lg transition-all"
                           title="See more options"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                           </svg>
                         </button>
                       )}
                     </div>
                     <div className="p-3">
-                      <h3 className="font-bold text-sm truncate">{idea?.title || `${letter} Date`}</h3>
-                      <p className="text-xs text-gray-500 mb-2">{idea?.category || 'Coming Soon'}</p>
-                      <div className="flex justify-between items-center">
+                      <h3 className={cn(
+                        "font-bold text-center text-md mb-1",
+                        isCompleted ? "line-through text-gray-500" : ""
+                      )}>
+                        {idea?.title || `${letter} Date`}
+                      </h3>
+                      
+                      <div className="flex justify-center">
                         <Link href={idea && idea.id > 0 ? `/date-idea/${idea.slug}` : '#'}>
-                          <Button variant="link" size="sm" className="p-0 h-auto text-xs">
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className={cn(
+                              "p-0 h-auto text-sm",
+                              isCompleted ? "opacity-60" : ""
+                            )}
+                          >
                             View Details
                           </Button>
                         </Link>
-                        {!isCompleted ? (
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="text-xs border-green-200 text-green-700 hover:bg-green-50"
-                            onClick={() => markAsCompleted(letter)}
-                          >
-                            Mark Done
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-green-600 font-medium">✓ Completed</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -227,15 +269,14 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
                 >
                   <button 
                     onClick={() => revealLetter(letter)}
-                    className="w-full h-full bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg p-0.5 shadow-lg cursor-pointer"
+                    className="w-full h-full bg-gradient-to-br from-rose-500 to-amber-500 rounded-lg p-1 shadow-lg cursor-pointer"
                   >
-                    <div className="bg-white rounded-md h-full flex flex-col items-center justify-center py-10">
-                      <span className="text-4xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-rose-500 to-amber-500">
+                    <div className="bg-white rounded-lg h-full flex flex-col items-center justify-center py-10">
+                      <span className="text-5xl sm:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-rose-500 to-amber-500">
                         {letter}
                       </span>
-                      <span className="mt-2 text-gray-500 text-xs">Click to reveal</span>
+                      <span className="mt-2 text-gray-600 font-medium">Tap to reveal!</span>
                       
-                      {/* Scratch texture overlay */}
                       <div className="absolute inset-0 rounded-lg" 
                         style={{
                           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100%25\' height=\'100%25\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cdefs%3E%3Cpattern id=\'smallGrid\' width=\'8\' height=\'8\' patternUnits=\'userSpaceOnUse\'%3E%3Cpath d=\'M 8 0 L 0 0 0 8\' fill=\'none\' stroke=\'rgba(0, 0, 0, 0.05)\' stroke-width=\'0.5\'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=\'100%25\' height=\'100%25\' fill=\'url(%23smallGrid)\'/%3E%3C/svg%3E")',
@@ -251,22 +292,16 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
         })}
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 max-w-2xl">
-        <h3 className="text-xl font-semibold mb-3 text-amber-800">About Alphabet Dating</h3>
-        <p className="text-amber-700 mb-4">
-          Alphabet dating is a fun way to keep date nights creative and exciting! The concept is simple - work through the alphabet, with each date being inspired by a different letter.
-        </p>
-        <p className="text-amber-700">
-          Click each card to reveal a date idea starting with that letter. After you've gone on the date, mark it as completed to track your progress. Can you complete all 26 letters?
-        </p>
-      </div>
-
-      {/* Date Ideas Selection Modal */}
       {selectedLetterIdeas && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-rose-500 to-amber-500 text-white">
-              <h3 className="text-xl font-bold">Choose a Date Idea for Letter {selectedLetterIdeas.letter}</h3>
+              <h3 className="text-xl font-bold flex items-center">
+                <span className="bg-white text-rose-500 w-10 h-10 rounded-full flex items-center justify-center mr-2 font-bold text-xl">
+                  {selectedLetterIdeas.letter}
+                </span>
+                Choose a Date Idea
+              </h3>
               <button 
                 onClick={() => setSelectedLetterIdeas(null)}
                 className="p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -302,39 +337,36 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
                         />
                         {isSelected && (
                           <div className="absolute top-2 right-2 bg-amber-500 text-white p-1.5 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           </div>
                         )}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                          <h4 className="text-white font-bold text-sm truncate">{idea.title}</h4>
+                          <h4 className="text-white font-bold text-lg truncate">{idea.title}</h4>
                         </div>
                       </div>
-                      <div className="p-3">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded">{idea.category}</span>
-                          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">{idea.price}</span>
-                          <span className="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded">{idea.duration}</span>
-                        </div>
-                        <p className="text-gray-600 text-sm line-clamp-2 mb-2">{idea.description}</p>
-                        <div className="flex justify-between items-center">
-                          <Link href={`/date-idea/${idea.slug}`} onClick={(e) => e.stopPropagation()}>
-                            <Button variant="link" size="sm" className="p-0 h-auto text-amber-600 hover:text-amber-800">
-                              View Details
-                            </Button>
-                          </Link>
+                      <div className="p-4">
+                        <div className="mb-4 text-center">
                           <Button 
-                            variant="ghost" 
+                            variant="outline" 
                             size="sm"
-                            className={`text-xs ${isSelected ? 'bg-amber-100 text-amber-700' : 'border-amber-200 text-amber-700 hover:bg-amber-50'}`}
+                            className={`w-full ${isSelected ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800'}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               selectDateIdea(selectedLetterIdeas.letter, idea);
                             }}
                           >
-                            {isSelected ? 'Selected' : 'Select This Date'}
+                            {isSelected ? 'Selected ✓' : 'Choose This One!'}
                           </Button>
+                        </div>
+                        
+                        <div className="flex justify-center">
+                          <Link href={`/date-idea/${idea.slug}`} onClick={(e) => e.stopPropagation()}>
+                            <Button variant="link" size="sm" className="p-0 h-auto text-blue-600 hover:text-blue-800">
+                              View Details
+                            </Button>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -344,25 +376,18 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
             </div>
 
             <div className="p-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-end gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setSelectedLetterIdeas(null)}
-                >
-                  Cancel
-                </Button>
+              <div className="flex justify-center">
                 <Button 
                   onClick={() => {
                     if (selectedDateIdeas[selectedLetterIdeas.letter]) {
                       setSelectedLetterIdeas(null);
                     } else if (selectedLetterIdeas.ideas.length > 0) {
-                      // Auto-select first idea if none selected
                       selectDateIdea(selectedLetterIdeas.letter, selectedLetterIdeas.ideas[0]);
                     }
                   }}
-                  className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white"
+                  className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white px-8"
                 >
-                  Confirm Selection
+                  Done
                 </Button>
               </div>
             </div>
