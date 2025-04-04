@@ -12,21 +12,21 @@ const query = groq`*[_type == "blog" && slug.current == $slug][0] {
   extract
 }`;
 
-// Define the page as a server component (no "use client" directive)
-export default async function BlogPostPage({ 
-  params 
-}: { 
-  params: { slug: string } 
+// Updated to properly handle the Promise params in Next.js 15
+export default async function BlogPostPage(props: { 
+  params: Promise<{ slug: string }> 
 }) {
-  // Fetch post data server-side
-  const post = await client.fetch(query, { slug: params.slug });
+  // Await the params Promise to get the actual slug value
+  const { slug } = await props.params;
   
+  const post = await client.fetch(query, { slug });
+
   if (!post) {
     return <div>Post not found</div>;
   }
-  
+
   const imageUrl = await getPexelsFallbackUrl(post.title, 800, 450);
-  
+
   return (
     <>
       <Header />
