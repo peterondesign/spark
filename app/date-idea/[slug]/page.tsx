@@ -59,7 +59,9 @@ interface SearchSource {
   priority: number; // Lower number = higher priority
 }
 
+
 export default function DateIdeaDetails() {
+  
   const params = useParams<{ slug: string }>();
   const slug = params?.slug || '';
   const [dateIdea, setDateIdea] = useState<DateIdea | null>(null);
@@ -149,64 +151,71 @@ export default function DateIdeaDetails() {
     setShowLocationPrompt(false);
   };
 
-  useEffect(() => {
-    const detectLocation = async () => {
-      try {
-        setShowLocationPrompt(false); // Hide prompt initially while detecting
+  // Simple function for clearing user city
+  const clearUserCity = () => {
+    localStorage.removeItem("userCity");
+    localStorage.removeItem("userCityData");
+    setUserCity(null);
+    setShowLocationPrompt(true);
+    setShowUserLocationBadge(false);
+  };
 
-        // Try to detect location with IP first
-        const response = await fetch('/api/location');
-        if (!response.ok) {
-          throw new Error(`Location API error: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.city) {
-          console.log('📍 Location detected from IP:', data.city);
-          setUserCity(data.city);
-          
-          // Save both city name and country code
-          localStorage.setItem("userCity", data.city);
-          localStorage.setItem("userCountry", data.country_code || "");
-          localStorage.setItem("userCityData", JSON.stringify({
-            name: data.city,
-            countryCode: data.country_code || "",
-            countryName: data.country || data.country_name || "",
-            id: `${data.city}-${data.country_code || ""}-ip`
-          }));
-          
-          localStorage.setItem("locationDataTimestamp", Date.now().toString());
-          setShowUserLocationBadge(true);
-          return;
-        }
-        
-        // If IP detection failed, try localStorage
-        const savedCityData = localStorage.getItem("userCityData");
-        if (savedCityData) {
-          const cityData = JSON.parse(savedCityData);
-          console.log('📍 Location loaded from storage:', cityData.name);
-          setUserCity(cityData.name);
-          setShowUserLocationBadge(true);
-          return;
-        }
-        
-        // Fall back to just the city name if no city data is stored
-        const savedCity = localStorage.getItem("userCity");
-        if (savedCity) {
-          console.log('📍 City name loaded from storage:', savedCity);
-          setUserCity(savedCity);
-          setShowUserLocationBadge(true);
-          return;
-        }
-        
-        // If we get here, we couldn't detect location
-        console.log('📍 No location detected, showing prompt');
-        setShowLocationPrompt(true);
-      } catch (error) {
-        console.error('Error detecting location:', error);
-        
-        // Try localStorage as fallback after error
+  // Create a simplified location component that's easier to use
+  const LocationSelector = () => {
+    return (
+      <>
+        {showLocationPrompt ? (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+              <div className="mb-3 md:mb-0 md:mr-4">
+                <h3 className="text-sm font-semibold text-blue-800">Set Your Location</h3>
+                <p className="text-sm text-blue-600">Add your city to see experiences relevant to you</p>
+              </div>
+              <div className="flex w-full md:w-auto">
+                <CountryCitySelector 
+                  onCitySelect={handleCitySelect}
+                  defaultCountry="US"
+                  className="w-full md:w-auto"
+                  prioritizeIpLocation={false} 
+                />
+              </div>
+            </div>
+          </div>
+        ) : userCity ? (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-white">
+            <div className="flex items-center">
+              <MapPinIcon className="h-4 w-4 text-gray-500 mr-2" />
+              <span className="text-gray-700 text-sm">Location: {userCity}</span>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowLocationPrompt(true)}
+                className="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1 rounded-full flex items-center transition-colors"
+              >
+                Change
+              </button>
+              <button
+                onClick={clearUserCity}
+                className="text-xs bg-gray-50 text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full flex items-center transition-colors"
+                aria-label="Clear location"
+                title="Clear location"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </>
+    );
+  };
+
+  // Modified function to detect user location without relying on IP detection when changing location
+  useEffect(() => {
+    const loadUserLocation = async () => {
+      try {
+        // Just check localStorage, don't do IP detection
         const savedCityData = localStorage.getItem("userCityData");
         if (savedCityData) {
           try {
@@ -226,11 +235,15 @@ export default function DateIdeaDetails() {
           return;
         }
         
+        // Show prompt if no location is found
+        setShowLocationPrompt(true);
+      } catch (error) {
+        console.error('Error loading user location:', error);
         setShowLocationPrompt(true);
       }
     };
 
-    detectLocation();
+    loadUserLocation();
   }, []);
 
   useEffect(() => {
@@ -297,6 +310,13 @@ export default function DateIdeaDetails() {
       fetchDateIdea();
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (dateIdea && dateIdea.id && dateIdea.category) {
+      // When we have a dateIdea loaded, fetch other related ideas
+      fetchOtherDateIdeas(dateIdea.id);
+    }
+  }, [dateIdea]); // This will run whenever dateIdea changes/loads
 
   useEffect(() => {
     const fetchExperiences = async () => {
@@ -521,14 +541,6 @@ export default function DateIdeaDetails() {
     }
   }, [userCity, dateIdea]);
 
-  const clearUserCity = () => {
-    localStorage.removeItem("userCity");
-    localStorage.removeItem("userCityData");
-    setUserCity(null);
-    setShowLocationPrompt(true);
-    setShowUserLocationBadge(false);
-  };
-
   const dateIdeaSchema = dateIdea ? {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -558,6 +570,128 @@ export default function DateIdeaDetails() {
       "url": typeof window !== 'undefined' ? window.location.origin : ''
     }
   } : null;
+
+  // Add state for other date ideas
+  const [otherDateIdeas, setOtherDateIdeas] = useState<DateIdea[]>([]);
+  const [loadingOtherIdeas, setLoadingOtherIdeas] = useState(false);
+
+  // Improved function to fetch other random date ideas from the database
+  const fetchOtherDateIdeas = async (currentId: string) => {
+    setLoadingOtherIdeas(true);
+    try {
+      console.log('🔍 Fetching random date ideas');
+      
+      // Using proper Supabase syntax for random ordering
+      const { data: randomIdeas, error } = await supabase
+        .from('date_ideas')
+        .select('id, title, category, description, slug, image')
+        .neq('id', currentId)
+        .order('id', { ascending: false }) // Use any field first
+        .limit(10); // Get more than we need so we can randomize client-side
+        
+      if (error) {
+        console.error('Error fetching random ideas:', error);
+        throw error;
+      }
+      
+      if (randomIdeas && randomIdeas.length > 0) {
+        // Shuffle array client-side to get random results
+        const shuffledIdeas = randomIdeas
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3); // Take just the 3 we need
+        
+        console.log(`Found ${randomIdeas.length} ideas, using ${shuffledIdeas.length} random ones`);
+        setOtherDateIdeas(shuffledIdeas as DateIdea[]);
+      } else {
+        throw new Error('No random date ideas found');
+      }
+    } catch (error) {
+      console.error("Error fetching other date ideas:", error);
+      
+      // Fallback date ideas if the database query fails
+      setOtherDateIdeas([
+        {
+          id: 'fallback-1',
+          title: 'Romantic Dinner',
+          category: 'Food & Drink',
+          description: 'Enjoy a candle-lit dinner at a cozy restaurant.',
+          slug: 'romantic-dinner',
+          image: '/placeholder.jpg'
+        },
+        {
+          id: 'fallback-2',
+          title: 'Hiking Adventure',
+          category: 'Outdoor',
+          description: 'Explore nature trails and enjoy scenic views together.',
+          slug: 'hiking-adventure',
+          image: '/placeholder.jpg'
+        },
+        {
+          id: 'fallback-3',
+          title: 'Movie Night',
+          category: 'Entertainment',
+          description: 'Cuddle up with popcorn and watch a film together.',
+          slug: 'movie-night',
+          image: '/placeholder.jpg'
+        }
+      ]);
+    } finally {
+      setLoadingOtherIdeas(false);
+    }
+  };
+
+  // Improved function to render other date ideas
+  const renderOtherDateIdeas = () => {
+    if (loadingOtherIdeas) {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
+              <div className="h-40 bg-gray-200"></div>
+              <div className="p-4">
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    if (otherDateIdeas.length === 0) {
+      return (
+        <div className="text-center py-6">
+          <p className="text-gray-500">Searching for more date ideas...</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {otherDateIdeas.map((idea) => (
+          <Link
+            key={idea.id}
+            href={`/date-idea/${idea.slug}`}
+            className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+          >
+            <div className="relative h-20">
+              <div className="absolute bottom-0 left-0 bg-rose-500/80 text-white text-xs font-medium px-2 py-1">
+                {idea.category}
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-800 mb-2 group-hover:text-rose-600 transition-colors">
+                {idea.title}
+              </h3>
+              <p className="text-gray-600 text-sm line-clamp-2">
+                {idea.description}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -768,42 +902,7 @@ export default function DateIdeaDetails() {
           </div>
         </div>
 
-        {showLocationPrompt && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-              <div className="mb-3 md:mb-0 md:mr-4">
-                <h3 className="text-sm font-semibold text-blue-800">Personalize Your Experience</h3>
-                <p className="text-sm text-blue-600">Add your city to see date ideas relevant to your location</p>
-              </div>
-              <div className="flex w-full md:w-auto">
-                <CountryCitySelector 
-                  onCitySelect={handleCitySelect}
-                  defaultCountry="US"
-                  className="w-full md:w-auto"
-                  prioritizeIpLocation={true} 
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showUserLocationBadge && userCity && (
-          <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-white">
-            <div className="flex items-center">
-              <MapPinIcon className="h-4 w-4 text-gray-500 mr-2" />
-              <span className="text-gray-700 text-sm">Location: {userCity}</span>
-            </div>
-            <button
-              onClick={clearUserCity}
-              className="text-xs text-gray-500 hover:text-gray-700 ml-2 flex items-center"
-            >
-              <span className="mr-1">Change</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </button>
-          </div>
-        )}
+        <LocationSelector />
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
           {userCity ? (
@@ -857,7 +956,7 @@ export default function DateIdeaDetails() {
                           )}
                           {source.status === 'error' && (
                             <svg className="ml-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                             </svg>
                           )}
                         </div>
@@ -1006,6 +1105,12 @@ export default function DateIdeaDetails() {
             </div>
           </div>
         )}
+
+        {/* Dynamic section to display other date ideas */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Explore Other Date Ideas</h2>
+          {renderOtherDateIdeas()}
+        </div>
 
         <div className="text-center mt-8 mb-4">
           <Link
