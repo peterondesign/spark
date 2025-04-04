@@ -7,7 +7,13 @@ const query = groq`*[_type == "blog" && slug.current == $slug][0] {
   publishedAt
 }`;
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+interface PageProps {
+  params: {
+    slug: string;
+  };
+}
+
+export default async function BlogPostPage({ params }: PageProps) {
   const post = await client.fetch(query, { slug: params.slug });
 
   if (!post) {
