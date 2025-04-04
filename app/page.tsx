@@ -8,7 +8,6 @@ import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, DollarSign, Moo
 import SaveButton from "./components/SaveButton";
 import { getImageUrl } from "./utils/imageService";
 import { supabase } from "../utils/supabaseClient";
-import AdvancedSearchModal from "./components/AdvancedSearchModal"; // Import the new component
 import GridView from "./components/GridView"; // Import the GridView component
 import Header from "./components/Header"; // Import the Header component
 import Footer from "./components/Footer";

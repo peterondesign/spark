@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /api/
-
-# Sitemap location
-Sitemap: https://sparkus.cc/sitemap.xml
