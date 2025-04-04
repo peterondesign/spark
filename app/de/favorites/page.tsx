@@ -217,7 +217,7 @@ export default function Favorites() {
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Your Saved Date Ideas</h2>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Your Saved Date Ideas</h1>
             <p className="text-gray-600">Here are all the date ideas you've saved for easy access and future planning.</p>
           </div>
 

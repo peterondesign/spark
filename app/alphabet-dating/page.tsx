@@ -148,6 +148,19 @@ export default function AlphabetDatingPage() {
     fetchDateIdeas();
   }, []);
 
+  const clearLetterSelection = (letter: string) => {
+    setAlphabetDateIdeas((prevIdeas) => {
+      const updatedIdeas = { ...prevIdeas };
+      delete updatedIdeas[letter];
+      return updatedIdeas;
+    });
+
+    // Update localStorage
+    const savedSelectedDateIdeas = JSON.parse(localStorage.getItem('alphabetDatingSelected') || '{}');
+    delete savedSelectedDateIdeas[letter];
+    localStorage.setItem('alphabetDatingSelected', JSON.stringify(savedSelectedDateIdeas));
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <PageTitle title="Alphabet Dating | A to Z Date Ideas" />
@@ -173,7 +186,11 @@ export default function AlphabetDatingPage() {
                 <p className="mt-4 text-gray-600">Loading alphabet date ideas...</p>
               </div>
             ) : (
-              <AlphabetDating dateIdeas={alphabetDateIdeas} dateIdeaImages={dateIdeaImages} />
+              <AlphabetDating 
+                dateIdeas={alphabetDateIdeas} 
+                dateIdeaImages={dateIdeaImages} 
+                onClearLetter={clearLetterSelection} 
+              />
             )}
           </div>
         </div>

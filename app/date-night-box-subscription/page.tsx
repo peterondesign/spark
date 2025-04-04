@@ -96,7 +96,7 @@ const DateNightBoxSubscription = () => {
                     <div className="absolute inset-0 opacity-80 bg-gradient-to-b from-purple-900 to-black"></div>
                     <div className="relative z-10 text-center text-white px-4">
                         <h1 className="text-6xl md:text-6xl font-bold mb-6 tracking-tight">This is your sign to spoil your person</h1>
-                        <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">Get surprise gifts just for date night</p>
+                        <p className="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">Get surprise super-personalized gifts just for them</p>
                         <Button
                             variant="secondary"
                             size="lg"
@@ -162,7 +162,7 @@ const DateNightBoxSubscription = () => {
                                 <div className="aspect-square rounded-3xl overflow-hidden mb-6 transform group-hover:scale-105 transition-transform duration-500">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
                                     <Image
-                                        src="/couplegift.webp"
+                                        src="/couplegiftbox.png"
                                         alt="Monthly couple box"
                                         layout="fill"
                                         objectFit="cover"

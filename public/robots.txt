@@ -4,4 +4,4 @@ Disallow: /admin/
 Disallow: /api/
 
 # Sitemap location
-Sitemap: https://sparkus.cc/sitemap.xml
+Sitemap: https://www.sparkus.cc/sitemap.xml

@@ -30,16 +30,26 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ dateIdeas, dateIdeaImages }) => {
   const [isResultLoading, setIsResultLoading] = useState(false);
   const wheelRef = useRef<HTMLDivElement>(null);
   
-  // Function to calculate text position on wheel
+  // Improved function to calculate text position on wheel
   const calculateTextPosition = (index: number, total: number) => {
-    const angle = (index / total) * 360;
-    const angleInRadians = (angle - 90) * (Math.PI / 180); // -90 to start at top
-    const radius = 130; // Distance from center, adjust as needed
+    // Calculate the angle for this segment (in the middle of the segment)
+    const segmentAngle = 360 / total;
+    const middleOfSegment = segmentAngle / 2;
+    const angle = (index * segmentAngle) + middleOfSegment;
+    
+    // Convert to radians, adjust to start from top (-90 degrees)
+    const angleInRadians = (angle - 90) * (Math.PI / 180);
+    
+    // Adjust radius based on the number of items to prevent text overflow
+    // More items = smaller radius to fit everything
+    const baseRadius = 125;
+    const adjustedRadius = Math.min(baseRadius, baseRadius - (total > 8 ? (total - 8) * 5 : 0));
     
     return {
-      x: Math.cos(angleInRadians) * radius,
-      y: Math.sin(angleInRadians) * radius,
+      x: Math.cos(angleInRadians) * adjustedRadius,
+      y: Math.sin(angleInRadians) * adjustedRadius,
       angle: angle,
+      segmentAngle: segmentAngle
     };
   };
 
@@ -104,33 +114,53 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ dateIdeas, dateIdeaImages }) => {
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
               }}
             >
-              {/* Text positioned on wheel with absolute positioning for accuracy */}
+              {/* Divider lines between segments for clearer separation */}
+              {dateIdeas.map((_, index) => {
+                const angle = (index / dateIdeas.length) * 360;
+                return (
+                  <div
+                    key={`divider-${index}`}
+                    className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white bg-opacity-30"
+                    style={{
+                      transformOrigin: 'bottom center',
+                      transform: `rotate(${angle}deg)`,
+                      height: '50%'
+                    }}
+                  />
+                );
+              })}
+              
+              {/* Text positioned on wheel with improved alignment */}
               {dateIdeas.map((idea, index) => {
                 const position = calculateTextPosition(index, dateIdeas.length);
                 return (
                   <div 
                     key={idea.id}
-                    className="absolute"
+                    className="absolute pointer-events-none"
                     style={{ 
                       left: '50%',
                       top: '50%',
                       transform: `translate(${position.x}px, ${position.y}px) rotate(${position.angle}deg)`,
                       transformOrigin: 'center',
                       textAlign: 'center',
-                      width: '100px',
+                      width: `${position.segmentAngle * 1.5}px`, // Make the width proportional to segment size
                     }}
                   >
                     <span 
-                      className="inline-block text-white font-bold text-xs text-shadow-sm shadow-black"
+                      className="inline-block text-white font-bold text-xs"
                       style={{ 
-                        textShadow: '1px 1px 2px rgba(0, 0, 0, 0.7)',
-                        maxWidth: '100px',
+                        textShadow: '1px 1px 3px rgba(0, 0, 0, 0.9)',
+                        maxWidth: '100%',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        padding: '2px 4px',
-                        borderRadius: '3px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                        padding: '3px 6px',
+                        borderRadius: '4px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        backdropFilter: 'blur(2px)',
+                        display: 'inline-block',
+                        transform: 'scale(0.9)',  // Slightly smaller text
+                        letterSpacing: '0.03em',  // Slightly better readability
                       }}
                     >
                       {idea.title}
