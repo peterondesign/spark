@@ -12,12 +12,12 @@ const query = groq`*[_type == "blog" && slug.current == $slug][0] {
   extract
 }`;
 
-interface Props {
+type PageParams = {
   params: { slug: string }
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams?: { [key: string]: string | string[] | undefined }
 }
 
-export default async function BlogPostPage({ params }: Props) {
+export default async function BlogPostPage({ params }: PageParams) {
   const post = await client.fetch(query, { slug: params.slug });
 
   if (!post) {
