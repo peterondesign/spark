@@ -12,20 +12,21 @@ const query = groq`*[_type == "blog" && slug.current == $slug][0] {
   extract
 }`;
 
-// Fix the params type to match Next.js expected structure
+// Define the page as a server component (no "use client" directive)
 export default async function BlogPostPage({ 
   params 
 }: { 
-  params: { slug: string }
+  params: { slug: string } 
 }) {
+  // Fetch post data server-side
   const post = await client.fetch(query, { slug: params.slug });
-
+  
   if (!post) {
     return <div>Post not found</div>;
   }
-
+  
   const imageUrl = await getPexelsFallbackUrl(post.title, 800, 450);
-
+  
   return (
     <>
       <Header />
