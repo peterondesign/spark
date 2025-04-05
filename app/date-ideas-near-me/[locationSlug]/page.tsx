@@ -7,13 +7,16 @@ import PageTitle from '../../components/PageTitle';
 import { PAGE_TITLES } from '../../utils/titleUtils';
 import { getCityBySlug } from '@/utils/cityService';
 
+
+
 // Generate metadata for SEO
-export async function generateMetadata({
-  params
-}: {
-  params: { locationSlug: string }
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>
 }): Promise<Metadata> {
-  const cityInfo = await getCityBySlug(params.locationSlug);
+  // Await the params Promise to get the actual slug value
+  const { slug } = await props.params;
+  
+  const cityInfo = await getCityBySlug(slug);
   
   if (!cityInfo) {
     return {
