@@ -291,6 +291,7 @@
   text-align: center;
   margin-bottom: 2rem;
   color: #333;
+  font-family: 'Plus Jakarta Sans', 'Plus Jakarta Sans Fallback', sans-serif;
 }
 
 .cardGrid {
