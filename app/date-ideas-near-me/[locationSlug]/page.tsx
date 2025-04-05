@@ -29,13 +29,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function DateIdeasNearMeLocationPage({ 
-  params 
-}: { 
-  params: { locationSlug: string } 
-}) {
-  const { locationSlug } = params;
-  const cityInfo = await getCityBySlug(locationSlug);
+
+
+  export default async function DateIdeasNearMeLocationPage(props: { 
+    params: Promise<{ slug: string }> 
+  }) {
+    // Await the params Promise to get the actual slug value
+    const { slug } = await props.params;
+
+  const cityInfo = await getCityBySlug(slug);
   
   // If no city found for this slug, return 404
   if (!cityInfo) {
@@ -96,7 +98,7 @@ export default async function DateIdeasNearMeLocationPage({
                   ].map((category) => (
                     <a 
                       key={category}
-                      href={`/date-ideas-near-me/${locationSlug}?category=${encodeURIComponent(category)}`}
+                      href={`/date-ideas-near-me/${slug}?category=${encodeURIComponent(category)}`}
                       className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-md text-sm font-medium text-center"
                     >
                       {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -133,7 +135,7 @@ export default async function DateIdeasNearMeLocationPage({
               { name: "Seasonal Activities", image: "/placeholder.jpg", query: "seasonal activities" },
             ].map((category) => (
               <div key={category.name} className="relative overflow-hidden rounded-xl shadow-md group">
-                <a href={`/date-ideas-near-me/${locationSlug}?category=${encodeURIComponent(category.query)}`}>
+                <a href={`/date-ideas-near-me/${slug}?category=${encodeURIComponent(category.query)}`}>
                   <div className="relative h-48">
                     <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors z-10"></div>
                     <img
