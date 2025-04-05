@@ -67,6 +67,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script async defer src="https://widget.getyourguide.com/dist/pa.umd.production.min.js" data-gyg-partner-id="5QQHAHP"></script>
         {/* 
           Proper implementation of hreflang attributes
           Each specific page should define its own set of alternates in its metadata

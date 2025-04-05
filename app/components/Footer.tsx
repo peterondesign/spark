@@ -23,11 +23,13 @@ export default function Footer() {
                                 <FaTiktok size={24} color="black" />
                                 <span className="sr-only">TikTok: @sparkuscc</span>
                             </Link>
-                            <Link href="https://www.pinterest.com/dateideacc" className="text-gray-600 hover:text-gray-900">
+                            <Link href="https://www.pinterest.com/dateideascc/" className="text-gray-600 hover:text-gray-900">
                                 <FaPinterest size={24} color="black" />
+                                <span className="sr-only">Pinterest: @dateideascc</span>
+
                             </Link>
                         </div>
-                        <p className="mt-2 text-sm text-gray-600">@dateideacc</p>
+                        {/* <p className="mt-2 text-sm text-gray-600">@dateideascc</p> */}
                     </div>
 
                     {/* Quick Links */}

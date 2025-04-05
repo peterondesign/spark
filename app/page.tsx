@@ -918,7 +918,7 @@ const Home = () => {
                 {activeFilters.city && (
                   <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
                     {activeFilters.city}
-                    <button 
+                    <button
                       onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
                       className="ml-1 text-rose-800"
                       aria-label="Remove city filter"
@@ -930,9 +930,9 @@ const Home = () => {
                   </span>
                 )}
                 {activeFilters.price !== 'all' && (
-                    <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                     {priceLevelMap[activeFilters.price]}
-                    <button 
+                    <button
                       onClick={() => setActiveFilters(prev => ({ ...prev, price: 'all' }))}
                       className="ml-1 text-green-800"
                       aria-label="Remove price filter"
@@ -946,7 +946,7 @@ const Home = () => {
                 {activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all' && (
                   <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                     {timeOfDayMap[activeFilters.timeOfDay as keyof typeof timeOfDayMap]}
-                    <button 
+                    <button
                       onClick={() => setActiveFilters(prev => ({ ...prev, timeOfDay: 'all' }))}
                       className="ml-1 text-blue-800"
                       aria-label="Remove time filter"
@@ -960,7 +960,7 @@ const Home = () => {
                 {selectedFilters.categories.map(category => (
                   <span key={category} className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
                     {category}
-                    <button 
+                    <button
                       onClick={() => handleFilterChange('categories', category, false)}
                       className="ml-1 text-purple-800"
                       aria-label={`Remove ${category} filter`}
@@ -972,20 +972,20 @@ const Home = () => {
                   </span>
                 ))}
                 {/* Show "more filters" badge if there are other advanced filters applied */}
-                {(selectedFilters.locationTypes.length > 0 || 
-                  selectedFilters.locationSettings.length > 0 || 
-                  selectedFilters.moodPaces.length > 0 || 
+                {(selectedFilters.locationTypes.length > 0 ||
+                  selectedFilters.locationSettings.length > 0 ||
+                  selectedFilters.moodPaces.length > 0 ||
                   selectedFilters.moodVibes.length > 0) && (
-                  <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                    +{selectedFilters.locationTypes.length + 
-                      selectedFilters.locationSettings.length + 
-                      selectedFilters.moodPaces.length + 
-                      selectedFilters.moodVibes.length} more
-                  </span>
-                )}
+                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                      +{selectedFilters.locationTypes.length +
+                        selectedFilters.locationSettings.length +
+                        selectedFilters.moodPaces.length +
+                        selectedFilters.moodVibes.length} more
+                    </span>
+                  )}
               </div>
             )}
-            
+
             {/* Main filter controls */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
               {/* City filter - compact on mobile */}
@@ -1172,11 +1172,10 @@ const Home = () => {
                 <button
                   onClick={clearAllFilters}
                   disabled={appliedFiltersCount === 0}
-                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    appliedFiltersCount > 0 
-                      ? 'bg-rose-100 text-rose-800 hover:bg-rose-200' 
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${appliedFiltersCount > 0
+                      ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   <span>Clear</span>
                   {appliedFiltersCount > 0 && (
@@ -1235,6 +1234,9 @@ const Home = () => {
           </button>
         )}
       </section>
+      <h1>GetYourGuide</h1>
+      <script async defer src="https://widget.getyourguide.com/dist/pa.umd.production.min.js" data-gyg-partner-id="5QQHAHP"></script>
+      <div data-gyg-href="https://widget.getyourguide.com/default/city.frame" data-gyg-location-id="200" data-gyg-locale-code="en-US" data-gyg-widget="city" data-gyg-partner-id="5QQHAHP"></div>
 
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">

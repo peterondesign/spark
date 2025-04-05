@@ -15,21 +15,23 @@ interface BlogClientProps {
 }
 
 export default function BlogClient({ posts }: BlogClientProps) {
+  const sortedPosts = [...posts].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
   return (
     <div className={styles.cardGrid}>
-      {posts.map((post) => (
-        <div key={post.slug.current} className={styles.card}>
-          <img src={post.imageUrl} alt={`Image for ${post.title}`} className={styles.cardImage} />
-          <div className={styles.cardContent}>
-            <Link href={`/blog/${post.slug.current}`} className={styles.cardTitle}>
+      {sortedPosts.map((post) => (
+        <Link href={`/blog/${post.slug.current}`} key={post.slug.current} className={styles.cardTitle}>
+          <div className={styles.card}>
+            <img src={post.imageUrl} alt={`Image for ${post.title}`} className={styles.cardImage} />
+            <div className={styles.cardContent}>
               {post.title}
-            </Link>
-            <p className={styles.cardExtract}>{post.extract}</p>
-            <p className={styles.cardDate}>
-              Published on: {new Date(post.publishedAt).toLocaleDateString()}
-            </p>
+              <p className={styles.cardExtract}>{post.extract}</p>
+              <p className={styles.cardDate}>
+                {new Date(post.publishedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+            </div>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );
