@@ -367,6 +367,26 @@ export default function Favorites() {
             )}
           </div>
 
+          {/* Newsletter subscription embed */}
+          <div className="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold mb-3">Subscribe to Our Date Ideas Newsletter</h2>
+            <p className="text-gray-600 mb-4">Get fresh date ideas delivered right to your inbox!</p>
+            <div className="newsletter-embed" style={{ width: '100%', overflow: 'hidden' }}>
+              <iframe 
+                src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true" 
+                data-test-id="beehiiv-embed" 
+                width="100%" 
+                height="320" 
+                frameBorder="0" 
+                scrolling="no" 
+                style={{ margin: 0, borderRadius: '0px !important', backgroundColor: 'transparent' }}
+                title="Date Ideas Newsletter"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
