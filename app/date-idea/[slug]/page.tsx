@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -16,6 +16,7 @@ import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { supabase } from "@/utils/supabaseClient";
 import CountryCitySelector from "@/app/components/CountryCitySelector";
 import RelatedDateIdea from "../../components/RelatedDateIdea";
+import LocationsList from "@/app/components/LocationsList";
 
 // Define DateIdea interface
 interface DateIdea {
@@ -945,7 +946,7 @@ export default function DateIdeaDetails() {
                           {source.name}
                           {source.status === 'complete' && (
                             <svg className="ml-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 101.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                           )}
                           {source.status === 'searching' && (
@@ -1066,9 +1067,18 @@ export default function DateIdeaDetails() {
           )}
         </div>
 
-        <div className="text-xs text-gray-400 mb-4 italic">
+        <div className="text-xs text-gray-400 my-16 italic">
           This page contains affiliate links
         </div>
+
+           {/* Location list instead of map */}
+           {userCity && (
+          <LocationsList
+            dateIdeaTitle={dateIdea.title}
+            userCity={userCity}
+            isVisible={true}
+          />
+        )}
 
         <div className="flex flex-col md:flex-row gap-8">
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
@@ -1093,6 +1103,8 @@ export default function DateIdeaDetails() {
             </div>
           )}
         </div>
+
+     
 
         {/* Related Date Ideas Section */}
         {dateIdea.relatedDateIdeas && dateIdea.relatedDateIdeas.length > 0 && (

@@ -37,6 +37,23 @@ const nextConfig = {
                         value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms; frame-src 'self' https://embeds.beehiiv.com;"
                     }
                 ]
+            },
+            {
+                source: "/sitemap.xml",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "no-cache, no-store, must-revalidate",
+                    },
+                    {
+                        key: "Pragma",
+                        value: "no-cache",
+                    },
+                    {
+                        key: "Expires",
+                        value: "0",
+                    },
+                ]
             }
         ];
     }
