@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 // import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, CurrencyDollarIcon, MoonIcon } from "./components/icons";
-import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, DollarSign, MoonIcon } from "lucide-react";
+import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, DollarSign, MoonIcon, SlidersHorizontal, X } from "lucide-react";
 import SaveButton from "./components/SaveButton";
 import { getImageUrl } from "./utils/imageService";
 import { supabase } from "../utils/supabaseClient";
@@ -23,6 +23,7 @@ import { Autocomplete, AutocompleteItem } from "@heroui/react";
 import { useAsyncList } from "@react-stately/data";
 import CountryCitySelector, { CityItem } from "./components/CountryCitySelector";
 import { POPULAR_CITIES } from "../utils/cityService";
+import Script from 'next/script';
 
 // DO NOT export metadata from this client component - it's now moved to metadata.ts
 
@@ -802,6 +803,9 @@ const Home = () => {
     );
   };
 
+  // Add new state for mobile filter modal
+  const [showFilterModal, setShowFilterModal] = useState<boolean>(false);
+
   return (
     <div className="min-h-screen bg-white">
       <Head>
@@ -911,83 +915,97 @@ const Home = () => {
         <div className="container mx-auto px-4">
 
           {/* Filters */}
-          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
+          <div className="sticky top-12 z-20 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
             {/* Active filters chips - visible on mobile */}
-            {appliedFiltersCount > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3 md:block hidden">
-                {activeFilters.city && (
-                  <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
-                    {activeFilters.city}
-                    <button
-                      onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
-                      className="ml-1 text-rose-800"
-                      aria-label="Remove city filter"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
+            <div className="flex justify-between items-center">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {appliedFiltersCount > 0 && (
+                  <>
+                    {activeFilters.city && (
+                      <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
+                        {activeFilters.city}
+                        <button
+                          onClick={() => setActiveFilters(prev => ({ ...prev, city: null }))}
+                          className="ml-1 text-rose-800"
+                          aria-label="Remove city filter"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </span>
+                    )}
+                    {activeFilters.price !== 'all' && (
+                      <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        {priceLevelMap[activeFilters.price]}
+                        <button
+                          onClick={() => setActiveFilters(prev => ({ ...prev, price: 'all' }))}
+                          className="ml-1 text-green-800"
+                          aria-label="Remove price filter"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </span>
+                    )}
+                    {activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all' && (
+                      <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        {timeOfDayMap[activeFilters.timeOfDay as keyof typeof timeOfDayMap]}
+                        <button
+                          onClick={() => setActiveFilters(prev => ({ ...prev, timeOfDay: 'all' }))}
+                          className="ml-1 text-blue-800"
+                          aria-label="Remove time filter"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </span>
+                    )}
+                    {selectedFilters.categories.length > 0 && (
+                      <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                        {selectedFilters.categories.length} categories
+                      </span>
+                    )}
+                    {/* Show "more filters" badge if there are other advanced filters applied */}
+                    {(selectedFilters.locationTypes.length > 0 ||
+                      selectedFilters.locationSettings.length > 0 ||
+                      selectedFilters.moodPaces.length > 0 ||
+                      selectedFilters.moodVibes.length > 0) && (
+                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                          +{selectedFilters.locationTypes.length +
+                            selectedFilters.locationSettings.length +
+                            selectedFilters.moodPaces.length +
+                            selectedFilters.moodVibes.length} more
+                        </span>
+                      )}
+                  </>
                 )}
-                {activeFilters.price !== 'all' && (
-                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                    {priceLevelMap[activeFilters.price]}
-                    <button
-                      onClick={() => setActiveFilters(prev => ({ ...prev, price: 'all' }))}
-                      className="ml-1 text-green-800"
-                      aria-label="Remove price filter"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
-                )}
-                {activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all' && (
-                  <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {timeOfDayMap[activeFilters.timeOfDay as keyof typeof timeOfDayMap]}
-                    <button
-                      onClick={() => setActiveFilters(prev => ({ ...prev, timeOfDay: 'all' }))}
-                      className="ml-1 text-blue-800"
-                      aria-label="Remove time filter"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
-                )}
-                {selectedFilters.categories.map(category => (
-                  <span key={category} className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                    {category}
-                    <button
-                      onClick={() => handleFilterChange('categories', category, false)}
-                      className="ml-1 text-purple-800"
-                      aria-label={`Remove ${category} filter`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-                {/* Show "more filters" badge if there are other advanced filters applied */}
-                {(selectedFilters.locationTypes.length > 0 ||
-                  selectedFilters.locationSettings.length > 0 ||
-                  selectedFilters.moodPaces.length > 0 ||
-                  selectedFilters.moodVibes.length > 0) && (
-                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                      +{selectedFilters.locationTypes.length +
-                        selectedFilters.locationSettings.length +
-                        selectedFilters.moodPaces.length +
-                        selectedFilters.moodVibes.length} more
-                    </span>
-                  )}
               </div>
-            )}
 
-            {/* Main filter controls */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
+              {/* Filter button for mobile */}
+              <button
+                onClick={() => setShowFilterModal(true)}
+                className="md:hidden flex items-center px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg shadow-sm"
+              >
+                <SlidersHorizontal className="h-4 w-4 mr-1" />
+                <span>Filters {appliedFiltersCount > 0 && `(${appliedFiltersCount})`}</span>
+              </button>
+
+              {/* Clear button on mobile when filters applied */}
+              {appliedFiltersCount > 0 && (
+                <button
+                  onClick={clearAllFilters}
+                  className="md:hidden flex items-center px-3 py-2 text-xs text-rose-600"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Main filter controls - desktop only */}
+            <div className="hidden md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
               {/* City filter - compact on mobile */}
               <div className="col-span-2 md:col-span-1">
                 <CountryCitySelector
@@ -1173,8 +1191,8 @@ const Home = () => {
                   onClick={clearAllFilters}
                   disabled={appliedFiltersCount === 0}
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${appliedFiltersCount > 0
-                      ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
                 >
                   <span>Clear</span>
@@ -1187,6 +1205,201 @@ const Home = () => {
               </div>
             </div>
           </div>
+
+          {/* Mobile filter modal */}
+          {showFilterModal && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center p-4">
+              <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <h3 className="text-xl font-semibold">Filters</h3>
+                  <button 
+                    onClick={() => setShowFilterModal(false)}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    aria-label="Close filters"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                <div className="overflow-y-auto flex-grow p-4 space-y-6">
+                  {/* City filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">City</label>
+                    <CountryCitySelector
+                      onCitySelect={(city) => handleCitySelect(city)}
+                      defaultCity={userCity || undefined}
+                      label=""
+                    />
+                  </div>
+
+                  {/* Price filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Price</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <select
+                        value={activeFilters.price}
+                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
+                        onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                      >
+                        <option value="all">All Prices</option>
+                        <option value="free">Free</option>
+                        <option value="affordable">Affordable</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="high">High</option>
+                        <option value="luxury">Luxury</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Time filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Time of Day</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <ClockIcon className="h-4 w-4 text-gray-400" />
+                      </div>
+                      <select
+                        value={activeFilters.timeOfDay || 'all'}
+                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
+                        onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
+                      >
+                        <option value="all">Any Time</option>
+                        <option value="day">Day</option>
+                        <option value="afternoon">Afternoon</option>
+                        <option value="evening">Evening</option>
+                        <option value="night">Night</option>
+                        <option value="varies">Varies</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Categories */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Categories</label>
+                    <div className="flex flex-wrap gap-2">
+                      {filterOptions.categories.map((category) => (
+                        <button
+                          key={category}
+                          onClick={() => handleFilterChange('categories', category, !selectedFilters.categories.includes(category))}
+                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.categories.includes(category)
+                            ? 'bg-rose-100 text-rose-700 font-medium'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Location Types */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Location Types</label>
+                    <div className="flex flex-wrap gap-2">
+                      {filterOptions.locationTypes.map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => handleFilterChange('locationTypes', type, !selectedFilters.locationTypes.includes(type))}
+                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.locationTypes.includes(type)
+                            ? 'bg-rose-100 text-rose-700 font-medium'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Location Settings */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Location Settings</label>
+                    <div className="flex flex-wrap gap-2">
+                      {filterOptions.locationSettings.map((setting) => (
+                        <button
+                          key={setting}
+                          onClick={() => handleFilterChange('locationSettings', setting, !selectedFilters.locationSettings.includes(setting))}
+                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.locationSettings.includes(setting)
+                            ? 'bg-rose-100 text-rose-700 font-medium'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          {setting}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Mood Paces */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Mood Pace</label>
+                    <div className="flex flex-wrap gap-2">
+                      {filterOptions.moodPaces.map((pace) => (
+                        <button
+                          key={pace}
+                          onClick={() => handleFilterChange('moodPaces', pace, !selectedFilters.moodPaces.includes(pace))}
+                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.moodPaces.includes(pace)
+                            ? 'bg-rose-100 text-rose-700 font-medium'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          {pace}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Mood Vibes */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Mood Vibe</label>
+                    <div className="flex flex-wrap gap-2">
+                      {filterOptions.moodVibes.map((vibe) => (
+                        <button
+                          key={vibe}
+                          onClick={() => handleFilterChange('moodVibes', vibe, !selectedFilters.moodVibes.includes(vibe))}
+                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.moodVibes.includes(vibe)
+                            ? 'bg-rose-100 text-rose-700 font-medium'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          {vibe}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 border-t flex justify-between">
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-5 py-2.5 text-gray-600 font-medium"
+                  >
+                    Clear all
+                  </button>
+                  <button
+                    onClick={() => setShowFilterModal(false)}
+                    className="px-5 py-2.5 bg-rose-600 text-white font-medium rounded-lg shadow-sm"
+                  >
+                    Apply filters {appliedFiltersCount > 0 && `(${appliedFiltersCount})`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* end of Filters */}
           {loading ? (
             <div className="h-96 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -1234,9 +1447,6 @@ const Home = () => {
           </button>
         )}
       </section>
-      <h1>GetYourGuide</h1>
-      <script async defer src="https://widget.getyourguide.com/dist/pa.umd.production.min.js" data-gyg-partner-id="5QQHAHP"></script>
-      <div data-gyg-href="https://widget.getyourguide.com/default/city.frame" data-gyg-location-id="200" data-gyg-locale-code="en-US" data-gyg-widget="city" data-gyg-partner-id="5QQHAHP"></div>
 
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">

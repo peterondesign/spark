@@ -26,6 +26,20 @@ const nextConfig = {
         
         return config;
     },
+    // Add script source to external scripts
+    async headers() {
+        return [
+            {
+                source: '/(.*)',
+                headers: [
+                    {
+                        key: 'Content-Security-Policy',
+                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms;"
+                    }
+                ]
+            }
+        ];
+    }
 }
 
 export default nextConfig;

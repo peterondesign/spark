@@ -6,6 +6,14 @@ import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 import ClientPrivacyNotice from './components/ClientPrivacyNotice';
 
+// Declare the global property on the Window interface
+declare global {
+  interface Window {
+    gygScriptBlocked?: boolean;
+    pa?: any;
+  }
+}
+
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
 
 // Base metadata that can be extended by individual pages
@@ -67,7 +75,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script async defer src="https://widget.getyourguide.com/dist/pa.umd.production.min.js" data-gyg-partner-id="5QQHAHP"></script>
         {/* 
           Proper implementation of hreflang attributes
           Each specific page should define its own set of alternates in its metadata
@@ -80,6 +87,37 @@ export default function RootLayout({
         {/* These will be properly extended by each page's metadata.alternates */}
       </head>
       <body className={plusJakartaSans.className}>
+        {/* GetYourGuide script with error detection */}
+        <Script
+          id="getyourguide-widget"
+          src="https://widget.getyourguide.com/dist/pa.umd.production.min.js"
+          data-gyg-partner-id="5QQHAHP"
+          strategy="afterInteractive"
+        />
+        
+        {/* Script to detect if ad blocker is preventing script load */}
+        <Script
+          id="adblock-detection"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Check if GetYourGuide script was blocked after a delay
+              setTimeout(function() {
+                if (window.gygScriptBlocked || !window.pa) {
+                  console.warn('GetYourGuide widget might be blocked by an ad blocker.');
+                  
+                  // You can add code here to show a notification to the user
+                  // For example:
+                  // const notification = document.createElement('div');
+                  // notification.innerHTML = 'Some features may not work correctly due to ad blocking. Please consider disabling your ad blocker for this site.';
+                  // notification.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#fff3cd;color:#856404;padding:10px;border-radius:4px;max-width:300px;z-index:9999;';
+                  // document.body.appendChild(notification);
+                }
+              }, 3000);
+            `
+          }}
+        />
+        
         {/* Microsoft Clarity analytics tracking script */}
         <Script
           id="microsoft-clarity"
