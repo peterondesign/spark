@@ -5,6 +5,7 @@ import { Plus_Jakarta_Sans } from "next/font/google"
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 import ClientPrivacyNotice from './components/ClientPrivacyNotice';
+import { SanityLive } from "@/sanity/lib/live";
 
 // Declare the global property on the Window interface
 declare global {
@@ -87,6 +88,9 @@ export default function RootLayout({
         {/* These will be properly extended by each page's metadata.alternates */}
       </head>
       <body className={plusJakartaSans.className}>
+        {/* SanityLive component to enable live content updates */}
+        <SanityLive />
+        
         {/* GetYourGuide script with error detection */}
         <Script
           id="getyourguide-widget"
