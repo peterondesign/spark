@@ -6,6 +6,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 import ClientPrivacyNotice from './components/ClientPrivacyNotice';
 import { SanityLive } from "@/sanity/lib/live";
+import { SpeedInsights } from "@vercel/speed-insights/next"
+
 
 // Declare the global property on the Window interface
 declare global {
@@ -90,7 +92,7 @@ export default function RootLayout({
       <body className={plusJakartaSans.className}>
         {/* SanityLive component to enable live content updates */}
         <SanityLive />
-        
+
         {/* GetYourGuide script with error detection */}
         <Script
           id="getyourguide-widget"
@@ -98,7 +100,7 @@ export default function RootLayout({
           data-gyg-partner-id="5QQHAHP"
           strategy="afterInteractive"
         />
-        
+
         {/* Script to detect if ad blocker is preventing script load */}
         <Script
           id="adblock-detection"
@@ -121,7 +123,7 @@ export default function RootLayout({
             `
           }}
         />
-        
+
         {/* Microsoft Clarity analytics tracking script */}
         <Script
           id="microsoft-clarity"
@@ -154,7 +156,7 @@ export default function RootLayout({
             `
           }}
         />
-
+        <SpeedInsights />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -1,156 +1,152 @@
-import type { MetadataRoute } from "next";
-import { unstable_noStore } from "next/cache";
-import { sanityFetch } from "@/sanity/lib/live";
-import { postSlugsQuery, dateIdeaSlugsQuery } from "@/sanity/lib/queries";
+import { MetadataRoute } from 'next'
+import { supabase } from "@/utils/supabaseClient"
 
-type BlogPostSlug = {
-  slug: string;
-  publishedAt: string;
-};
+type ChangeFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'always' | 'hourly' | 'never'
 
-type DateIdeaSlug = {
-  slug: string;
-  _updatedAt: string;
-};
-
-async function getBlogPosts(): Promise<MetadataRoute.Sitemap> {
-  try {
-    const posts = await sanityFetch({
-      query: postSlugsQuery,
-    });
-    
-    if (!posts || !Array.isArray(posts)) {
-      console.error("Blog posts data is not an array:", posts);
-      return [];
-    }
-    
-    return posts.map((post: BlogPostSlug) => ({
-      url: `https://www.sparkus.cc/blog/${post.slug}`,
-      lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-  } catch (error) {
-    console.error("Error fetching blog posts for sitemap:", error);
-    return [];
-  }
-}
-
-async function getDateIdeas(): Promise<MetadataRoute.Sitemap> {
-  try {
-    const dateIdeas = await sanityFetch({
-      query: dateIdeaSlugsQuery,
-    });
-    
-    if (!dateIdeas || !Array.isArray(dateIdeas)) {
-      console.error("Date ideas data is not an array:", dateIdeas);
-      return [];
-    }
-    
-    return dateIdeas.map((idea: DateIdeaSlug) => ({
-      url: `https://www.sparkus.cc/date-idea/${idea.slug}`,
-      lastModified: idea._updatedAt ? new Date(idea._updatedAt) : new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-  } catch (error) {
-    console.error("Error fetching date ideas for sitemap:", error);
-    return [];
-  }
-}
-
+/**
+ * This function generates a dynamic sitemap for the site
+ * It includes all static routes and dynamic routes like date ideas and blog posts
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Prevent caching issues
-  unstable_noStore();
-
-  // Fetch dynamic content
-  const [blogPosts, dateIdeas] = await Promise.all([
-    getBlogPosts(),
-    getDateIdeas(),
-  ]);
-
-  // Define all static pages
-  const staticUrls = [
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'
+  
+  // Get all date ideas for dynamic routes
+  const { data: dateIdeas } = await supabase
+    .from('date_ideas')
+    .select('slug, updated_at')
+    .order('updated_at', { ascending: false })
+  
+  // Get all blog posts for dynamic routes
+  const { data: blogPosts } = await supabase
+    .from('blog_posts')
+    .select('slug, updated_at')
+    .order('updated_at', { ascending: false })
+    .eq('published', true)
+  
+  // Get all city locations for dynamic routes
+  const { data: locations } = await supabase
+    .from('cities')
+    .select('slug, updated_at')
+    .order('updated_at', { ascending: false })
+  
+  // Static routes with their lastModified dates
+  const staticRoutes = [
     {
-      url: "https://www.sparkus.cc/",
+      url: `${baseUrl}`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
+      changeFrequency: 'daily' as ChangeFrequency,
       priority: 1.0,
     },
     {
-      url: "https://www.sparkus.cc/date-ideas-near-me",
+      url: `${baseUrl}/date-idea-generator`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.9,
-    },
-    {
-      url: "https://www.sparkus.cc/date-idea-generator",
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.9,
-    },
-    {
-      url: "https://www.sparkus.cc/date-night-box-subscription",
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.9,
-    },
-    {
-      url: "https://www.sparkus.cc/spin-the-wheel",
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
+      changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.8,
     },
     {
-      url: "https://www.sparkus.cc/favorites",
+      url: `${baseUrl}/date-ideas-near-me`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
+      changeFrequency: 'daily' as ChangeFrequency,
       priority: 0.8,
     },
     {
-      url: "https://www.sparkus.cc/calendar",
+      url: `${baseUrl}/spin-the-wheel`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
+      changeFrequency: 'weekly' as ChangeFrequency,
+      priority: 0.7,
     },
     {
-      url: "https://www.sparkus.cc/blog",
+      url: `${baseUrl}/blog`,
       lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.8,
+      changeFrequency: 'weekly' as ChangeFrequency,
+      priority: 0.7,
     },
     {
-      url: "https://www.sparkus.cc/alphabet-dating",
+      url: `${baseUrl}/alphabet-dating`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    },
-    {
-      url: "https://www.sparkus.cc/preferences",
-      lastModified: new Date(),
-      changeFrequency: "monthly" as const,
+      changeFrequency: 'monthly' as ChangeFrequency,
       priority: 0.6,
     },
     {
-      url: "https://www.sparkus.cc/terms",
+      url: `${baseUrl}/date-night-box-subscription`,
       lastModified: new Date(),
-      changeFrequency: "yearly" as const,
+      changeFrequency: 'monthly' as ChangeFrequency,
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/calendar`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as ChangeFrequency,
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/favorites`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as ChangeFrequency,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as ChangeFrequency,
       priority: 0.3,
     },
+    // German routes
     {
-      url: "https://www.sparkus.cc/de",
+      url: `${baseUrl}/de`,
       lastModified: new Date(),
-      changeFrequency: "weekly" as const,
+      changeFrequency: 'weekly' as ChangeFrequency,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/de/date-idea-generator`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
     },
     {
-      url: "https://www.sparkus.cc/de/blog",
+      url: `${baseUrl}/de/date-ideas-near-me`,
       lastModified: new Date(),
-      changeFrequency: "daily" as const,
+      changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
-    }
-  ];
+    },
+    {
+      url: `${baseUrl}/de/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as ChangeFrequency,
+      priority: 0.7,
+    },
+  ]
 
-  // Combine all URLs for the sitemap
-  return [...staticUrls, ...blogPosts, ...dateIdeas];
+  // Generate date idea route entries
+  const dateIdeaRoutes = dateIdeas?.map((dateIdea) => ({
+    url: `${baseUrl}/date-idea/${dateIdea.slug}`,
+    lastModified: new Date(dateIdea.updated_at || Date.now()),
+    changeFrequency: 'monthly' as ChangeFrequency,
+    priority: 0.7,
+  })) || []
+
+  // Generate blog post route entries
+  const blogPostRoutes = blogPosts?.map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated_at || Date.now()),
+    changeFrequency: 'monthly' as ChangeFrequency,
+    priority: 0.6,
+  })) || []
+
+  // Generate location route entries
+  const locationRoutes = locations?.map((location) => ({
+    url: `${baseUrl}/date-ideas-near-me/${location.slug}`,
+    lastModified: new Date(location.updated_at || Date.now()),
+    changeFrequency: 'weekly' as ChangeFrequency,
+    priority: 0.7,
+  })) || []
+
+  // Combine all routes
+  return [
+    ...staticRoutes,
+    ...dateIdeaRoutes,
+    ...blogPostRoutes,
+    ...locationRoutes,
+  ]
 }
