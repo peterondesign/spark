@@ -39,7 +39,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms https://va.vercel-scripts.com; connect-src 'self' https://api.pexels.com/v1 https://*.pexels.com https://*.api.sanity.io/ https://pexels.com https://images.pexels.com https://*.unsplash.com https://unsplash.com https://*.supabase.co https://*.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://nominatim.openstreetmap.org https://overpass-api.de; frame-src 'self' https://embeds.beehiiv.com;"
+                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms https://va.vercel-scripts.com; connect-src 'self' https://api.pexels.com/v1 https://*.pexels.com https://*.api.sanity.io/ https://pexels.com https://images.pexels.com https://*.unsplash.com https://unsplash.com https://*.supabase.co https://*.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://nominatim.openstreetmap.org https://overpass-api.de https://api.openai.com; frame-src 'self' https://embeds.beehiiv.com;"
                     }
                 ]
             },

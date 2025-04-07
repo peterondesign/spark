@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { getOSMMappingForDateIdea } from '../../services/osmMappingService';
 
 interface LocationResult {
   id: number;
@@ -17,122 +18,6 @@ interface LocationsListProps {
   userCity: string;
   isVisible: boolean;
 }
-
-// Activity to OSM tag mapping - centralized data structure for all activities
-const ACTIVITY_MAPPINGS: Record<string, {
-  tags: string[],
-  keywords: string[],
-  radius: number
-}> = {
-  // Outdoor activities
-  "hiking": {
-    tags: ["hiking", "trail", "path", "national_park", "nature_reserve"],
-    keywords: ["hike", "hiking", "trail", "mountain", "trekking", "walk"],
-    radius: 20000
-  },
-  "horseback-riding": {
-    tags: ["horse_riding", "horseback_riding", "equestrian", "riding", "stables"],
-    keywords: ["horse", "riding", "equestrian", "stable", "ranch"],
-    radius: 20000
-  },
-  "biking": {
-    tags: ["bicycle_rental", "cycle_route", "bicycle", "bike_rental"],
-    keywords: ["bike", "bicycle", "cycling", "mountain bike"],
-    radius: 15000
-  },
-  "swimming": {
-    tags: ["swimming", "swimming_pool", "beach", "water_park"],
-    keywords: ["swim", "pool", "aquatic", "water"],
-    radius: 15000
-  },
-  
-  // Food & Drink
-  "restaurant": {
-    tags: ["restaurant", "food", "cuisine"],
-    keywords: ["dinner", "food", "restaurant", "bistro", "eatery"],
-    radius: 10000
-  },
-  "cafe": {
-    tags: ["cafe", "coffee_shop", "tea", "bakery"],
-    keywords: ["coffee", "cafe", "tea", "pastry"],
-    radius: 10000
-  },
-  "wine": {
-    tags: ["winery", "vineyard", "wine_bar", "wine"],
-    keywords: ["wine", "tasting", "vineyard", "cellar"],
-    radius: 15000
-  },
-  "bar": {
-    tags: ["bar", "pub", "nightclub", "biergarten"],
-    keywords: ["bar", "pub", "cocktail", "drink"],
-    radius: 8000
-  },
-  
-  // Entertainment
-  "movie": {
-    tags: ["cinema", "theatre", "movie_theater"],
-    keywords: ["movie", "cinema", "film", "theater"],
-    radius: 12000
-  },
-  "museum": {
-    tags: ["museum", "gallery", "exhibition", "arts_centre"],
-    keywords: ["museum", "gallery", "exhibit", "art"],
-    radius: 15000
-  },
-  "bowling": {
-    tags: ["bowling_alley", "bowling", "entertainment"],
-    keywords: ["bowl", "bowling", "alley", "lanes"],
-    radius: 12000
-  },
-  "arcade": {
-    tags: ["arcade", "amusement_arcade", "games"],
-    keywords: ["arcade", "game", "pinball", "video games"],
-    radius: 12000
-  },
-  
-  // Parks & Nature
-  "park": {
-    tags: ["park", "garden", "nature_reserve", "picnic_site"],
-    keywords: ["park", "garden", "picnic", "nature"],
-    radius: 15000
-  },
-  "beach": {
-    tags: ["beach", "coastline", "shore"],
-    keywords: ["beach", "coast", "sand", "ocean"],
-    radius: 20000
-  },
-  "zoo": {
-    tags: ["zoo", "wildlife_park", "animal"],
-    keywords: ["zoo", "animal", "wildlife", "safari"],
-    radius: 20000
-  },
-  
-  // Shopping
-  "shopping": {
-    tags: ["mall", "shopping_center", "shop", "market"],
-    keywords: ["shop", "mall", "store", "boutique"],
-    radius: 10000
-  },
-  
-  // Fitness & Sports
-  "gym": {
-    tags: ["sport", "fitness_centre", "gym"],
-    keywords: ["gym", "fitness", "workout", "exercise"],
-    radius: 10000
-  },
-  
-  // Specialty
-  "comedy": {
-    tags: ["theatre", "arts_centre", "nightclub", "comedy_club"],
-    keywords: ["comedy", "laugh", "standup", "improv"],
-    radius: 12000
-  },
-  "amusement": {
-    tags: ["theme_park", "water_park", "amusement"],
-    keywords: ["amusement", "theme park", "roller coaster", "rides"],
-    radius: 20000
-  }
-};
 
 export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: LocationsListProps) {
   const [locations, setLocations] = useState<LocationResult[]>([]);
@@ -172,8 +57,8 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
         const cityLat = parseFloat(cityData[0].lat);
         const cityLon = parseFloat(cityData[0].lon);
         
-        // Determine the appropriate search parameters based on the date idea title
-        const searchConfig = determineSearchParameters(dateIdeaTitle);
+        // Get OpenAPI-generated search parameters from the OSM mapping service
+        const searchConfig = await getOSMMappingForDateIdea(dateIdeaTitle);
         
         // Build the Overpass API query
         const overpassQuery = buildOverpassQuery(cityLat, cityLon, searchConfig);
@@ -185,23 +70,10 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
         if (locationsData && locationsData.elements && locationsData.elements.length > 0) {
           // Format location data
           const formattedLocations = filterAndFormatLocations(locationsData.elements, searchConfig);
-          
           setLocations(formattedLocations);
         } else {
-          // If no results found, try a generic search
-          const fallbackQuery = buildFallbackQuery(cityLat, cityLon, dateIdeaTitle);
-          
-          const fallbackUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(fallbackQuery)}`;
-          const fallbackResponse = await fetch(fallbackUrl);
-          const fallbackData = await fallbackResponse.json();
-          
-          if (fallbackData && fallbackData.elements && fallbackData.elements.length > 0) {
-            const formattedLocations = filterAndFormatLocations(fallbackData.elements, searchConfig);
-            
-            setLocations(formattedLocations);
-          } else {
-            setLocations([]);
-          }
+          setLocations([]);
+          setError("No locations found for this activity in your area.");
         }
       } catch (err) {
         console.error("Error fetching location data:", err);
@@ -214,49 +86,12 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
     fetchLocations();
   }, [dateIdeaTitle, userCity, isVisible]);
   
-  // Function to determine search parameters based on the date idea title
-  const determineSearchParameters = (title: string) => {
-    const normalizedTitle = title.toLowerCase().replace(/-/g, ' ');
-    
-    // First, look for exact matches
-    for (const [activityKey, config] of Object.entries(ACTIVITY_MAPPINGS)) {
-      const activityName = activityKey.replace(/-/g, ' ').toLowerCase();
-      if (normalizedTitle.includes(activityName)) {
-        return {
-          tags: config.tags,
-          keywords: config.keywords,
-          radius: config.radius
-        };
-      }
-    }
-    
-    // If no exact match, look for keyword matches
-    for (const [activityKey, config] of Object.entries(ACTIVITY_MAPPINGS)) {
-      for (const keyword of config.keywords) {
-        if (normalizedTitle.includes(keyword)) {
-          return {
-            tags: config.tags,
-            keywords: config.keywords,
-            radius: config.radius
-          };
-        }
-      }
-    }
-    
-    // Default search parameters if no match is found
-    return {
-      tags: ["tourism", "leisure", "amenity"],
-      keywords: normalizedTitle.split(/\s+/).filter(word => word.length > 3),
-      radius: 12000
-    };
-  };
-  
   // Function to build the Overpass API query
   const buildOverpassQuery = (lat: number, lon: number, searchConfig: any) => {
     const { tags, radius } = searchConfig;
     
     // Build tag-based queries - focus on tags instead of name keywords
-    const tagQueries = tags.map((tag: any) => 
+    const tagQueries = tags.map((tag: string) => 
       `node["leisure"="${tag}"](around:${radius},${lat},${lon});
        node["amenity"="${tag}"](around:${radius},${lat},${lon});
        node["tourism"="${tag}"](around:${radius},${lat},${lon});
@@ -268,40 +103,6 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
       [out:json];
       (
         ${tagQueries}
-      );
-      out body 15;
-    `;
-  };
-  
-  // Function to build a fallback query if specific search returns no results
-  const buildFallbackQuery = (lat: number, lon: number, title: string) => {
-    // Get activity type for better filtering
-    const activityType = title.toLowerCase().replace(/-/g, ' ');
-    const tagFilters = [];
-    
-    // Determine relevant OSM tags based on activity
-    if (activityType.includes('hike') || activityType.includes('trail')) {
-      tagFilters.push('node["leisure"="nature_reserve"](around:20000,${lat},${lon});');
-      tagFilters.push('node["tourism"="attraction"][~".*nature.*"~".",i](around:20000,${lat},${lon});');
-    } else if (activityType.includes('food') || activityType.includes('restaurant')) {
-      tagFilters.push('node["amenity"="restaurant"](around:10000,${lat},${lon});');
-      tagFilters.push('node["cuisine"](around:10000,${lat},${lon});');
-    } else if (activityType.includes('museum') || activityType.includes('art')) {
-      tagFilters.push('node["tourism"="museum"](around:15000,${lat},${lon});');
-      tagFilters.push('node["tourism"="gallery"](around:15000,${lat},${lon});');
-    }
-    
-    // Default case if no specific filters added
-    if (tagFilters.length === 0) {
-      tagFilters.push('node["leisure"](around:10000,${lat},${lon});');
-      tagFilters.push('node["tourism"](around:10000,${lat},${lon});');
-      tagFilters.push('node["amenity"](around:10000,${lat},${lon});');
-    }
-    
-    return `
-      [out:json];
-      (
-        ${tagFilters.join('\n')}
       );
       out body 15;
     `;
@@ -331,20 +132,11 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
           return true;
         }
         
-        // For name matches, be more strict to avoid street name matches
-        // Only include it if the node's category makes sense for the activity
+        // For name matches, include if keywords match
         const name = element.tags.name.toLowerCase();
         const isKeywordMatch = keywords.some((kw: string) => name.includes(kw.toLowerCase()));
         
-        // Category-based filtering
-        const isRelevantCategory = (
-          (category === 'restaurant' && keywords.some((k: string) => ['food', 'dinner', 'eat'].includes(k))) ||
-          (category === 'cinema' && keywords.some((k: string) => ['movie', 'film'].includes(k))) ||
-          (category === 'museum' && keywords.some((k: string) => ['museum', 'art', 'gallery'].includes(k))) ||
-          (category === 'park' && keywords.some((k: string) => ['park', 'nature', 'outdoor'].includes(k)))
-        );
-        
-        return isKeywordMatch && isRelevantCategory;
+        return isKeywordMatch;
       })
       .map((element, index) => ({
         id: element.id || index,
