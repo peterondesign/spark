@@ -194,6 +194,48 @@ export const getImageGallery = async (
 };
 
 /**
+ * Process images for multiple date ideas at once
+ * This is optimized for displaying a list of date ideas with images
+ * 
+ * @param dateIdeas Array of date idea objects
+ * @param width Image width
+ * @param height Image height
+ * @returns Object mapping date idea IDs to image URLs
+ */
+export const processDateIdeaImages = async (
+  dateIdeas: Array<{id: string, title: string, category?: string, image?: string}>,
+  width: number = 400,
+  height: number = 300
+): Promise<Record<string, string>> => {
+  if (!dateIdeas || dateIdeas.length === 0) {
+    return {};
+  }
+
+  const imageMap: Record<string, string> = {};
+  
+  // Process all image requests in parallel for efficiency
+  const imagePromises = dateIdeas.map(async (idea) => {
+    const keyword = `${idea.title} ${idea.category || ''} date`;
+    try {
+      const imageUrl = await getImageUrl(idea.image, keyword, width, height);
+      return { id: idea.id, url: imageUrl };
+    } catch (error) {
+      console.error(`Error processing image for date idea ${idea.title}:`, error);
+      return { id: idea.id, url: getPlaceholderImage(width, height, idea.title) };
+    }
+  });
+  
+  const results = await Promise.all(imagePromises);
+  
+  // Convert the results to a map of id -> imageUrl
+  results.forEach(result => {
+    imageMap[result.id] = result.url;
+  });
+  
+  return imageMap;
+};
+
+/**
  * Update the images in a date idea object with better relevant images
  * @param dateIdea Date idea object
  * @returns Updated date idea with proper images

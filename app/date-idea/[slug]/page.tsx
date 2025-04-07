@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { HeartIcon, MapPinIcon, StarIcon } from "../../components/icons";
 import SaveButton from "../../components/SaveButton";
-import { getImageUrl } from "@/app/utils/imageService";
+import { getImageUrl, getPlaceholderImage, processDateIdeaImages } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import Head from 'next/head';
@@ -575,6 +575,8 @@ export default function DateIdeaDetails() {
   // Add state for other date ideas
   const [otherDateIdeas, setOtherDateIdeas] = useState<DateIdea[]>([]);
   const [loadingOtherIdeas, setLoadingOtherIdeas] = useState(false);
+  // Add state for date idea images
+  const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
 
   // Improved function to fetch other random date ideas from the database
   const fetchOtherDateIdeas = async (currentId: string) => {
@@ -603,6 +605,10 @@ export default function DateIdeaDetails() {
         
         console.log(`Found ${randomIdeas.length} ideas, using ${shuffledIdeas.length} random ones`);
         setOtherDateIdeas(shuffledIdeas as DateIdea[]);
+        
+        // Process images for the other date ideas
+        const imageMap = await processDateIdeaImages(shuffledIdeas, 400, 200);
+        setDateIdeaImages(imageMap);
       } else {
         throw new Error('No random date ideas found');
       }
@@ -610,7 +616,7 @@ export default function DateIdeaDetails() {
       console.error("Error fetching other date ideas:", error);
       
       // Fallback date ideas if the database query fails
-      setOtherDateIdeas([
+      const fallbackIdeas = [
         {
           id: 'fallback-1',
           title: 'Romantic Dinner',
@@ -635,7 +641,13 @@ export default function DateIdeaDetails() {
           slug: 'movie-night',
           image: '/placeholder.jpg'
         }
-      ]);
+      ];
+      
+      setOtherDateIdeas(fallbackIdeas);
+      
+      // Process fallback images
+      const fallbackImageMap = await processDateIdeaImages(fallbackIdeas, 400, 200);
+      setDateIdeaImages(fallbackImageMap);
     } finally {
       setLoadingOtherIdeas(false);
     }
@@ -675,7 +687,13 @@ export default function DateIdeaDetails() {
             href={`/date-idea/${idea.slug}`}
             className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md"
           >
-            <div className="relative h-20">
+            <div className="relative h-40">
+              <Image
+                src={dateIdeaImages[idea.id] || getPlaceholderImage(400, 200, idea.title)}
+                alt={idea.title}
+                fill
+                className="object-cover"
+              />
               <div className="absolute bottom-0 left-0 bg-rose-500/80 text-white text-xs font-medium px-2 py-1">
                 {idea.category}
               </div>

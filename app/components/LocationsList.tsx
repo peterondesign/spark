@@ -149,8 +149,19 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
       try {
         // Get the city coordinates using Nominatim
         const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(userCity)}`;
-        const cityResponse = await fetch(nominatimUrl);
-        const cityData = await cityResponse.json();
+        let cityData;
+        try {
+          const cityResponse = await fetch(nominatimUrl);
+          if (!cityResponse.ok) {
+            throw new Error(`Failed to fetch city data: ${cityResponse.statusText}`);
+          }
+          cityData = await cityResponse.json();
+        } catch (error) {
+          console.error("Error fetching city data:", error);
+          setError("Unable to fetch city data. Please check your internet connection or try again later.");
+          setLoading(false);
+          return;
+        }
         
         if (!cityData || cityData.length === 0) {
           setError("Could not find your city on the map.");
