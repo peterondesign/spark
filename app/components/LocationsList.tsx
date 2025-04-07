@@ -173,19 +173,7 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
         
         if (locationsData && locationsData.elements && locationsData.elements.length > 0) {
           // Format location data
-          const formattedLocations = locationsData.elements
-            .filter((element: any) => element.type === 'node' && element.tags && element.tags.name)
-            .map((element: any, index: number) => ({
-              id: element.id || index,
-              name: element.tags.name,
-              lat: element.lat,
-              lon: element.lon,
-              address: element.tags['addr:street'] ? 
-                `${element.tags['addr:housenumber'] || ''} ${element.tags['addr:street']}` : undefined,
-              website: element.tags.website || element.tags.url,
-              phone: element.tags.phone,
-              category: element.tags.amenity || element.tags.leisure || element.tags.tourism || element.tags.shop || element.tags.sport
-            }));
+          const formattedLocations = filterAndFormatLocations(locationsData.elements, searchConfig);
           
           setLocations(formattedLocations);
         } else {
@@ -197,19 +185,7 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
           const fallbackData = await fallbackResponse.json();
           
           if (fallbackData && fallbackData.elements && fallbackData.elements.length > 0) {
-            const formattedLocations = fallbackData.elements
-              .filter((element: any) => element.type === 'node' && element.tags && element.tags.name)
-              .map((element: any, index: number) => ({
-                id: element.id || index,
-                name: element.tags.name,
-                lat: element.lat,
-                lon: element.lon,
-                address: element.tags['addr:street'] ? 
-                  `${element.tags['addr:housenumber'] || ''} ${element.tags['addr:street']}` : undefined,
-                website: element.tags.website || element.tags.url,
-                phone: element.tags.phone,
-                category: element.tags.amenity || element.tags.leisure || element.tags.tourism || element.tags.shop
-              }));
+            const formattedLocations = filterAndFormatLocations(fallbackData.elements, searchConfig);
             
             setLocations(formattedLocations);
           } else {
@@ -266,9 +242,9 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
   
   // Function to build the Overpass API query
   const buildOverpassQuery = (lat: number, lon: number, searchConfig: any) => {
-    const { tags, keywords, radius } = searchConfig;
+    const { tags, radius } = searchConfig;
     
-    // Build tag-based queries
+    // Build tag-based queries - focus on tags instead of name keywords
     const tagQueries = tags.map((tag: any) => 
       `node["leisure"="${tag}"](around:${radius},${lat},${lon});
        node["amenity"="${tag}"](around:${radius},${lat},${lon});
@@ -277,17 +253,10 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
        node["shop"="${tag}"](around:${radius},${lat},${lon});`
     ).join('\n');
     
-    // Build keyword-based name search
-    const keywordPattern = keywords.join('|');
-    const nameQuery = `
-      node["name"~"${keywordPattern}",i](around:${radius},${lat},${lon});
-    `;
-    
     return `
       [out:json];
       (
         ${tagQueries}
-        ${nameQuery}
       );
       out body 15;
     `;
@@ -295,34 +264,90 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
   
   // Function to build a fallback query if specific search returns no results
   const buildFallbackQuery = (lat: number, lon: number, title: string) => {
-    const keywords = title
-      .toLowerCase()
-      .replace(/-/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 3);
-      
-    if (keywords.length > 0) {
-      const keywordPattern = keywords.join('|');
-      return `
-        [out:json];
-        (
-          node["name"~"${keywordPattern}",i](around:12000,${lat},${lon});
-          node["leisure"](around:10000,${lat},${lon});
-          node["amenity"](around:10000,${lat},${lon});
-          node["tourism"](around:10000,${lat},${lon});
-        );
-        out body 10;
-      `;
-    } else {
-      return `
-        [out:json];
-        (
-          node["leisure"](around:10000,${lat},${lon});
-          node["tourism"](around:10000,${lat},${lon});
-        );
-        out body 10;
-      `;
+    // Get activity type for better filtering
+    const activityType = title.toLowerCase().replace(/-/g, ' ');
+    const tagFilters = [];
+    
+    // Determine relevant OSM tags based on activity
+    if (activityType.includes('hike') || activityType.includes('trail')) {
+      tagFilters.push('node["leisure"="nature_reserve"](around:20000,${lat},${lon});');
+      tagFilters.push('node["tourism"="attraction"][~".*nature.*"~".",i](around:20000,${lat},${lon});');
+    } else if (activityType.includes('food') || activityType.includes('restaurant')) {
+      tagFilters.push('node["amenity"="restaurant"](around:10000,${lat},${lon});');
+      tagFilters.push('node["cuisine"](around:10000,${lat},${lon});');
+    } else if (activityType.includes('museum') || activityType.includes('art')) {
+      tagFilters.push('node["tourism"="museum"](around:15000,${lat},${lon});');
+      tagFilters.push('node["tourism"="gallery"](around:15000,${lat},${lon});');
     }
+    
+    // Default case if no specific filters added
+    if (tagFilters.length === 0) {
+      tagFilters.push('node["leisure"](around:10000,${lat},${lon});');
+      tagFilters.push('node["tourism"](around:10000,${lat},${lon});');
+      tagFilters.push('node["amenity"](around:10000,${lat},${lon});');
+    }
+    
+    return `
+      [out:json];
+      (
+        ${tagFilters.join('\n')}
+      );
+      out body 15;
+    `;
+  };
+  
+  // Function to filter and format locations
+  const filterAndFormatLocations = (elements: any[], searchConfig: any) => {
+    const { keywords } = searchConfig;
+    
+    return elements
+      .filter(element => {
+        // Only include nodes with names
+        if (element.type !== 'node' || !element.tags || !element.tags.name) {
+          return false;
+        }
+        
+        // Check for category match - this ensures the place is the right type
+        // not just coincidentally matching a keyword in its name
+        const category = element.tags.amenity || element.tags.leisure || 
+                         element.tags.tourism || element.tags.shop || 
+                         element.tags.sport;
+                         
+        if (!category) return false;
+        
+        // Check if any of the activity-specific tags match
+        if (searchConfig.tags.includes(category)) {
+          return true;
+        }
+        
+        // For name matches, be more strict to avoid street name matches
+        // Only include it if the node's category makes sense for the activity
+        const name = element.tags.name.toLowerCase();
+        const isKeywordMatch = keywords.some((kw: string) => name.includes(kw.toLowerCase()));
+        
+        // Category-based filtering
+        const isRelevantCategory = (
+          (category === 'restaurant' && keywords.some((k: string) => ['food', 'dinner', 'eat'].includes(k))) ||
+          (category === 'cinema' && keywords.some((k: string) => ['movie', 'film'].includes(k))) ||
+          (category === 'museum' && keywords.some((k: string) => ['museum', 'art', 'gallery'].includes(k))) ||
+          (category === 'park' && keywords.some((k: string) => ['park', 'nature', 'outdoor'].includes(k)))
+        );
+        
+        return isKeywordMatch && isRelevantCategory;
+      })
+      .map((element, index) => ({
+        id: element.id || index,
+        name: element.tags.name,
+        lat: element.lat,
+        lon: element.lon,
+        address: element.tags['addr:street'] ? 
+          `${element.tags['addr:housenumber'] || ''} ${element.tags['addr:street']}` : undefined,
+        website: element.tags.website || element.tags.url,
+        phone: element.tags.phone,
+        category: element.tags.amenity || element.tags.leisure || 
+                 element.tags.tourism || element.tags.shop || 
+                 element.tags.sport
+      }));
   };
   
   // Helper function to create Google Maps URL
@@ -334,12 +359,21 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
   
   return (
     <div className="mt-6 mb-8">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Places to Visit in {userCity}</h2>
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Other Locations for {dateIdeaTitle} in {userCity}</h2>
       
       {loading && (
-        <div className="flex items-center justify-center bg-gray-100 rounded-lg p-8 mb-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-rose-500"></div>
-          <p className="ml-3 text-gray-600">Finding locations...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, index) => (
+            <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse">
+              <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
+              <div className="flex gap-2">
+                <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                <div className="h-6 bg-gray-200 rounded-full w-24"></div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
       
@@ -350,17 +384,17 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
       )}
       
       {!loading && locations.length > 0 && (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {locations.map((location) => (
-            <div key={location.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div key={location.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow h-full flex flex-col">
               <h3 className="font-semibold text-gray-800">{location.name}</h3>
               {location.category && (
-                <p className="text-sm text-gray-500">Type: {location.category}</p>
+                <p className="text-sm text-gray-500">{location.category}</p>
               )}
               {location.address && (
                 <p className="text-sm text-gray-600">{location.address}</p>
               )}
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-2 mt-auto pt-2 flex-wrap">
                 {location.website && (
                   <a 
                     href={location.website.startsWith('http') ? location.website : `https://${location.website}`} 
