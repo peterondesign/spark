@@ -39,7 +39,7 @@ export default function Footer() {
                             <li><Link href="/favorites" className="text-gray-600 hover:text-gray-900">Favorites</Link></li>
                             <li><Link href="/calendar" className="text-gray-600 hover:text-gray-900">Calendar</Link></li>
                             <li><Link href="/date-idea-generator" className="text-gray-600 hover:text-gray-900">Date Idea Generator</Link></li>
-                            <li><Link href="/date-night-box-subscription" className="text-gray-600 hover:text-gray-900">Date Night Box Subscription</Link></li>
+                            <li><Link href="/date-night-box-subscription" className="text-gray-600 hover:text-gray-900">Couples’ Gift Box Subscription</Link></li>
                             <li><Link href="/date-ideas-near-me" className="text-gray-600 hover:text-gray-900">Date Ideas Near Me</Link></li>
                             <li><Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
                         </ul>
@@ -47,7 +47,7 @@ export default function Footer() {
 
                     {/* Tools Section */}
                     <div>
-                        <h3 className="text-gray-800 font-bold mb-4">Tools</h3>
+                        <h3 className="text-gray-800 font-bold mb-4">Date Challenges</h3>
                         <ul className="space-y-2">
                             <li><Link href="/alphabet-dating" className="text-gray-600 hover:text-gray-900">Alphabet Dating</Link></li>
                             <li><Link href="/spin-the-wheel" className="text-gray-600 hover:text-gray-900">Spin the Wheel</Link></li>

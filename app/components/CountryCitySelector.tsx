@@ -95,6 +95,7 @@ export default function CountryCitySelector({
   const [ipLocationAttempted, setIpLocationAttempted] = useState(false);
   const [ipLocationFailed, setIpLocationFailed] = useState(false);
   const [detectionTimeout, setDetectionTimeout] = useState(false);
+  const [placeholderText, setPlaceholderText] = useState("Search for a city...");
 
   // Memoize the renderOptionLabel to prevent unnecessary re-renders
   const renderOptionLabel = useCallback((city: CityItem) => (
@@ -117,6 +118,11 @@ export default function CountryCitySelector({
     // Check if localStorage needs to be refreshed
     checkAndClearLocalStorage();
     
+    // Update placeholder text on client-side only
+    if (isLoading && !inputValue) {
+      setPlaceholderText("Detecting your location...");
+    }
+    
     // Only attempt to get the IP location if prioritizeIpLocation is true
     if (hasStoredLocationData()) {
       loadStoredLocation();
@@ -131,6 +137,7 @@ export default function CountryCitySelector({
           console.log('Location detection timed out after 4s, loading popular cities');
           loadPopularCities();
           setIsLoading(false);
+          setPlaceholderText("Search for a city...");
         }
       }, LOCATION_DETECTION_TIMEOUT);
       
@@ -215,6 +222,7 @@ export default function CountryCitySelector({
   const detectIpLocation = async () => {
     setIsLoading(true);
     setIpLocationAttempted(true);
+    setPlaceholderText("Detecting your location...");
     
     try {
       console.log('Attempting to detect location from IP...');
@@ -643,7 +651,7 @@ export default function CountryCitySelector({
           inputValue={inputValue}
           isLoading={isLoading}
           isSearchable={true}
-          placeholder={isLoading && !inputValue ? "Detecting your location..." : "Search for a city..."}
+          placeholder={placeholderText}
           noOptionsMessage={() => "No cities found"}
           styles={customStyles}
           className="react-select"

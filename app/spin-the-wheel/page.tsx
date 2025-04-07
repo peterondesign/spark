@@ -128,7 +128,7 @@ export default function SpinTheWheelPage() {
          {/* Other Tools Section */}
          <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Try Our Other Date Tools</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">Try Our Other Date Challenges</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Link href="/date-idea-generator" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <h3 className="text-xl font-semibold mb-2 text-blue-600">Date Idea Generator</h3>

@@ -30,7 +30,7 @@ const DateNightBoxSubscription = () => {
     const dateNightBoxSchema = {
         "@context": "https://schema.org",
         "@type": "Product",
-        "name": "Date Night Box Subscription",
+        "name": "Couples’ Gift Box Subscription",
         "description": "Monthly themed date night boxes delivered to your door with everything you need for a memorable date night at home.",
         "offers": {
             "@type": "AggregateOffer",

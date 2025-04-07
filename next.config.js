@@ -14,7 +14,7 @@ const nextConfig = {
     reactStrictMode: true,
     // Add transpilePackages if needed
     transpilePackages: [],
-    webpack: (config, { isServer }) => {
+    webpack: (config) => {
         // Add the resolver for the Skypack CDN URL
         config.resolve.alias['https://cdn.skypack.dev/@mozilla/readability'] = '@mozilla/readability';
         
@@ -34,7 +34,7 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pexels.com https://unsplash.com https://widget.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms; frame-src 'self' https://embeds.beehiiv.com;"
+                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms https://va.vercel-scripts.com; connect-src 'self' https://api.pexels.com/v1 https://*.pexels.com https://pexels.com https://images.pexels.com https://*.unsplash.com https://unsplash.com https://*.supabase.co https://*.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms; frame-src 'self' https://embeds.beehiiv.com;"
                     }
                 ]
             },

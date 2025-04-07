@@ -921,7 +921,7 @@ const Home = () => {
               <div className="flex flex-wrap gap-2 mb-3">
                 {appliedFiltersCount > 0 && (
                   <>
-                    {activeFilters.city && (
+                    {/* {activeFilters.city && (
                       <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
                         {activeFilters.city}
                         <button
@@ -934,7 +934,7 @@ const Home = () => {
                           </svg>
                         </button>
                       </span>
-                    )}
+                    )} */}
                     {activeFilters.price !== 'all' && (
                       <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                         {priceLevelMap[activeFilters.price]}
@@ -1007,13 +1007,13 @@ const Home = () => {
             {/* Main filter controls - desktop only */}
             <div className="hidden md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
               {/* City filter - compact on mobile */}
-              <div className="col-span-2 md:col-span-1">
+              {/* <div className="col-span-2 md:col-span-1">
                 <CountryCitySelector
                   onCitySelect={(city) => handleCitySelect(city)}
                   defaultCity={userCity || undefined}
                   label="City"
                 />
-              </div>
+              </div> */}
 
               {/* Price Range Filter - compact design */}
               <div>

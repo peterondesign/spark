@@ -104,7 +104,7 @@ export default function Header() {
                         <div className="relative" ref={toolsMenuRef}>
                             <button 
                                 id="tools-button"
-                                className={`flex items-center space-x-1 px-3 py-2 rounded-md ${
+                                className={`flex items-center space-x-1 px-1 py-2 rounded-md ${
                                     isToolActive() || isToolsMenuOpen 
                                     ? 'bg-gray-100 text-rose-600 font-medium' 
                                     : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
@@ -116,7 +116,7 @@ export default function Header() {
                                 aria-expanded={isToolsMenuOpen}
                                 aria-controls="tools-dropdown"
                             >
-                                <span>Tools</span>
+                                <span>Date Challenges</span>
                                 <svg 
                                     xmlns="http://www.w3.org/2000/svg" 
                                     className={`h-4 w-4 transition-transform ${isToolsMenuOpen ? 'rotate-180' : ''}`} 
@@ -151,7 +151,7 @@ export default function Header() {
                             )}
                         </div>
                         
-                        <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Date Night Box Subscription</Link>
+                        <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link>
                         <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link>
                         <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link>
                     </div>
@@ -180,16 +180,16 @@ export default function Header() {
                         id="mobile-menu"
                         className={`fixed top-0 right-0 h-full w-3/4 max-w-sm bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
                     >
-                        <div className="p-6 flex flex-col space-y-6 pt-16">
+                        <div className="p-4 flex flex-col space-y-4 pt-8">
                             <Link href="/" className={getMobileLinkStyle('/')}>Home</Link>
                             <Link href="/favorites" className={getMobileLinkStyle('/favorites')}>Favorites</Link>
                             <Link href="/calendar" className={getMobileLinkStyle('/calendar')}>Date Calendar</Link>
                             <Link href="/date-idea-generator" className={getMobileLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
                             
                             {/* Mobile Tools Section */}
-                            <div className="py-2 border-b border-gray-100">
-                                <p className="text-gray-800 font-medium mb-2">Tools</p>
-                                <div className="pl-4 flex flex-col space-y-2 bg-gray-50 rounded-lg p-2">
+                            <div className="py-1 border-b border-gray-100">
+                                <p className="text-gray-800 font-medium text-sm mb-1">Tools</p>
+                                <div className="pl-3 flex flex-col space-y-1 bg-gray-50 rounded-lg p-1">
                                     <Link href="/alphabet-dating" className={getMobileLinkStyle('/alphabet-dating')}>
                                         Alphabet Dating
                                     </Link>
@@ -199,9 +199,9 @@ export default function Header() {
                                 </div>
                             </div>
                             
-                            <Link href="/date-night-box-subscription" className={getMobileLinkStyle('/date-night-box-subscription')}>Date Night Box Subscription</Link>
+                            <Link href="/date-night-box-subscription" className={getMobileLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link>
                             <Link href="/blog" className={getMobileLinkStyle('/blog')}>Blog</Link>
-                            <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-800 hover:text-gray-900 text-lg font-medium py-2 border-b border-gray-100">Contact Us</Link>
+                            <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-800 hover:text-gray-900 text-sm font-medium py-1 border-b border-gray-100">Contact Us</Link>
                         </div>
                     </div>
                 </div>
