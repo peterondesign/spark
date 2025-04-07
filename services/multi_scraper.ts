@@ -19,31 +19,76 @@ interface ScraperOptions {
   city: string;
   category?: string;
   limit?: number;
+  streamResults?: boolean; // Add new option to enable streaming results
 }
 
 // Main function to fetch experiences from multiple sources
 export async function fetchMultiSourceExperiences(options: ScraperOptions): Promise<Experience[]> {
-  const { city, category = 'activities', limit = 10 } = options;
+  const { city, category = 'activities', limit = 10, streamResults = false } = options;
   
   // Define scrapers - using a mix of real scrapers and mock data providers
   const sources = [
-    { name: 'getyourguide', fn: scrapeGetYourGuide, enabled: true, useMock: false },
-    { name: 'viator', fn: scrapeViator, enabled: true, useMock: true },
-    { name: 'airbnbexperiences', fn: scrapeAirbnbExperiences, enabled: true, useMock: true },
-    { name: 'eventbrite', fn: scrapeEventbrite, enabled: true, useMock: true },
-    { name: 'googlemaps', fn: scrapeGoogleMaps, enabled: true, useMock: false },  // Changed to useMock: false
-    { name: 'timeout', fn: scrapeTimeout, enabled: true, useMock: true },
-    { name: 'meetup', fn: scrapeMeetup, enabled: true, useMock: true },
-    { name: 'luma', fn: scrapeLuma, enabled: true, useMock: true }
+    { name: 'getyourguide', fn: scrapeGetYourGuide, enabled: true, useMock: false, priority: 1 },
+    { name: 'googlemaps', fn: scrapeGoogleMaps, enabled: true, useMock: false, priority: 2 }, 
+    { name: 'viator', fn: scrapeViator, enabled: true, useMock: true, priority: 3 },
+    { name: 'airbnbexperiences', fn: scrapeAirbnbExperiences, enabled: true, useMock: true, priority: 4 },
+    { name: 'eventbrite', fn: scrapeEventbrite, enabled: true, useMock: true, priority: 5 },
+    { name: 'timeout', fn: scrapeTimeout, enabled: true, useMock: true, priority: 6 },
+    { name: 'meetup', fn: scrapeMeetup, enabled: true, useMock: true, priority: 7 },
+    { name: 'luma', fn: scrapeLuma, enabled: true, useMock: true, priority: 8 }
   ];
   
   console.log(`[SCRAPER] Starting multi-source fetch for ${city}, ${category}`);
   console.log(`[SCRAPER] Enabled sources: ${sources.filter(s => s.enabled).map(s => s.name).join(', ')}`);
   
-  // Process each source - either fetch real data or use mock data
-  const promises = sources
-    .filter(source => source.enabled)
-    .map(source => {
+  // Sort sources by priority (lowest number = highest priority)
+  const sortedSources = [...sources].filter(source => source.enabled).sort((a, b) => a.priority - b.priority);
+  
+  // Collect all results
+  const allExperiences: Experience[] = [];
+  
+  if (streamResults) {
+    // For streaming mode, process sources sequentially to return results faster
+    for (const source of sortedSources) {
+      console.log(`[SCRAPER] Processing source: ${source.name} (useMock: ${source.useMock})`);
+      try {
+        let sourceResults: Experience[] = [];
+        if (source.useMock) {
+          // Use mock data for this source
+          sourceResults = getMockExperiences(source.name, city, category, Math.ceil(limit / 3));
+        } else {
+          // Try to fetch real data
+          console.log(`[SCRAPER] Starting real fetch from ${source.name}`);
+          sourceResults = await source.fn(city, category, Math.ceil(limit / 3));
+          console.log(`[SCRAPER] SUCCESS: ${source.name} returned ${sourceResults.length} results`);
+        }
+        
+        // Process source results
+        if (sourceResults.length > 0) {
+          console.log(`[SCRAPER] Processing ${sourceResults.length} results from ${source.name}`);
+          allExperiences.push(...sourceResults);
+          
+          // If we have enough results and this is GetYourGuide, we can return early
+          if (allExperiences.length >= limit && source.name === 'getyourguide') {
+            console.log(`[SCRAPER] Got enough results from GetYourGuide, returning early`);
+            return shuffleArray(allExperiences).slice(0, limit);
+          }
+        }
+      } catch (error) {
+        console.error(`[SCRAPER] ERROR: ${source.name} failed:`, error);
+        // Fall back to mock data if real fetch fails
+        console.log(`[SCRAPER] Falling back to mock data for ${source.name}`);
+        const mockResults = getMockExperiences(source.name, city, category, Math.ceil(limit / 3));
+        allExperiences.push(...mockResults);
+      }
+    }
+    
+    // Shuffle and return what we have
+    return shuffleArray(allExperiences).slice(0, limit);
+  } else {
+    // Original parallel processing approach
+    // Process each source - either fetch real data or use mock data
+    const promises = sortedSources.map(source => {
       console.log(`[SCRAPER] Processing source: ${source.name} (useMock: ${source.useMock})`);
       if (source.useMock) {
         // Use mock data for this source
@@ -65,29 +110,28 @@ export async function fetchMultiSourceExperiences(options: ScraperOptions): Prom
       }
     });
   
-  try {
-    // Collect all results
-    const results = await Promise.all(promises);
-    
-    // Process results
-    const allExperiences: Experience[] = [];
-    
-    results.forEach((sourceResults: string | any[], index: number) => {
-      const sourceName = sources.filter(s => s.enabled)[index].name;
-      console.log(`[SCRAPER] Processing ${sourceResults.length} results from ${sourceName}`);
-      allExperiences.push(...sourceResults);
-    });
-    
-    // Shuffle the experiences to mix the sources
-    const shuffledExperiences = shuffleArray(allExperiences);
-    console.log(`[SCRAPER] Total experiences after processing: ${allExperiences.length}`);
-    console.log(`[SCRAPER] Returning ${Math.min(shuffledExperiences.length, limit)} experiences`);
-    
-    // Return limited number of experiences
-    return shuffledExperiences.slice(0, limit);
-  } catch (error) {
-    console.error('[SCRAPER] Error in multi-source fetching:', error);
-    return [];
+    try {
+      // Collect all results
+      const results = await Promise.all(promises);
+      
+      // Process results
+      results.forEach((sourceResults, index) => {
+        const sourceName = sortedSources[index].name;
+        console.log(`[SCRAPER] Processing ${sourceResults.length} results from ${sourceName}`);
+        allExperiences.push(...sourceResults);
+      });
+      
+      // Shuffle the experiences to mix the sources
+      const shuffledExperiences = shuffleArray(allExperiences);
+      console.log(`[SCRAPER] Total experiences after processing: ${allExperiences.length}`);
+      console.log(`[SCRAPER] Returning ${Math.min(shuffledExperiences.length, limit)} experiences`);
+      
+      // Return limited number of experiences
+      return shuffledExperiences.slice(0, limit);
+    } catch (error) {
+      console.error('[SCRAPER] Error in multi-source fetching:', error);
+      return [];
+    }
   }
 }
 

@@ -95,6 +95,9 @@ export default function DateIdeaDetails() {
     completedSources: 0
   });
 
+  // State to track if initial results have loaded
+  const [initialResultsLoaded, setInitialResultsLoaded] = useState(false);
+
   // Add cityList for autocomplete functionality similar to home page
   const cityList = useAsyncList<CityItem>({
     async load({ signal, filterText = "" }) {
@@ -319,12 +322,14 @@ export default function DateIdeaDetails() {
     }
   }, [dateIdea]); // This will run whenever dateIdea changes/loads
 
+  // UseEffect for fetching date idea experiences with progressive loading
   useEffect(() => {
     const fetchExperiences = async () => {
       if (!userCity || !dateIdea?.title) return;
 
       setLoadingExperiences(true);
-
+      setInitialResultsLoaded(false);
+      
       console.log('🔍 DEBUG: Starting to fetch experiences', { userCity, dateIdeaTitle: dateIdea.title });
 
       setSearchSources(prev => prev.map(source => ({ ...source, status: 'pending' })));
@@ -338,6 +343,7 @@ export default function DateIdeaDetails() {
       let allExperiences: Experience[] = [];
 
       try {
+        // First attempt: Fast loading of GetYourGuide results
         setSearchSources(prev =>
           prev.map(source => source.name === 'GetYourGuide' ? { ...source, status: 'searching' } : source)
         );
@@ -346,20 +352,99 @@ export default function DateIdeaDetails() {
         const gygSearchUrl = `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3`;
         console.log('🔍 DEBUG: Fetching from GetYourGuide', { gygSearchUrl });
         
-        const gygResponse = await fetch(`/api/scrape?url=${encodeURIComponent(gygSearchUrl)}&method=selenium`);
-        console.log('🔍 DEBUG: GetYourGuide response status:', gygResponse.status);
-
-        if (!gygResponse.ok) {
-          console.error('❌ DEBUG: GetYourGuide request failed', { status: gygResponse.status });
-          throw new Error(`Failed to fetch from GetYourGuide: ${gygResponse.status}`);
+        try {
+          // Direct fetch for quick GetYourGuide results
+          const quickGygResponse = await fetch(`/api/getyourguide?city=${encodeURIComponent(userCity)}&category=${encodeURIComponent(dateIdea.title)}`);
+          
+          if (quickGygResponse.ok) {
+            const quickGygData = await quickGygResponse.json();
+            
+            if (quickGygData.success && quickGygData.activities && quickGygData.activities.length > 0) {
+              console.log('🔍 DEBUG: Quick GYG data received', { activitiesCount: quickGygData.activities.length });
+              
+              // Map the GYG data to our Experience format
+              const gygExperiences: Experience[] = quickGygData.activities.map((activity: any) => ({
+                title: activity.title || `${dateIdea.title} in ${userCity}`,
+                price: activity.price && activity.price !== "Price not available"
+                  ? activity.price
+                  : "Check website for prices",
+                rating: activity.rating || "4.5",
+                reviewCount: activity.reviews || "100+",
+                imageUrl: activity.image || dateIdea.image,
+                link: activity.url || gygSearchUrl,
+                isRelevant: true,
+                source: 'GetYourGuide'
+              }));
+              
+              // Show initial results immediately
+              allExperiences = [...gygExperiences];
+              setExperiences(allExperiences);
+              setInitialResultsLoaded(true);
+              
+              console.log('🔍 DEBUG: Set initial quick GYG experiences', { count: gygExperiences.length });
+            }
+          }
+        } catch (quickGygError) {
+          console.error('❌ DEBUG: Error with quick GYG fetch:', quickGygError);
+          // Continue with regular GYG fetch as fallback
         }
+        
+        // Fallback or additional GYG results via selenium scraper
+        if (!initialResultsLoaded) {
+          const gygResponse = await fetch(`/api/scrape?url=${encodeURIComponent(gygSearchUrl)}&method=selenium`);
+          console.log('🔍 DEBUG: GetYourGuide response status:', gygResponse.status);
 
-        const gygData = await gygResponse.json();
-        console.log('🔍 DEBUG: GetYourGuide data received', { 
-          hasData: !!gygData, 
-          activitiesCount: gygData?.activities?.length || 0 
-        });
+          if (!gygResponse.ok) {
+            console.error('❌ DEBUG: GetYourGuide request failed', { status: gygResponse.status });
+            throw new Error(`Failed to fetch from GetYourGuide: ${gygResponse.status}`);
+          }
 
+          const gygData = await gygResponse.json();
+          console.log('🔍 DEBUG: GetYourGuide data received', { 
+            hasData: !!gygData, 
+            activitiesCount: gygData?.activities?.length || 0 
+          });
+
+          if (gygData && gygData.activities && gygData.activities.length > 0) {
+            const relevantActivities = gygData.activities.filter((activity: any) => {
+              const activityTitle = activity.title?.toLowerCase() || '';
+              const dateIdeaTitle = dateIdea.title.toLowerCase();
+              const dateIdeaWords = dateIdeaTitle.split(/\s+/).filter((word: string) => word.length > 3);
+              const isRelevant = dateIdeaWords.some((word: string) => activityTitle.includes(word));
+              return isRelevant;
+            });
+            
+            console.log('🔍 DEBUG: Filtered activities', { 
+              total: gygData.activities.length, 
+              relevant: relevantActivities.length,
+              relevantTitles: relevantActivities.map((a: any) => a.title)
+            });
+
+            const gygExperiences: Experience[] = (relevantActivities.length > 0 ? relevantActivities : gygData.activities)
+              .map((activity: any) => {
+                return {
+                  title: activity.title || `${dateIdea.title} in ${userCity}`,
+                  price: activity.price && activity.price !== "Price not available"
+                    ? activity.price
+                    : "Check website for prices",
+                  rating: activity.rating || "4.5",
+                  reviewCount: activity.reviews || "100+",
+                  imageUrl: activity.image || dateIdea.image,
+                  link: activity.url || `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3?partner_id=5QQHAHP&utm_medium=online_publisher`,
+                  isRelevant: relevantActivities.includes(activity),
+                  source: 'GetYourGuide'
+                };
+              });
+
+            console.log('🔍 DEBUG: Created GYG experiences', { count: gygExperiences.length });
+            allExperiences = [...gygExperiences];
+            setExperiences(allExperiences);
+            setInitialResultsLoaded(true);
+            console.log('🔍 DEBUG: Set experiences state', { count: allExperiences.length });
+          }
+        }
+        
+        // Update status for GetYourGuide now that we've shown results
         setSearchSources(prev =>
           prev.map(source => source.name === 'GetYourGuide' ? { ...source, status: 'complete' } : source)
         );
@@ -369,47 +454,6 @@ export default function DateIdeaDetails() {
           percentComplete: Math.round(((prev.completedSources + 1) / prev.totalSources) * 100),
           currentSource: 'Google Maps'
         }));
-
-        if (gygData && gygData.activities && gygData.activities.length > 0) {
-          const relevantActivities = gygData.activities.filter((activity: any) => {
-            const activityTitle = activity.title?.toLowerCase() || '';
-            const dateIdeaTitle = dateIdea.title.toLowerCase();
-            const dateIdeaWords = dateIdeaTitle.split(/\s+/).filter((word: string) => word.length > 3);
-
-            const isRelevant = dateIdeaWords.some((word: string) => activityTitle.includes(word));
-            return isRelevant;
-          });
-          
-          console.log('🔍 DEBUG: Filtered activities', { 
-            total: gygData.activities.length, 
-            relevant: relevantActivities.length,
-            relevantTitles: relevantActivities.map((a: any) => a.title)
-          });
-
-          const gygExperiences: Experience[] = (relevantActivities.length > 0 ? relevantActivities : gygData.activities)
-            .map((activity: any) => {
-              return {
-                title: activity.title || `${dateIdea.title} in ${userCity}`,
-                price: activity.price && activity.price !== "Price not available"
-                  ? activity.price
-                  : "Check website for prices",
-                rating: activity.rating || "4.5",
-                reviewCount: activity.reviews || "100+",
-                imageUrl: activity.image || dateIdea.image,
-                link: activity.url || `https://www.getyourguide.com/s/?q=${encodeURIComponent(dateIdea.title)}+${encodeURIComponent(userCity)}&searchSource=3?partner_id=5QQHAHP&utm_medium=online_publisher`,
-                isRelevant: relevantActivities.includes(activity),
-                source: 'GetYourGuide'
-              };
-            });
-
-          console.log('🔍 DEBUG: Created GYG experiences', { count: gygExperiences.length });
-          allExperiences = [...gygExperiences];
-
-          setExperiences(allExperiences);
-          console.log('🔍 DEBUG: Set experiences state', { count: allExperiences.length });
-        } else {
-          console.log('🔍 DEBUG: No activities found in GYG data');
-        }
 
         // Debug the multi_scraper approach for Google Maps
         try {
@@ -443,7 +487,10 @@ export default function DateIdeaDetails() {
               }));
               
               console.log('🔍 DEBUG: Adding Google Maps experiences', { count: googleMapsExperiences.length });
-              allExperiences = [...allExperiences, ...googleMapsExperiences];
+              // Merge with existing experiences, avoiding duplicates
+              const existingIds = new Set(allExperiences.map(e => e.title));
+              const newGoogleMapsExperiences = googleMapsExperiences.filter(e => !existingIds.has(e.title));
+              allExperiences = [...allExperiences, ...newGoogleMapsExperiences];
               setExperiences(allExperiences);
             }
           }
@@ -926,7 +973,7 @@ export default function DateIdeaDetails() {
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
           {userCity ? (
             <div>
-              {loadingExperiences ? (
+              {loadingExperiences && !initialResultsLoaded ? (
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
                     <div className="flex items-center mb-3">
@@ -934,7 +981,7 @@ export default function DateIdeaDetails() {
                       <div>
                         <p className="text-gray-700 font-medium">Looking for relevant activities...</p>
                         <p className="text-xs text-gray-500">
-                          Searching across GetYourGuide, Google Maps, Eventbrite, Timeout, Meetup, Fever, Luma
+                          Searching for experiences in {userCity}
                         </p>
                       </div>
                     </div>
@@ -1060,6 +1107,19 @@ export default function DateIdeaDetails() {
                       )}
                     </a>
                   ))}
+
+                  {/* Show loading indicator if initial results are loaded but still fetching more */}
+                  {loadingExperiences && initialResultsLoaded && (
+                    <div className="mt-4 flex justify-center">
+                      <div className="inline-flex items-center px-4 py-2 bg-rose-50 text-rose-600 rounded-full">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-rose-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Finding more experiences...
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-500">No experiences found for this date idea in {userCity}</p>
