@@ -45,9 +45,13 @@ const SpinWheel: React.FC<SpinWheelProps> = ({ dateIdeas, dateIdeaImages }) => {
     const baseRadius = 125;
     const adjustedRadius = Math.min(baseRadius, baseRadius - (total > 8 ? (total - 8) * 5 : 0));
     
+    // Apply an offset to move text more to the left and higher up
+    const xOffset = -15; // negative value moves left
+    const yOffset = -10; // negative value moves up
+    
     return {
-      x: Math.cos(angleInRadians) * adjustedRadius,
-      y: Math.sin(angleInRadians) * adjustedRadius,
+      x: Math.cos(angleInRadians) * adjustedRadius + xOffset,
+      y: Math.sin(angleInRadians) * adjustedRadius + yOffset,
       angle: angle,
       segmentAngle: segmentAngle
     };
