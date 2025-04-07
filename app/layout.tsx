@@ -89,7 +89,7 @@ export default function RootLayout({
         />
         {/* These will be properly extended by each page's metadata.alternates */}
       </head>
-      <body className={plusJakartaSans.className}>
+      <body className={plusJakartaSans.className} suppressHydrationWarning={true}>
         {/* SanityLive component to enable live content updates */}
         <SanityLive />
 
