@@ -95,7 +95,9 @@ export default function Header() {
                     </Link>
                     {/* Desktop Navigation */}
                     <div className="hidden xl:flex items-center space-x-4 text-sm">
-                        <Link href="/" className={getLinkStyle('/')}>Home</Link>
+                        {!isActive('/') && (
+                            <Link href="/" className={getLinkStyle('/')}>Home</Link>
+                        )}
                         <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
                         <Link href="/calendar" className={getLinkStyle('/calendar')}>Date Calendar</Link>
                         <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
@@ -152,8 +154,8 @@ export default function Header() {
                         </div>
                         
                         <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link>
-                        <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link>
-                        <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link>
+                        {/* <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link> */}
+                        {/* <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link> */}
                     </div>
                     
                     {/* Mobile Hamburger Button */}
