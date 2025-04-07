@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getOSMMappingForDateIdea } from '../../services/osmMappingService';
+import { getOSMMappingForDateIdea, buildOverpassQuery, OSMActivityMapping } from '../../services/osmMappingService';
 
 interface LocationResult {
   id: number;
@@ -11,6 +11,7 @@ interface LocationResult {
   website?: string;
   phone?: string;
   category?: string;
+  relevanceScore?: number;
 }
 
 interface LocationsListProps {
@@ -59,8 +60,9 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
         
         // Get OpenAPI-generated search parameters from the OSM mapping service
         const searchConfig = await getOSMMappingForDateIdea(dateIdeaTitle);
+        console.log(`OSM mapping for ${dateIdeaTitle}:`, searchConfig);
         
-        // Build the Overpass API query
+        // Build the Overpass API query using the enhanced function
         const overpassQuery = buildOverpassQuery(cityLat, cityLon, searchConfig);
         
         const overpassUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
@@ -68,8 +70,12 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
         const locationsData = await locationsResponse.json();
         
         if (locationsData && locationsData.elements && locationsData.elements.length > 0) {
-          // Format location data
+          // Format location data with semantic filtering
           const formattedLocations = filterAndFormatLocations(locationsData.elements, searchConfig);
+          
+          // Sort by relevance score
+          formattedLocations.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+          
           setLocations(formattedLocations);
         } else {
           setLocations([]);
@@ -86,74 +92,182 @@ export default function LocationsList({ dateIdeaTitle, userCity, isVisible }: Lo
     fetchLocations();
   }, [dateIdeaTitle, userCity, isVisible]);
   
-  // Function to build the Overpass API query
-  const buildOverpassQuery = (lat: number, lon: number, searchConfig: any) => {
-    const { tags, radius } = searchConfig;
+  /**
+   * Filter and format OSM elements into LocationResult objects with semantic filtering
+   */
+  const filterAndFormatLocations = (elements: any[], searchConfig: OSMActivityMapping): LocationResult[] => {
+    const { tags, keywords, mustContain, mustExclude } = searchConfig;
     
-    // Build tag-based queries - focus on tags instead of name keywords
-    const tagQueries = tags.map((tag: string) => 
-      `node["leisure"="${tag}"](around:${radius},${lat},${lon});
-       node["amenity"="${tag}"](around:${radius},${lat},${lon});
-       node["tourism"="${tag}"](around:${radius},${lat},${lon});
-       node["sport"="${tag}"](around:${radius},${lat},${lon});
-       node["shop"="${tag}"](around:${radius},${lat},${lon});`
-    ).join('\n');
-    
-    return `
-      [out:json];
-      (
-        ${tagQueries}
-      );
-      out body 15;
-    `;
-  };
-  
-  // Function to filter and format locations
-  const filterAndFormatLocations = (elements: any[], searchConfig: any) => {
-    const { keywords } = searchConfig;
-    
+    // Filter out elements without proper data and apply semantic filtering
     return elements
       .filter(element => {
-        // Only include nodes with names
-        if (element.type !== 'node' || !element.tags || !element.tags.name) {
+        // Only include elements with names
+        if ((!element.tags || !element.tags.name)) {
           return false;
         }
         
-        // Check for category match - this ensures the place is the right type
-        // not just coincidentally matching a keyword in its name
-        const category = element.tags.amenity || element.tags.leisure || 
-                         element.tags.tourism || element.tags.shop || 
-                         element.tags.sport;
-                         
+        const name = element.tags.name.toLowerCase();
+        const description = element.tags.description ? element.tags.description.toLowerCase() : '';
+        
+        // Extract category from tags
+        const category = element.tags.amenity || 
+                         element.tags.leisure || 
+                         element.tags.tourism || 
+                         element.tags.shop || 
+                         element.tags.sport ||
+                         element.tags.natural ||
+                         element.tags.historic;
+        
         if (!category) return false;
         
-        // Check if any of the activity-specific tags match
-        if (searchConfig.tags.includes(category)) {
+        // CRITICAL: If this is a restaurant/cafe but we're looking for a class/workshop, filter it out
+        if (mustExclude && mustExclude.length > 0) {
+          // If any excluded term is in name, category or description, filter it out
+          if (mustExclude.some(term => 
+              category.includes(term) || 
+              name.includes(term) || 
+              description.includes(term))) {
+            // Special case - if the name explicitly mentions our activity, keep it despite category
+            if (keywords.some(kw => name.includes(kw.toLowerCase()))) {
+              // Let it pass if it has strong keyword match
+            } else {
+              return false;  
+            }
+          }
+        }
+        
+        // If activity type requires specific terms, check for them
+        if (mustContain && mustContain.length > 0) {
+          // For class-type activities, we need strong proof that this is a class venue
+          const hasRequiredTerm = mustContain.some(term => 
+            category.includes(term) || 
+            name.includes(term) || 
+            description.includes(term));
+          
+          // For specific activities like "Sushi Making Class", look for both "sushi" and "class"
+          const specificTerms = dateIdeaTitle.toLowerCase().split(/\s+/);
+          const hasSpecificTerms = specificTerms.some(term => 
+            term.length > 3 && name.includes(term));
+            
+          if (!hasRequiredTerm && !hasSpecificTerms) {
+            return false;
+          }
+        }
+        
+        // For activities with common tag categories, add additional tag checking
+        if (searchConfig.activityType && tags.includes(category)) {
           return true;
         }
         
-        // For name matches, include if keywords match
-        const name = element.tags.name.toLowerCase();
-        const isKeywordMatch = keywords.some((kw: string) => name.includes(kw.toLowerCase()));
-        
-        return isKeywordMatch;
+        // Keyword matching
+        return keywords.some(kw => name.toLowerCase().includes(kw.toLowerCase()));
       })
-      .map((element, index) => ({
-        id: element.id || index,
-        name: element.tags.name,
-        lat: element.lat,
-        lon: element.lon,
-        address: element.tags['addr:street'] ? 
-          `${element.tags['addr:housenumber'] || ''} ${element.tags['addr:street']}` : undefined,
-        website: element.tags.website || element.tags.url,
-        phone: element.tags.phone,
-        category: element.tags.amenity || element.tags.leisure || 
-                 element.tags.tourism || element.tags.shop || 
-                 element.tags.sport
-      }));
+      .map((element) => {
+        // Calculate relevance score based on how well it matches our criteria
+        const name = element.tags.name.toLowerCase();
+        const description = element.tags.description ? element.tags.description.toLowerCase() : '';
+        const category = element.tags.amenity || 
+                         element.tags.leisure || 
+                         element.tags.tourism || 
+                         element.tags.shop || 
+                         element.tags.sport ||
+                         element.tags.natural ||
+                         element.tags.historic;
+        
+        // Base score
+        let relevanceScore = 1;
+        
+        // Check for direct category match
+        if (tags.includes(category)) {
+          relevanceScore += 3;
+        }
+        
+        // Check for keyword matches in name
+        keywords.forEach(kw => {
+          if (name.includes(kw.toLowerCase())) {
+            relevanceScore += 2;
+          }
+        });
+        
+        // Check for required terms
+        if (mustContain) {
+          mustContain.forEach(term => {
+            if (name.includes(term.toLowerCase()) || 
+                description.includes(term.toLowerCase()) || 
+                category.includes(term)) {
+              relevanceScore += 2;
+            }
+          });
+        }
+        
+        // Special case for classes
+        if (dateIdeaTitle.toLowerCase().includes('class') && 
+           (name.includes('class') || name.includes('school') || 
+            name.includes('studio') || name.includes('workshop'))) {
+          relevanceScore += 5;
+        }
+        
+        // Special case for specific activities
+        if (dateIdeaTitle.toLowerCase().includes('sushi') && name.includes('sushi')) {
+          relevanceScore += 5;
+        }
+        
+        return {
+          id: element.id || Math.random().toString(36).substring(7),
+          name: element.tags.name,
+          lat: element.lat,
+          lon: element.lon,
+          address: formatAddress(element.tags),
+          website: element.tags.website || element.tags.url,
+          phone: element.tags.phone,
+          category: getCategoryLabel(category),
+          relevanceScore
+        };
+      });
   };
   
-  // Helper function to create Google Maps URL
+  /**
+   * Format address from OSM tags
+   */
+  const formatAddress = (tags: any): string | undefined => {
+    if (tags['addr:street']) {
+      const housenumber = tags['addr:housenumber'] || '';
+      const street = tags['addr:street'];
+      const city = tags['addr:city'] ? `, ${tags['addr:city']}` : '';
+      return `${housenumber} ${street}${city}`.trim();
+    }
+    return undefined;
+  };
+  
+  /**
+   * Get a human-readable category label
+   */
+  const getCategoryLabel = (category: string): string => {
+    switch (category) {
+      case 'restaurant': return 'Restaurant';
+      case 'cafe': return 'Café';
+      case 'fast_food': return 'Fast Food';
+      case 'pub': return 'Pub';
+      case 'bar': return 'Bar';
+      case 'cinema': return 'Cinema';
+      case 'theatre': return 'Theatre';
+      case 'arts_centre': return 'Arts Center';
+      case 'museum': return 'Museum';
+      case 'park': return 'Park';
+      case 'garden': return 'Garden';
+      case 'mall': return 'Shopping Mall';
+      case 'community_centre': return 'Community Center';
+      case 'school': return 'School';
+      case 'college': return 'College';
+      case 'university': return 'University';
+      case 'studio': return 'Studio';
+      default: return category.charAt(0).toUpperCase() + category.slice(1).replace('_', ' ');
+    }
+  };
+  
+  /**
+   * Helper function to create Google Maps URL
+   */
   const getGoogleMapsUrl = (name: string, lat: number, lon: number) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${lat},${lon}`;
   };
