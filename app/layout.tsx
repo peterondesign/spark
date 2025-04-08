@@ -7,7 +7,7 @@ import Script from 'next/script';
 import ClientPrivacyNotice from './components/ClientPrivacyNotice';
 import { SanityLive } from "@/sanity/lib/live";
 import { SpeedInsights } from "@vercel/speed-insights/next"
-
+import { getCanonicalUrl } from './utils/canonicalUrl';
 
 // Declare the global property on the Window interface
 declare global {
@@ -65,6 +65,10 @@ export const metadata: Metadata = {
     "Fun date ideas",
     "Creative date ideas"
   ],
+  // Default canonical URL for root page
+  alternates: {
+    canonical: getCanonicalUrl('/')
+  },
   other: {
     'cache-control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=31536000'
   }
@@ -75,22 +79,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get the base URL from environment or use the default
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc';
-  
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* 
-          Proper implementation of hreflang attributes
-          Each specific page should define its own set of alternates in its metadata
-          Here we define only the root alternates
-        */}
-        <link
-          rel="canonical"
-          href={baseUrl}
-        />
-        {/* These will be properly extended by each page's metadata.alternates */}
+        {/* Next.js will automatically handle canonical links through metadata */}
       </head>
       <body className={plusJakartaSans.className} suppressHydrationWarning={true}>
         {/* SanityLive component to enable live content updates */}
