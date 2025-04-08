@@ -140,7 +140,7 @@ export default function Header() {
                                         className={`block px-4 py-2 ${getLinkStyle('/alphabet-date-ideas')} hover:bg-gray-100`}
                                         onClick={() => setIsToolsMenuOpen(false)}
                                     >
-                                        Alphabet Dating
+                                        Alphabet Date Ideas
                                     </Link>
                                     <Link 
                                         href="/spin-the-wheel" 
@@ -193,7 +193,7 @@ export default function Header() {
                                 <p className="text-gray-800 font-medium text-sm mb-1">Tools</p>
                                 <div className="pl-3 flex flex-col space-y-1 bg-gray-50 rounded-lg p-1">
                                     <Link href="/alphabet-date-ideas" className={getMobileLinkStyle('/alphabet-date-ideas')}>
-                                        Alphabet Dating
+                                        Alphabet Date Ideas
                                     </Link>
                                     <Link href="/spin-the-wheel" className={getMobileLinkStyle('/spin-the-wheel')}>
                                         Spin the Wheel

@@ -67,7 +67,7 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
         setSelectedDateIdeas(JSON.parse(savedSelectedDateIdeas));
       }
     } catch (error) {
-      console.error('Error loading alphabet dating progress:', error);
+      console.error('Error loading Alphabet Date Ideas progress:', error);
     }
   }, []);
 
