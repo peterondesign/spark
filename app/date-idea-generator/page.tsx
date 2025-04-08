@@ -9,6 +9,7 @@ import Footer from "../components/Footer";
 import PageTitle from "../components/PageTitle";
 import { PAGE_TITLES } from "../utils/titleUtils";
 import Link from "next/link";
+import Image from 'next/image';
 import Head from "next/head";
 import { generateMetadata } from "../../utils/metadataUtils";
 import { Heart, Brain, Shuffle, Tag } from "lucide-react";
@@ -187,6 +188,37 @@ export default function DateIdeaGenerator() {
               <p className="text-gray-700">"A must-have tool for couples looking to spice things up."</p>
               <p className="text-sm text-gray-500 mt-4">- Chris & Sam</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* New Section with Image and Text */}
+      <section className="py-16 bg-gray-100">
+        <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
+          {/* Image */}
+          <div className="rounded-lg overflow-hidden shadow-md">
+        <Image
+          src="/couplegokart.webp"
+          alt="Couple on a Date"
+          width={500}
+          height={300}
+          layout="responsive"
+          objectFit="cover"
+        />
+          </div>
+
+          {/* Text Content */}
+          <div>
+        <h2 className="text-3xl font-bold mb-4 text-gray-800">Rediscover Romance with Every Swipe</h2>
+        <p className="text-gray-700 leading-relaxed mb-4">
+          In the hustle of daily life, it's easy to let romance take a back seat. Our Date Idea Generator is designed to reignite that spark, offering a curated selection of experiences tailored to couples at any stage. Whether you're celebrating a milestone or simply seeking a break from routine, we provide the inspiration you need to create unforgettable moments.
+        </p>
+        <p className="text-gray-700 leading-relaxed mb-4">
+          Imagine surprising your partner with a spontaneous picnic under the stars, a cozy movie night with gourmet snacks, or an adventurous weekend getaway. Our generator makes it easy to discover activities that align with your interests, budget, and time constraints. Say goodbye to endless scrolling and hello to quality time spent together.
+        </p>
+        <p className="text-gray-700 leading-relaxed">
+          With our AI-powered recommendations, you can explore new hobbies, revisit cherished memories, and strengthen your bond with every date. Let us help you plan the perfect date night, so you can focus on what truly matters: connecting with the one you love. Start swiping and rediscover the joy of romance today!
+        </p>
           </div>
         </div>
       </section>

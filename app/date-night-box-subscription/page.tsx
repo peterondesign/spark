@@ -246,8 +246,14 @@ const DateNightBoxSubscription = () => {
                         {/* Text Content */}
                         <div>
                             <h2 className="text-3xl font-bold mb-4 text-gray-800">Give the Gift of Connection</h2>
+                            <p className="text-gray-700 leading-relaxed mb-4">
+                                Looking for a unique way to strengthen bonds? Our curated gift boxes offer more than just items; they deliver shared experiences. Each box is designed to spark conversation, laughter, and lasting memories. Perfect for anniversaries, special occasions, birthdays, or just because, give a gift that truly connects.
+                            </p>
+                            <p className="text-gray-700 leading-relaxed mb-4">
+                                Imagine the joy of unwrapping a thoughtfully curated box filled with items designed to create a special date night. From gourmet snacks and engaging activities to cozy ambiance setters, each element is carefully selected to foster intimacy and fun.
+                            </p>
                             <p className="text-gray-700 leading-relaxed">
-                                Looking for a unique way to strengthen bonds? Our curated gift boxes offer more than just items; they deliver shared experiences. Each box is designed to spark conversation, laughter, and lasting memories. Perfect for anniversaries, special occassions, birthdays, or just because, give a gift that truly connects.
+                                Whether it's a romantic evening for two or a fun-filled night with friends, our gift boxes provide everything you need to create a memorable experience. Say goodbye to the stress of planning and hello to quality time and shared moments. Give the gift of connection today and watch relationships blossom.
                             </p>
                         </div>
                     </div>

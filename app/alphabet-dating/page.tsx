@@ -38,7 +38,7 @@ export default function AlphabetDatingPage() {
         const { data, error } = await supabase
           .from('date_ideas')
           .select('*');
-          
+
         if (error) {
           console.error("Supabase Error:", error);
           throw error;
@@ -80,7 +80,7 @@ export default function AlphabetDatingPage() {
           if (!hasScavengerHunt) {
             enhancedData.push(natureScavengerHunt);
           }
-          
+
           if (!hasPhotography) {
             enhancedData.push(naturePhotography);
           }
@@ -133,7 +133,7 @@ export default function AlphabetDatingPage() {
           const imagesPromises = allIdeas.map(async (idea) => ({
             [idea.slug]: await getImageUrl(idea.image, `${idea.title} ${idea.category}`, 400, 300),
           }));
-          
+
           const imagesResolved = Object.assign({}, ...(await Promise.all(imagesPromises)));
           setDateIdeaImages(imagesResolved);
         }
@@ -164,9 +164,9 @@ export default function AlphabetDatingPage() {
   return (
     <div className="min-h-screen bg-white">
       <PageTitle title="Alphabet Dating | A to Z Date Ideas" />
-      
+
       <Header />
-      
+
       {/* Hero Section */}
       <section className="relative bg-cover bg-center h-[320px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-rose-500/80 to-amber-600/80"></div>
@@ -186,10 +186,10 @@ export default function AlphabetDatingPage() {
                 <p className="mt-4 text-gray-600">Loading alphabet date ideas...</p>
               </div>
             ) : (
-              <AlphabetDating 
-                dateIdeas={alphabetDateIdeas} 
-                dateIdeaImages={dateIdeaImages} 
-                onClearLetter={clearLetterSelection} 
+              <AlphabetDating
+                dateIdeas={alphabetDateIdeas}
+                dateIdeaImages={dateIdeaImages}
+                onClearLetter={clearLetterSelection}
               />
             )}
           </div>
@@ -200,23 +200,29 @@ export default function AlphabetDatingPage() {
       <section className="py-16 bg-gradient-to-br from-pink-100 to-rose-100">
         <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
           <div className="md:order-2">
-        <img 
-          src="/alphabet-dating.webp"
-          alt="Alphabet Dating"
-          className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
-        />
+            <img
+              src="/alphabet-dating.webp"
+              alt="Alphabet Dating"
+              className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
+            />
           </div>
           <div className="md:order-1">
-        <h2 className="text-4xl font-extrabold text-rose-700 mb-4">Discover Alphabet Dating</h2>
-        <p className="text-lg text-gray-700 leading-relaxed">
-          Embark on a unique journey through the alphabet with our Alphabet Dating challenge! Spice up your love life by exploring creative date ideas, from A to Z. Uncover new adventures and create lasting memories as you complete each letter together. Let the alphabet be your guide to unforgettable experiences!
-        </p>
+            <h2 className="text-4xl font-extrabold text-rose-700 mb-4">Discover Alphabet Dating</h2>
+            <p className="text-lg text-gray-700 leading-relaxed mb-4">
+              Embark on a unique journey through the alphabet with our Alphabet Dating challenge! Spice up your love life by exploring creative date ideas, from A to Z. Uncover new adventures and create lasting memories as you complete each letter together. Let the alphabet be your guide to unforgettable experiences!
+            </p>
+            <p className="text-lg text-gray-700 leading-relaxed mb-4">
+              The concept is simple yet transformative: for each letter of the alphabet, plan a date that begins with that letter. This approach adds structure and excitement to your dating life, encouraging you to try activities you might never have considered otherwise. From archery to ziplining, baking to yoga, each letter opens up a world of possibilities.
+            </p>
+            <p className="text-lg text-gray-700 leading-relaxed">
+              What makes Alphabet Dating special is its versatility. You can proceed in order or jump around the alphabet as inspiration strikes. Set your own pace—complete one letter each week for a half-year adventure, or spread it out over a full year for more elaborate experiences. Many couples find that this challenge reignites their connection, breaking routine patterns and creating space for genuine quality time. As you progress through the letters, you'll build a collection of shared experiences that become part of your unique story together. Ready to discover what "Q" and "X" have in store for your relationship?
+            </p>
           </div>
         </div>
       </section>
 
-       {/* Other Tools Section */}
-       <section className="py-12 bg-gray-50">
+      {/* Other Tools Section */}
+      <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">Try Our Other Date Challenges</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -235,8 +241,8 @@ export default function AlphabetDatingPage() {
           </div>
         </div>
       </section>
-  
-      
+
+
       {/* How It Works Section */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -244,25 +250,28 @@ export default function AlphabetDatingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-rose-100 p-6 rounded-lg shadow-md text-center">
               <div className="bg-rose-500 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
-              <h3 className="text-xl font-semibold mb-2">Scratch to Reveal</h3>
-              <p className="text-gray-700">Click on a letter card to reveal date ideas starting with that letter.</p>
+              <h3 className="text-xl font-semibold mb-2">Tap to Reveal</h3>
+              <p className="text-gray-700">Click on a letter card to reveal date ideas starting with that letter. Uncover a world of possibilities with each click, from adventurous outings to cozy nights in.</p>
             </div>
             <div className="bg-amber-100 p-6 rounded-lg shadow-md text-center">
               <div className="bg-amber-500 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">2</div>
               <h3 className="text-xl font-semibold mb-2">Choose Your Favorite</h3>
-              <p className="text-gray-700">Browse multiple options and select the date idea that excites you most.</p>
+              <p className="text-gray-700">Browse multiple options and select the date idea that excites you most. Tailor your dates to your preferences, whether you're seeking thrills or relaxation.</p>
             </div>
             <div className="bg-orange-100 p-6 rounded-lg shadow-md text-center">
               <div className="bg-orange-500 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">3</div>
               <h3 className="text-xl font-semibold mb-2">Complete the Challenge</h3>
-              <p className="text-gray-700">Work through all 26 letters for an entire year of unique dates!</p>
+              <p className="text-gray-700">Work through all 26 letters for an entire year of unique dates! Celebrate your journey together as you conquer the alphabet and create lasting memories.</p>
             </div>
           </div>
+          <p className="text-center text-gray-600 mt-4">
+            Embark on this exciting adventure and let the alphabet guide you to unforgettable moments.
+          </p>
         </div>
       </section>
 
-     
-      
+
+
       <Footer />
     </div>
   );

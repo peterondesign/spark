@@ -1555,6 +1555,36 @@ const Home = () => {
         </div>
       </section>
 
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
+          {/* Text Content */}
+          <div className="text-center md:text-left">
+        <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
+        <p className="text-gray-700 leading-relaxed mb-6">
+          We created this site to solve the "what should we do tonight?" dilemma.
+          Finding fresh and exciting date ideas can be challenging, so we've curated a diverse collection to spark inspiration and create memorable moments.
+          Our goal is to help couples and friends strengthen their connections through unique and personalized experiences.
+        </p>
+        <p className="text-gray-700 leading-relaxed">
+          We believe that shared experiences are the cornerstone of strong relationships. That's why we're dedicated to providing you with a wide array
+          of date ideas, from cozy nights in to adventurous outings. Let us help you create lasting memories and strengthen your bond with those you care about most.
+        </p>
+          </div>
+
+          {/* Image */}
+          <div className="rounded-lg overflow-hidden shadow-md">
+        <Image
+          src="/bikeriding.webp"
+          alt="Couple enjoying a date"
+          width={500}
+          height={300}
+          layout="responsive"
+          objectFit="cover"
+        />
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
