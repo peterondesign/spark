@@ -131,7 +131,7 @@ export default function SpinTheWheelPage() {
            {/* Image */}
            <div className="md:order-2">
             <img
-              src="/spin-the-wheel-image.jpeg" 
+              src="/couple-happy-wheel.jpeg" 
               alt="Spin the Wheel"
               className="rounded-lg shadow-md"
             />

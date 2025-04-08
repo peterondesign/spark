@@ -201,7 +201,7 @@ export default function AlphabetDatingPage() {
         <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
           <div className="md:order-2">
             <img
-              src="/alphabet-dating.webp"
+              src="/alphabet.webp"
               alt="Alphabet Dating"
               className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
             />

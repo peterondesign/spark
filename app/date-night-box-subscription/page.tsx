@@ -234,7 +234,7 @@ const DateNightBoxSubscription = () => {
                         {/* Image */}
                         <div className="rounded-lg overflow-hidden shadow-md">
                             <Image
-                                src="/couple-box.jpg"
+                                src="/couple-happy.webp"
                                 alt="Thoughtful Gift"
                                 width={500}
                                 height={300}

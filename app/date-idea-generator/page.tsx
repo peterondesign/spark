@@ -198,8 +198,8 @@ export default function DateIdeaGenerator() {
           {/* Image */}
           <div className="rounded-lg overflow-hidden shadow-md">
         <Image
-          src="/couplegokart.webp"
-          alt="Couple on a Date"
+          src="/gift.webp"
+          alt="Couples Gift Box Subscription"
           width={500}
           height={300}
           layout="responsive"
@@ -209,16 +209,19 @@ export default function DateIdeaGenerator() {
 
           {/* Text Content */}
           <div>
-        <h2 className="text-3xl font-bold mb-4 text-gray-800">Rediscover Romance with Every Swipe</h2>
+        <h2 className="text-3xl font-bold mb-4 text-gray-800">Elevate Your Romance with Our Couples' Gift Box</h2>
         <p className="text-gray-700 leading-relaxed mb-4">
-          In the hustle of daily life, it's easy to let romance take a back seat. Our Date Idea Generator is designed to reignite that spark, offering a curated selection of experiences tailored to couples at any stage. Whether you're celebrating a milestone or simply seeking a break from routine, we provide the inspiration you need to create unforgettable moments.
+          Take your date nights to the next level with our curated Couples' Gift Box Subscription. Each month, receive a thoughtfully designed box filled with everything you need for a unique date experience — from gourmet treats and romantic activities to relationship-building games.
         </p>
         <p className="text-gray-700 leading-relaxed mb-4">
-          Imagine surprising your partner with a spontaneous picnic under the stars, a cozy movie night with gourmet snacks, or an adventurous weekend getaway. Our generator makes it easy to discover activities that align with your interests, budget, and time constraints. Say goodbye to endless scrolling and hello to quality time spent together.
+          Our subscription boxes are designed by relationship experts to help couples create meaningful moments and strengthen their bond. No more planning stress or repetitive date nights — just open your box and enjoy quality time together.
         </p>
-        <p className="text-gray-700 leading-relaxed">
-          With our AI-powered recommendations, you can explore new hobbies, revisit cherished memories, and strengthen your bond with every date. Let us help you plan the perfect date night, so you can focus on what truly matters: connecting with the one you love. Start swiping and rediscover the joy of romance today!
+        <p className="text-gray-700 leading-relaxed mb-6">
+          Perfect for anniversaries, birthdays, or "just because" moments. Each box is tailored to different relationship stages and interests, ensuring a personalized experience every time.
         </p>
+        <Link href="/date-night-box-subscription" className="inline-block bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 shadow-md">
+          Get Your First Box
+        </Link>
           </div>
         </div>
       </section>
