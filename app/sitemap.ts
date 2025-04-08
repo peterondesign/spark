@@ -48,11 +48,39 @@ async function safeSupabaseQuery<T>(
 }
 
 /**
+ * Check if a URL is valid
+ */
+function isValidUrl(url: string): boolean {
+  try {
+    // Check if URL is properly formatted
+    const parsedUrl = new URL(url);
+    // Make sure it has http or https protocol
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Creates a slug-safe string from any input
+ */
+function sanitizeSlug(slug: string): string {
+  if (!slug) return '';
+  return slug.trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-'); // Replace multiple hyphens with a single one
+}
+
+/**
  * This function generates a dynamic sitemap for the site
  * It includes all static routes and dynamic routes like date ideas and blog posts
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc';
+  // Ensure baseUrl has proper format with no trailing slash
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
   
   console.log("Generating sitemap...");
   
@@ -65,7 +93,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     []
   );
   
-  console.log(`Found ${dateIdeas?.length || 0} date ideas for sitemap`);
+  // Filter out entries with empty or invalid slugs
+  const validDateIdeas = dateIdeas.filter(idea => idea.slug && idea.slug.trim() !== '');
+  
+  console.log(`Found ${validDateIdeas.length} valid date ideas for sitemap (filtered from ${dateIdeas.length} total)`);
   
   // Get all blog posts for dynamic routes
   const blogPosts = await safeSupabaseQuery<BlogPost>(
@@ -77,7 +108,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     []
   );
   
-  console.log(`Found ${blogPosts?.length || 0} blog posts for sitemap`);
+  // Filter out entries with empty or invalid slugs
+  const validBlogPosts = blogPosts.filter(post => post.slug && post.slug.trim() !== '');
+  
+  console.log(`Found ${validBlogPosts.length} valid blog posts for sitemap (filtered from ${blogPosts.length} total)`);
   
   // Get all city locations for dynamic routes
   const locations = await safeSupabaseQuery<Location>(
@@ -88,130 +122,143 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     []
   );
   
-  console.log(`Found ${locations?.length || 0} city locations for sitemap`);
+  // Filter out entries with empty or invalid slugs
+  const validLocations = locations.filter(location => location.slug && location.slug.trim() !== '');
+  
+  console.log(`Found ${validLocations.length} valid city locations for sitemap (filtered from ${locations.length} total)`);
   
   // Static routes with their lastModified dates
   const staticRoutes = [
     {
-      url: `${baseUrl}`,
+      url: `${normalizedBaseUrl}`,
       lastModified: new Date(),
       changeFrequency: 'daily' as ChangeFrequency,
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/date-idea-generator`,
+      url: `${normalizedBaseUrl}/date-idea-generator`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/date-ideas-near-me`,
+      url: `${normalizedBaseUrl}/date-ideas-near-me`,
       lastModified: new Date(),
       changeFrequency: 'daily' as ChangeFrequency,
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/spin-the-wheel`,
+      url: `${normalizedBaseUrl}/spin-the-wheel`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/blog`,
+      url: `${normalizedBaseUrl}/blog`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/alphabet-dating`,
+      url: `${normalizedBaseUrl}/alphabet-dating`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as ChangeFrequency,
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/date-night-box-subscription`,
+      url: `${normalizedBaseUrl}/date-night-box-subscription`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as ChangeFrequency,
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/calendar`,
+      url: `${normalizedBaseUrl}/calendar`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as ChangeFrequency,
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/favorites`,
+      url: `${normalizedBaseUrl}/favorites`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as ChangeFrequency,
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/terms`,
+      url: `${normalizedBaseUrl}/terms`,
       lastModified: new Date(),
       changeFrequency: 'yearly' as ChangeFrequency,
       priority: 0.3,
     },
     // German routes
     {
-      url: `${baseUrl}/de`,
+      url: `${normalizedBaseUrl}/de`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/de/date-idea-generator`,
+      url: `${normalizedBaseUrl}/de/date-idea-generator`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/de/date-ideas-near-me`,
+      url: `${normalizedBaseUrl}/de/date-ideas-near-me`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/de/blog`,
+      url: `${normalizedBaseUrl}/de/blog`,
       lastModified: new Date(),
       changeFrequency: 'weekly' as ChangeFrequency,
       priority: 0.7,
     },
   ];
 
-  // Generate date idea route entries
-  const dateIdeaRoutes = dateIdeas.map((dateIdea) => ({
-    url: `${baseUrl}/date-idea/${dateIdea.slug}`,
+  // Generate date idea route entries with proper slug sanitization
+  const dateIdeaRoutes = validDateIdeas.map((dateIdea) => ({
+    url: `${normalizedBaseUrl}/date-idea/${sanitizeSlug(dateIdea.slug)}`,
     lastModified: new Date(dateIdea.updated_at || Date.now()),
     changeFrequency: 'monthly' as ChangeFrequency,
     priority: 0.7,
   }));
 
-  // Generate blog post route entries
-  const blogPostRoutes = blogPosts.map((post) => ({
-    url: `${baseUrl}/blog/${post.slug}`,
+  // Generate blog post route entries with proper slug sanitization
+  const blogPostRoutes = validBlogPosts.map((post) => ({
+    url: `${normalizedBaseUrl}/blog/${sanitizeSlug(post.slug)}`,
     lastModified: new Date(post.updated_at || Date.now()),
     changeFrequency: 'monthly' as ChangeFrequency,
     priority: 0.6,
   }));
 
-  // Generate location route entries
-  const locationRoutes = locations.map((location) => ({
-    url: `${baseUrl}/date-ideas-near-me/${location.slug}`,
+  // Generate location route entries with proper slug sanitization
+  const locationRoutes = validLocations.map((location) => ({
+    url: `${normalizedBaseUrl}/date-ideas-near-me/${sanitizeSlug(location.slug)}`,
     lastModified: new Date(location.updated_at || Date.now()),
     changeFrequency: 'weekly' as ChangeFrequency,
     priority: 0.7,
   }));
 
-  // Log the number of routes being generated
-  const allRoutes = [
+  // Combine all routes and ensure URLs are valid
+  let allRoutes = [
     ...staticRoutes,
     ...dateIdeaRoutes,
     ...blogPostRoutes,
     ...locationRoutes,
   ];
   
-  console.log(`Generating sitemap with ${allRoutes.length} total URLs`);
+  // Remove any duplicate URLs
+  const uniqueUrls = new Set();
+  allRoutes = allRoutes.filter(route => {
+    if (uniqueUrls.has(route.url)) {
+      return false;
+    }
+    uniqueUrls.add(route.url);
+    return isValidUrl(route.url);
+  });
+  
+  console.log(`Generating sitemap with ${allRoutes.length} total valid URLs`);
   console.log(`- Static routes: ${staticRoutes.length}`);
   console.log(`- Date idea routes: ${dateIdeaRoutes.length}`);
   console.log(`- Blog post routes: ${blogPostRoutes.length}`);

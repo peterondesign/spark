@@ -14,6 +14,18 @@ const nextConfig = {
                 source: '/api/scrape',
                 destination: '/api/scrape',
             },
+            {
+                source: '/sitemap.xml',
+                destination: '/sitemap.xml',
+                // Ensure the sitemap is always freshly generated
+                has: [
+                    {
+                        type: 'query',
+                        key: 'fresh',
+                        value: 'true',
+                    },
+                ],
+            },
         ];
     },
     reactStrictMode: true,
@@ -57,6 +69,31 @@ const nextConfig = {
                     {
                         key: "Expires",
                         value: "0",
+                    },
+                    {
+                        key: "X-Robots-Tag",
+                        value: "all",
+                    },
+                ]
+            },
+            {
+                source: "/robots.txt",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "no-cache, no-store, must-revalidate",
+                    },
+                    {
+                        key: "Pragma",
+                        value: "no-cache",
+                    },
+                    {
+                        key: "Expires",
+                        value: "0",
+                    },
+                    {
+                        key: "X-Robots-Tag",
+                        value: "all",
                     },
                 ]
             }
