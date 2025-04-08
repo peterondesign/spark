@@ -1,14 +1,22 @@
 // next-sitemap.config.js
 const config = {
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc',
   generateRobotsTxt: true,
+  robotsTxtOptions: {
+    policies: [
+      { userAgent: '*', allow: '/' }
+    ],
+    additionalSitemaps: [
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'}/sitemap.xml`,
+    ],
+  },
   async additionalPaths() {
     // Array to store all dynamic paths
     let allPaths = [];
     
     // Fetch date idea slugs
     try {
-      const dateIdeasRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/getAllSlugs?type=dateIdeas` || 'https://example.com/api/getAllSlugs?type=dateIdeas');
+      const dateIdeasRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'}/api/getAllSlugs?type=dateIdeas`);
       const dateIdeas = await dateIdeasRes.json();
       
       const dateIdeaPaths = dateIdeas.map((slug) => ({
@@ -24,7 +32,7 @@ const config = {
     
     // Fetch blog post slugs
     try {
-      const blogRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/getAllSlugs?type=blog` || 'https://example.com/api/getAllSlugs?type=blog');
+      const blogRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'}/api/getAllSlugs?type=blog`);
       const blogPosts = await blogRes.json();
       
       const blogPaths = blogPosts.map((slug) => ({
@@ -44,4 +52,5 @@ const config = {
   },
 };
 
-module.exports = config;
+// Change from CommonJS to ES Module export
+export default config;
