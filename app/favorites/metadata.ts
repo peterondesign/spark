@@ -1,14 +1,15 @@
-import { generateMetadata } from "../../utils/metadataUtils";
+import { generateMetadata } from '@/utils/metadataUtils';
 
-export const metadata = generateMetadata({
-  title: 'Your Favorite Date Ideas | Saved Collection',
-  description: 'View and manage your collection of saved date ideas. Organize your perfect date nights and explore your personalized date recommendations.',
+export default generateMetadata({
+  title: 'My Favorite Date Ideas | Saved Date Night Inspirations',
+  description: 'Access your saved date ideas and favorites in one place. Plan your next date night using your personalized collection of romantic activities.',
   path: '/favorites',
   keywords: [
-    'saved date ideas',
-    'favorite date nights',
-    'date collection',
-    'personalized date recommendations',
-    'date planning'
+    'favorite date ideas',
+    'saved date nights',
+    'date planning',
+    'personalized date collection',
+    'couple favorites',
+    'romantic bookmarks'
   ],
 });

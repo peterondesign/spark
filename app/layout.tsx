@@ -75,6 +75,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Get the base URL from environment or use the default
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc';
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -85,7 +88,7 @@ export default function RootLayout({
         */}
         <link
           rel="canonical"
-          href="https://www.sparkus.cc/"
+          href={baseUrl}
         />
         {/* These will be properly extended by each page's metadata.alternates */}
       </head>
