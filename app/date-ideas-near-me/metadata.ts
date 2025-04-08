@@ -1,15 +1,15 @@
-import { generateMetadata } from '@/utils/metadataUtils';
+import { generateMetadata } from '../../utils/metadataUtils';
 
-export default generateMetadata({
-  title: 'Date Ideas Near Me | Find Local Romantic Activities',
-  description: 'Discover the best date ideas and romantic activities near you. Find local experiences perfect for couples in your city.',
+export const metadata = generateMetadata({
+  title: 'Date Ideas Near Me | Local Experiences for Couples | Spark',
+  description: 'Discover date ideas and romantic activities near your location. Find local restaurants, attractions, and experiences perfect for creating memorable moments together.',
   path: '/date-ideas-near-me',
   keywords: [
     'date ideas near me',
     'local date spots',
-    'couple activities near me',
-    'romantic places nearby',
-    'fun date ideas local',
-    'date night spots nearby',
+    'nearby romantic places',
+    'couple activities nearby',
+    'local experiences',
+    'date night locations'
   ],
 });

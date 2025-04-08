@@ -125,6 +125,39 @@ export default function SpinTheWheelPage() {
         </div>
       </section>
 
+      {/* Spin the Wheel Details Section */}
+        <section className="py-12 bg-white">
+          <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+           {/* Image */}
+           <div className="md:order-2">
+            <img
+              src="/spin-the-wheel-image.jpeg" 
+              alt="Spin the Wheel"
+              className="rounded-lg shadow-md"
+            />
+           </div>
+
+           {/* Text Content */}
+           <div className="md:order-1">
+            <h2 className="text-3xl font-bold mb-4">About Spin the Wheel</h2>
+            <p className="text-gray-700 mb-6">
+              Feeling spontaneous? Our "Spin the Wheel" feature is your ticket to a surprise date night! Simply spin the wheel and let it randomly select from a curated list of exciting date ideas.
+            </p>
+            <ul className="list-disc list-inside text-gray-700">
+              <li>Completely random selection for adventurous daters.</li>
+              <li>Discover new and exciting date ideas you might not have considered.</li>
+              <li>Perfect for couples who have trouble making decisions.</li>
+              <li>Great for breaking the routine and trying something new.</li>
+              <li>Each spin is a new activity waiting to happen!</li>
+              <li>Share your results with friends or on social media.</li>
+            </ul>
+            <p className="text-gray-700 mt-6">
+              Ready to add an element of chance to your dating life? Give the wheel a spin and see where it takes you!
+            </p>
+           </div>
+          </div>
+        </section>
+
          {/* Other Tools Section */}
          <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">

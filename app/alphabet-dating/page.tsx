@@ -196,6 +196,25 @@ export default function AlphabetDatingPage() {
         </div>
       </section>
 
+      {/* Introduction Section */}
+      <section className="py-16 bg-gradient-to-br from-pink-100 to-rose-100">
+        <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
+          <div className="md:order-2">
+        <img 
+          src="/alphabet-dating.webp"
+          alt="Alphabet Dating"
+          className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
+        />
+          </div>
+          <div className="md:order-1">
+        <h2 className="text-4xl font-extrabold text-rose-700 mb-4">Discover Alphabet Dating</h2>
+        <p className="text-lg text-gray-700 leading-relaxed">
+          Embark on a unique journey through the alphabet with our Alphabet Dating challenge! Spice up your love life by exploring creative date ideas, from A to Z. Uncover new adventures and create lasting memories as you complete each letter together. Let the alphabet be your guide to unforgettable experiences!
+        </p>
+          </div>
+        </div>
+      </section>
+
        {/* Other Tools Section */}
        <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">

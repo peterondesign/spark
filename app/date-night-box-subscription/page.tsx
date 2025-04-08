@@ -228,6 +228,31 @@ const DateNightBoxSubscription = () => {
                     </div>
                 </section>
 
+                {/* New Section with Image and Text */}
+                <section className="py-16 bg-gray-100">
+                    <div className="container mx-auto px-4 grid md:grid-cols-2 gap-8 items-center">
+                        {/* Image */}
+                        <div className="rounded-lg overflow-hidden shadow-md">
+                            <Image
+                                src="/couple-box.jpg"
+                                alt="Thoughtful Gift"
+                                width={500}
+                                height={300}
+                                layout="responsive"
+                                objectFit="cover"
+                            />
+                        </div>
+
+                        {/* Text Content */}
+                        <div>
+                            <h2 className="text-3xl font-bold mb-4 text-gray-800">Give the Gift of Connection</h2>
+                            <p className="text-gray-700 leading-relaxed">
+                                Looking for a unique way to strengthen bonds? Our curated gift boxes offer more than just items; they deliver shared experiences. Each box is designed to spark conversation, laughter, and lasting memories. Perfect for anniversaries, special occassions, birthdays, or just because, give a gift that truly connects.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Join The Movement Section */}
                 <section className="py-24 bg-black text-white text-center">
                     <div className="container mx-auto px-4 max-w-3xl">

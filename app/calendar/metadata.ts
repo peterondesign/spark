@@ -1,15 +1,15 @@
-import { generateMetadata } from '@/utils/metadataUtils';
+import { generateMetadata } from '../../utils/metadataUtils';
 
-export default generateMetadata({
-  title: 'Date Night Calendar | Plan Your Monthly Date Nights',
-  description: 'Use our interactive date night calendar to plan and schedule your couple activities for the month. Never miss a special moment with your partner.',
+export const metadata = generateMetadata({
+  title: 'Date Planning Calendar | Schedule Your Date Nights | Spark',
+  description: 'Plan your date nights with our interactive calendar. Organize special moments with your partner and keep track of upcoming romantic experiences.',
   path: '/calendar',
   keywords: [
     'date night calendar',
-    'couple planning calendar',
-    'relationship calendar',
-    'date scheduler',
-    'monthly date planner',
-    'couple activities calendar'
+    'relationship planner',
+    'couple calendar',
+    'date scheduling',
+    'romance planner',
+    'date night organizer'
   ],
 });

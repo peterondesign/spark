@@ -511,7 +511,9 @@ const CalendarPage: React.FC = () => {
                     "Creates new shared experiences",
                     "Reduces relationship stress",
                     "Improves communication",
-                    "Increases relationship satisfaction"
+                    "Increases relationship satisfaction",
+                    "Provides a break from routine",
+                    "Enhances creativity in planning",
                   ].map((benefit, index) => (
                     <li key={index} className="flex items-start">
                       <svg className="w-5 h-5 text-rose-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
