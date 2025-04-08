@@ -151,9 +151,9 @@ export default function Favorites() {
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
                 <div>
-                  <h1 className="text-5xl md:text-6xl font-light text-gray-900 mb-8 leading-tight tracking-tight">
-                    Your Curated <br />
-                    <span className="font-medium">Date Collection</span>
+                  <h1 className="text-5xl md:text-6xl font-medium text-gray-900 mb-8 leading-tight tracking-tight">
+                    Your Curated
+                    Date Collection
                   </h1>
                   <p className="text-xl text-gray-600 leading-relaxed font-light">
                     A thoughtfully saved collection of moments waiting to be experienced together.

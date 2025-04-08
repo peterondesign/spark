@@ -1,0 +1,32 @@
+# robots.txt for date-ideas-site
+
+# Global rules
+User-agent: *
+Allow: /
+
+# Google-specific crawlers
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /public/
+
+User-agent: Googlebot-Mobile
+Allow: /
+
+# Bing-specific crawlers
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: MSNBot
+Allow: /
+
+# Common areas to block
+Disallow: /admin/
+Disallow: /private/
+Disallow: /api/
+
+# Sitemap location
