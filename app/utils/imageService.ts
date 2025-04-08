@@ -2,7 +2,7 @@
  * Utility functions for handling images using the Pexels API
  */
 
-const PEXELS_ACCESS_KEY = process.env.NEXT_PUBLIC_PEXELS_ACCESS_KEY || "your-pexels-access-key";
+const PEXELS_ACCESS_KEY = process.env.NEXT_PUBLIC_PEXELS_ACCESS_KEY || "uCWBRGyGfG2SPRGVszsdP9WFzVNMwVC6co4xLTAaivaRCnleATbRcIEe";
 const PEXELS_API_URL = "https://api.pexels.com/v1";
 
 // Type for Pexels image response
@@ -35,7 +35,7 @@ type ImageCache = {
   };
 };
 
-// Simple in-memory cache with 1-hour expiration
+// Simple in-memory cache with 1-hour expiration (server-side)
 const imageCache: ImageCache = {};
 const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
 
@@ -49,6 +49,70 @@ const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
 export const getPlaceholderImage = (width: number = 400, height: number = 300, text?: string): string => {
   const baseUrl = `/placeholder.svg?height=${height}&width=${width}`;
   return text ? `${baseUrl}&text=${encodeURIComponent(text)}` : baseUrl;
+};
+
+/**
+ * Check if an image is already cached in the browser storage
+ * @param cacheKey The key to check in storage
+ * @returns The cached image data or null
+ */
+const getBrowserCachedImage = (cacheKey: string) => {
+  // Only run in browser environment
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    // Check sessionStorage first (per visit)
+    const sessionCached = sessionStorage.getItem(`img_${cacheKey}`);
+    if (sessionCached) {
+      const parsedData = JSON.parse(sessionCached);
+      // Check if the cache is still valid
+      if (Date.now() - parsedData.timestamp < CACHE_EXPIRY) {
+        return parsedData;
+      }
+    }
+    
+    // Then check localStorage (persists across visits)
+    const localCached = localStorage.getItem(`img_${cacheKey}`);
+    if (localCached) {
+      const parsedData = JSON.parse(localCached);
+      // Local storage has a longer expiry (24 hours)
+      if (Date.now() - parsedData.timestamp < 24 * CACHE_EXPIRY) {
+        // Refresh the session cache
+        sessionStorage.setItem(`img_${cacheKey}`, JSON.stringify({
+          ...parsedData,
+          timestamp: Date.now() // Update timestamp
+        }));
+        return parsedData;
+      }
+    }
+  } catch (error) {
+    console.error('Error retrieving from browser cache:', error);
+  }
+  
+  return null;
+};
+
+/**
+ * Save an image to browser cache
+ * @param cacheKey The key to store in cache
+ * @param imageData The image data to cache
+ */
+const saveToBrowserCache = (cacheKey: string, imageData: any) => {
+  // Only run in browser environment
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const dataToCache = {
+      ...imageData,
+      timestamp: Date.now()
+    };
+    
+    // Save to both session (current visit) and local storage (future visits)
+    sessionStorage.setItem(`img_${cacheKey}`, JSON.stringify(dataToCache));
+    localStorage.setItem(`img_${cacheKey}`, JSON.stringify(dataToCache));
+  } catch (error) {
+    console.error('Error saving to browser cache:', error);
+  }
 };
 
 /**
@@ -68,9 +132,20 @@ export const getImageUrl = async (
 ): Promise<string> => {
   // Check cache first
   const cacheKey = `${keyword}-${width}x${height}`;
-  const cachedImage = imageCache[cacheKey];
   
+  // Try browser cache first (client-side only)
+  const browserCached = getBrowserCachedImage(cacheKey);
+  if (browserCached) {
+    return browserCached.url;
+  }
+  
+  // Then check server memory cache
+  const cachedImage = imageCache[cacheKey];
   if (cachedImage && Date.now() - cachedImage.timestamp < CACHE_EXPIRY) {
+    // If found in server cache, also save to browser cache
+    if (typeof window !== 'undefined') {
+      saveToBrowserCache(cacheKey, cachedImage);
+    }
     return cachedImage.url;
   }
   
@@ -119,6 +194,22 @@ export const getPexelsFallbackUrl = async (
   // Create a cache key
   const cacheKey = `${keyword}-${width}x${height}`;
   
+  // Check browser cache first
+  const browserCached = getBrowserCachedImage(cacheKey);
+  if (browserCached) {
+    return browserCached.url;
+  }
+
+  // Then check memory cache
+  if (imageCache[cacheKey] && Date.now() - imageCache[cacheKey].timestamp < CACHE_EXPIRY) {
+    const cached = imageCache[cacheKey];
+    
+    // Also save to browser cache
+    saveToBrowserCache(cacheKey, cached);
+    
+    return cached.url;
+  }
+  
   try {
     // Call the Pexels Search API
     const response = await fetch(
@@ -141,13 +232,19 @@ export const getPexelsFallbackUrl = async (
       const photo: PexelsPhoto = data.photos[0];
       const imageUrl = photo.src.large;
       
-      // Save to cache
-      imageCache[cacheKey] = {
+      // Create cache object
+      const cacheData = {
         url: imageUrl,
         photographer: photo.photographer,
         photographerUrl: photo.photographer_url,
         timestamp: Date.now()
       };
+      
+      // Save to memory cache
+      imageCache[cacheKey] = cacheData;
+      
+      // Save to browser cache
+      saveToBrowserCache(cacheKey, cacheData);
       
       return imageUrl;
     } else {

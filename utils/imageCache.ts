@@ -8,6 +8,7 @@ const IMAGE_CACHE_DIR = path.join(process.cwd(), 'public/image-cache');
 const CACHE_MANIFEST_PATH = path.join(IMAGE_CACHE_DIR, 'manifest.json');
 const MAX_CACHE_SIZE = 1000; // Maximum number of images to cache
 const CACHE_CLEANUP_FREQUENCY = 7 * 24 * 60 * 60 * 1000; // 7 days
+const CACHE_REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour - time before refreshing image from source
 
 interface CachedImageInfo {
   originalUrl: string;
@@ -61,18 +62,30 @@ function getImageKey(url: string): string {
   return createHash('md5').update(url).digest('hex');
 }
 
+// Check if an image needs to be refreshed based on its age
+function shouldRefreshImage(imageInfo: CachedImageInfo): boolean {
+  return Date.now() - imageInfo.savedAt > CACHE_REFRESH_INTERVAL;
+}
+
 // Download and save an image to the local cache
-export async function cacheImage(imageUrl: string): Promise<string | null> {
+export async function cacheImage(imageUrl: string, force: boolean = false): Promise<string | null> {
   const manifest = getCacheManifest();
   const imageKey = getImageKey(imageUrl);
   
   // Check if the image is already cached
-  if (manifest.images[imageKey]) {
+  if (manifest.images[imageKey] && !force) {
     const imageInfo = manifest.images[imageKey];
     
     // Update last accessed time and count
     imageInfo.lastAccessed = Date.now();
     imageInfo.accessCount += 1;
+    
+    // If the image is older than our refresh interval, trigger a background refresh
+    // but still return the existing cached version immediately
+    if (shouldRefreshImage(imageInfo)) {
+      // This runs the refresh asynchronously without waiting
+      refreshCachedImage(imageUrl, imageKey, manifest);
+    }
     
     saveCacheManifest(manifest);
     
@@ -134,10 +147,79 @@ export async function cacheImage(imageUrl: string): Promise<string | null> {
   }
 }
 
+// Refresh an image in the background without waiting for completion
+async function refreshCachedImage(imageUrl: string, imageKey: string, manifest: CacheManifest) {
+  try {
+    const urlObj = new URL(imageUrl);
+    const extension = path.extname(urlObj.pathname) || '.jpg';
+    const localFilename = `${imageKey}${extension}`;
+    const localPath = path.join(IMAGE_CACHE_DIR, localFilename);
+
+    // Download the fresh image
+    await new Promise<void>((resolve, reject) => {
+      https.get(imageUrl, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`Failed to refresh image: ${response.statusCode}`));
+          return;
+        }
+        
+        const tempPath = `${localPath}.temp`;
+        const fileStream = fs.createWriteStream(tempPath);
+        
+        response.pipe(fileStream);
+        
+        fileStream.on('finish', () => {
+          fileStream.close();
+          
+          // Replace the old file with the new one
+          try {
+            fs.renameSync(tempPath, localPath);
+            
+            // Update the manifest
+            if (manifest.images[imageKey]) {
+              manifest.images[imageKey].savedAt = Date.now();
+              saveCacheManifest(manifest);
+            }
+          } catch (err) {
+            console.error('Error replacing cached image:', err);
+            // Try to clean up the temp file
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          }
+          
+          resolve();
+        });
+        
+        fileStream.on('error', (err) => {
+          if (fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath);
+          }
+          reject(err);
+        });
+      }).on('error', reject);
+    });
+  } catch (error) {
+    console.error(`Error refreshing cached image ${imageUrl}:`, error);
+    // Non-critical error, we can just continue using the old cached version
+  }
+}
+
 // Get a cached image or fetch and cache if it doesn't exist
 export async function getOrCacheImage(imageUrl: string): Promise<string> {
   const cachedPath = await cacheImage(imageUrl);
   return cachedPath || imageUrl; // Fall back to original URL if caching fails
+}
+
+// Generate cache headers for browser caching
+function generateCacheHeaders(imageAge: number) {
+  // If the image was cached/refreshed recently, set longer cache time
+  const maxAge = imageAge < CACHE_REFRESH_INTERVAL ? 86400 : 3600; // 24 hours or 1 hour
+  
+  return {
+    'Cache-Control': `public, max-age=${maxAge}`,
+    'X-Cache-Date': new Date().toISOString(),
+  };
 }
 
 // Serve a cached image directly
@@ -164,14 +246,22 @@ export async function serveCachedImage(req: NextRequest, imageKey: string): Prom
     imageInfo.accessCount += 1;
     saveCacheManifest(manifest);
     
+    // Determine if we should refresh based on age (but still serve old version immediately)
+    if (shouldRefreshImage(imageInfo)) {
+      // Asynchronously refresh without waiting
+      refreshCachedImage(imageInfo.originalUrl, imageKey, manifest);
+    }
+    
     // Read file
     const imageBuffer = fs.readFileSync(localPath);
     const contentType = getContentTypeFromExtension(path.extname(localPath));
+    const imageAge = Date.now() - imageInfo.savedAt;
+    const cacheHeaders = generateCacheHeaders(imageAge);
     
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable', // 1 year cache
+        ...cacheHeaders,
         'Content-Length': imageBuffer.length.toString()
       }
     });
@@ -210,16 +300,32 @@ export function cleanupCache() {
     return;
   }
   
-  // Sort by last accessed time (oldest first)
-  imageEntries.sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+  // Score images based on access count, recency, and age
+  const scoredEntries = imageEntries.map(([key, info]) => {
+    // Score formula weights:
+    // - Higher access count is better
+    // - More recent access is better
+    // - Newer images are better
+    const accessRecency = (Date.now() - info.lastAccessed) / (24 * 60 * 60 * 1000); // days since last access
+    const accessScore = Math.min(info.accessCount, 100) / 100; // normalize access count (cap at 100)
+    const ageScore = Math.max(0, 30 - (Date.now() - info.savedAt) / (24 * 60 * 60 * 1000)) / 30; // age in days (newer is better)
+    
+    // Combined score (higher is better to keep)
+    const score = (accessScore * 0.5) + (1 / (accessRecency + 1) * 0.3) + (ageScore * 0.2);
+    
+    return { key, info, score };
+  });
+  
+  // Sort by score (lowest first - will be removed)
+  scoredEntries.sort((a, b) => a.score - b.score);
   
   // Calculate how many to remove
   const imagesToRemove = imageEntries.length - MAX_CACHE_SIZE;
   
-  // Remove oldest images
+  // Remove lowest scoring images
   for (let i = 0; i < imagesToRemove; i++) {
-    const [key, imageInfo] = imageEntries[i];
-    const localPath = path.join(IMAGE_CACHE_DIR, imageInfo.localPath);
+    const { key, info } = scoredEntries[i];
+    const localPath = path.join(IMAGE_CACHE_DIR, info.localPath);
     
     try {
       if (fs.existsSync(localPath)) {
@@ -267,6 +373,7 @@ export function getCacheStats() {
     maxCacheSize: MAX_CACHE_SIZE,
     oldestImage: new Date(oldestImage).toISOString(),
     newestImage: new Date(newestImage).toISOString(),
-    lastCleanup: new Date(manifest.lastCleanup).toISOString()
+    lastCleanup: new Date(manifest.lastCleanup).toISOString(),
+    cacheRefreshInterval: `${CACHE_REFRESH_INTERVAL / (60 * 60 * 1000)} hours`
   };
 }
