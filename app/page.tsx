@@ -218,10 +218,10 @@ const Home = () => {
   const priceLevelMap = {
     'all': 'All Prices',
     'free': 'Free',
-    'affordable': 'Affordable',
-    'moderate': 'Moderate',
-    'high': 'High',
-    'luxury': 'Luxury'
+    'affordable': 'Under $25',
+    'moderate': 'Under $50',
+    'high': 'Under $75',
+    'luxury': 'Above $100'
   };
 
   const timeOfDayMap = {
@@ -1029,10 +1029,10 @@ const Home = () => {
                   >
                     <option value="all">All Prices</option>
                     <option value="free">Free</option>
-                    <option value="affordable">Affordable</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="high">High</option>
-                    <option value="luxury">Luxury</option>
+                    <option value="affordable">Under $25</option>
+                    <option value="moderate">Under $50</option>
+                    <option value="high">Under $75</option>
+                    <option value="luxury">Above $100</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">

@@ -290,11 +290,75 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
   const shareAsImage = async () => {
     const element = document.querySelector('.alphabet-dating-container') as HTMLElement;
     if (element) {
-      const canvas = await html2canvas(element);
-      const link = document.createElement('a');
-      link.download = 'alphabet-dating.jpg';
-      link.href = canvas.toDataURL('image/jpeg');
-      link.click();
+      // Create a clone of the element to modify for sharing
+      const clone = element.cloneNode(true) as HTMLElement;
+      
+      // Style the clone for image generation
+      clone.style.padding = '20px';
+      clone.style.backgroundColor = 'white';
+      clone.style.borderRadius = '12px';
+      clone.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+      
+      // Create watermark with dateideas.cc URL
+      const watermark = document.createElement('div');
+      watermark.innerHTML = `
+        <div style="
+          position: absolute;
+          bottom: 12px;
+          right: 12px;
+          background-color: rgba(255,255,255,0.8);
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-weight: bold;
+          font-size: 16px;
+          color: #ff6b6b;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          z-index: 100;
+        ">
+          dateideas.cc
+        </div>
+      `;
+      
+      // Add watermark to the clone
+      clone.appendChild(watermark);
+      
+      // For empty date ideas, ensure the letter is visible
+      const unrevealed = clone.querySelectorAll('.alphabet-dating-container button:not(.bg-blue-500)');
+      unrevealed.forEach((card) => {
+        // Make sure letter cards remain visible in the image
+        const cardEl = card as HTMLElement;
+        if (cardEl.textContent?.trim().match(/^[A-Z]$/)) {
+          cardEl.style.opacity = '1';
+          cardEl.style.visibility = 'visible';
+        }
+      });
+      
+      // Temporarily add the clone to the document for html2canvas to work with it
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      document.body.appendChild(clone);
+      
+      try {
+        const canvas = await html2canvas(clone, {
+          backgroundColor: 'white',
+          scale: 2, // Higher quality
+          logging: false,
+          useCORS: true
+        });
+        
+        const link = document.createElement('a');
+        link.download = 'alphabet-dating-dateideas.cc.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+        
+        toast.success("Image downloaded! Share your A-Z dating progress!");
+      } catch (err) {
+        console.error("Error generating image:", err);
+        toast.error("Could not generate image. Please try again.");
+      } finally {
+        // Remove the clone from the document
+        document.body.removeChild(clone);
+      }
     }
   };
 
