@@ -167,7 +167,7 @@ export default function SpinTheWheelPage() {
               <h3 className="text-xl font-semibold mb-2 text-blue-600">Date Idea Generator</h3>
               <p className="text-gray-600">Swipe through curated date ideas to find your perfect match.</p>
             </Link>
-            <Link href="/alphabet-dating" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <Link href="/alphabet-date-ideas" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
               <h3 className="text-xl font-semibold mb-2 text-purple-600">Alphabet Dating</h3>
               <p className="text-gray-600">Work through the alphabet with themed date ideas for each letter.</p>
             </Link>

@@ -288,7 +288,7 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
   };
 
   const shareAsImage = async () => {
-    const element = document.querySelector('.alphabet-dating-container') as HTMLElement;
+    const element = document.querySelector('.alphabet-date-ideas-container') as HTMLElement;
     if (element) {
       // Create a clone of the element to modify for sharing
       const clone = element.cloneNode(true) as HTMLElement;
@@ -323,7 +323,7 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
       clone.appendChild(watermark);
       
       // For empty date ideas, ensure the letter is visible
-      const unrevealed = clone.querySelectorAll('.alphabet-dating-container button:not(.bg-blue-500)');
+      const unrevealed = clone.querySelectorAll('.alphabet-date-ideas-container button:not(.bg-blue-500)');
       unrevealed.forEach((card) => {
         // Make sure letter cards remain visible in the image
         const cardEl = card as HTMLElement;
@@ -347,7 +347,7 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
         });
         
         const link = document.createElement('a');
-        link.download = 'alphabet-dating-dateideas.cc.jpg';
+        link.download = 'alphabet-date-ideas-dateideas.cc.jpg';
         link.href = canvas.toDataURL('image/jpeg', 0.95);
         link.click();
         
@@ -363,7 +363,7 @@ const AlphabetDating: React.FC<AlphabetDatingProps> = ({ dateIdeas, dateIdeaImag
   };
 
   return (
-    <div className="alphabet-dating-container flex flex-col items-center">
+    <div className="alphabet-date-ideas-container flex flex-col items-center">
       <div className="mb-8 text-center">
         <h2 className="text-3xl font-bold mb-4">A-Z Dating Challenge</h2>
         <p className="text-gray-600 mb-6">Reveal letter cards to find fun date ideas!</p>

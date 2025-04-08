@@ -49,7 +49,7 @@ export default function Footer() {
                     <div>
                         <h3 className="text-gray-800 font-bold mb-4">Date Challenges</h3>
                         <ul className="space-y-2">
-                            <li><Link href="/alphabet-dating" className="text-gray-600 hover:text-gray-900">Alphabet Dating</Link></li>
+                            <li><Link href="/alphabet-date-ideas" className="text-gray-600 hover:text-gray-900">Alphabet Dating</Link></li>
                             <li><Link href="/spin-the-wheel" className="text-gray-600 hover:text-gray-900">Spin the Wheel</Link></li>
                         </ul>
                     </div>

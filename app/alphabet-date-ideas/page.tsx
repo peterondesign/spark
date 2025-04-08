@@ -163,7 +163,7 @@ export default function AlphabetDatingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <PageTitle title="Alphabet Dating | A to Z Date Ideas" />
+      <PageTitle title="Alphabet Date Ideas | A to Z Date Ideas" />
 
       <Header />
 
@@ -171,12 +171,12 @@ export default function AlphabetDatingPage() {
       <section className="relative bg-cover bg-center h-[320px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-rose-500/80 to-amber-600/80"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Alphabet Dating Challenge</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Alphabet Date Ideas Challenge</h1>
           <p className="text-xl max-w-2xl">Work through the alphabet with 26 unique date ideas, one for each letter!</p>
         </div>
       </section>
 
-      {/* Alphabet Dating Section */}
+      {/* Alphabet Date Ideas Section */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -202,20 +202,20 @@ export default function AlphabetDatingPage() {
           <div className="md:order-2">
             <img
               src="/alphabet.webp"
-              alt="Alphabet Dating"
+              alt="Alphabet Date Ideas"
               className="rounded-lg shadow-xl hover:shadow-2xl transition-shadow duration-300"
             />
           </div>
           <div className="md:order-1">
-            <h2 className="text-4xl font-extrabold text-rose-700 mb-4">Discover Alphabet Dating</h2>
+            <h2 className="text-4xl font-extrabold text-rose-700 mb-4">Discover Alphabet Date Ideas</h2>
             <p className="text-lg text-gray-700 leading-relaxed mb-4">
-              Embark on a unique journey through the alphabet with our Alphabet Dating challenge! Spice up your love life by exploring creative date ideas, from A to Z. Uncover new adventures and create lasting memories as you complete each letter together. Let the alphabet be your guide to unforgettable experiences!
+              Embark on a unique journey through the alphabet with our Alphabet Date Ideas challenge! Spice up your love life by exploring creative date ideas, from A to Z. Uncover new adventures and create lasting memories as you complete each letter together. Let the alphabet be your guide to unforgettable experiences!
             </p>
             <p className="text-lg text-gray-700 leading-relaxed mb-4">
               The concept is simple yet transformative: for each letter of the alphabet, plan a date that begins with that letter. This approach adds structure and excitement to your dating life, encouraging you to try activities you might never have considered otherwise. From archery to ziplining, baking to yoga, each letter opens up a world of possibilities.
             </p>
             <p className="text-lg text-gray-700 leading-relaxed">
-              What makes Alphabet Dating special is its versatility. You can proceed in order or jump around the alphabet as inspiration strikes. Set your own pace—complete one letter each week for a half-year adventure, or spread it out over a full year for more elaborate experiences. Many couples find that this challenge reignites their connection, breaking routine patterns and creating space for genuine quality time. As you progress through the letters, you'll build a collection of shared experiences that become part of your unique story together. Ready to discover what "Q" and "X" have in store for your relationship?
+              What makes Alphabet Date Ideas special is its versatility. You can proceed in order or jump around the alphabet as inspiration strikes. Set your own pace—complete one letter each week for a half-year adventure, or spread it out over a full year for more elaborate experiences. Many couples find that this challenge reignites their connection, breaking routine patterns and creating space for genuine quality time. As you progress through the letters, you'll build a collection of shared experiences that become part of your unique story together. Ready to discover what "Q" and "X" have in store for your relationship?
             </p>
           </div>
         </div>
@@ -246,7 +246,7 @@ export default function AlphabetDatingPage() {
       {/* How It Works Section */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">How Alphabet Dating Works</h2>
+          <h2 className="text-3xl font-bold text-center mb-8">How Alphabet Date Ideas Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-rose-100 p-6 rounded-lg shadow-md text-center">
               <div className="bg-rose-500 text-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>

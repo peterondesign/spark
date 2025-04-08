@@ -63,7 +63,7 @@ export default function Header() {
 
     // Function to determine if a tool is active
     const isToolActive = () => {
-        return isActive('/spin-the-wheel') || isActive('/alphabet-dating');
+        return isActive('/spin-the-wheel') || isActive('/alphabet-date-ideas');
     }
     
     // Link style based on active state
@@ -136,8 +136,8 @@ export default function Header() {
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <Link 
-                                        href="/alphabet-dating" 
-                                        className={`block px-4 py-2 ${getLinkStyle('/alphabet-dating')} hover:bg-gray-100`}
+                                        href="/alphabet-date-ideas" 
+                                        className={`block px-4 py-2 ${getLinkStyle('/alphabet-date-ideas')} hover:bg-gray-100`}
                                         onClick={() => setIsToolsMenuOpen(false)}
                                     >
                                         Alphabet Dating
@@ -192,7 +192,7 @@ export default function Header() {
                             <div className="py-1 border-b border-gray-100">
                                 <p className="text-gray-800 font-medium text-sm mb-1">Tools</p>
                                 <div className="pl-3 flex flex-col space-y-1 bg-gray-50 rounded-lg p-1">
-                                    <Link href="/alphabet-dating" className={getMobileLinkStyle('/alphabet-dating')}>
+                                    <Link href="/alphabet-date-ideas" className={getMobileLinkStyle('/alphabet-date-ideas')}>
                                         Alphabet Dating
                                     </Link>
                                     <Link href="/spin-the-wheel" className={getMobileLinkStyle('/spin-the-wheel')}>
