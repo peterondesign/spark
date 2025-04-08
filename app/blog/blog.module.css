@@ -1,607 +1,607 @@
-	
-	
 	/* Blog-specific styles */
 	.prose {
-	  /* Applying typography styles directly instead of using composes */
-	  max-width: none;
-	  /* You may need to add the specific styles from prose and prose-lg classes here */
-	  font-size: 1.125rem;
-	  line-height: 1.8;
-	  color: #333;
-	}
-	.prose h2 {
-	  font-size: 1.875rem;
-	  line-height: 2.25rem;
-	  font-weight: 300;
-	  margin-top: 4rem;
-	  margin-bottom: 1.5rem;
-	}
-	.prose h3 {
-	  font-size: 1.5rem;
-	  line-height: 2rem;
-	  font-weight: 300;
-	  margin-top: 3rem;
-	  margin-bottom: 1rem;
-	}
-	.prose p {
-	  color: rgb(75 85 99);
-	  line-height: 1.75;
-	  margin-bottom: 1.5rem;
-	}
-	.prose a {
-	  color: rgb(147 51 234);
-	  text-decoration: none;
-	}
-	.prose a:hover {
-	  color: rgb(126 34 206);
-	}
-	.prose blockquote {
-	  border-left-color: rgb(233 213 255);
-	  background-color: rgba(250, 245, 255, 0.5);
-	  padding: 0.5rem 1.5rem;
-	  border-top-right-radius: 0.5rem;
-	  border-bottom-right-radius: 0.5rem;
-	  font-style: normal;
-	  font-weight: 400;
-	}
-	.prose img {
-	  border-radius: 1rem;
-	}
-	.prose strong {
-	  color: rgb(17 24 39);
-	  font-weight: 500;
-	}
-	.prose ul {
-	  margin-top: 0.5rem;
-	  margin-bottom: 0.5rem;
-	}
-	.prose li {
-	  color: rgb(75 85 99);
-	  margin-top: 0.25rem;
-	  margin-bottom: 0.25rem;
-	}
-	.prose hr {
-	  border-color: rgb(243 244 246);
-	}
-	/* Enhanced image captions */
-	.imageCaption {
-	  font-size: 0.875rem;
-	  line-height: 1.25rem;
-	  color: rgb(107 114 128);
-	  text-align: center;
-	  margin-top: 0.5rem;
-	  font-style: italic;
-	}
-	/* Pull quotes */
-	.pullQuote {
-	  font-size: 1.5rem;
-	  line-height: 2rem;
-	  font-weight: 300;
-	  color: rgb(107 33 168);
-	  margin-top: 3rem;
-	  margin-bottom: 3rem;
-	  padding-left: 2rem;
-	  padding-right: 2rem;
-	  text-align: center;
-	}
-	/* Code blocks */
-	.code {
-	  background-color: rgb(17 24 39);
-	  color: rgb(243 244 246);
-	  border-radius: 0.75rem;
-	  padding: 1.5rem;
-	  margin-top: 2rem;
-	  margin-bottom: 2rem;
-	  overflow-x: auto;
-	}
-	/* Table styles */
-	.table {
-	  min-width: 100%;
-	  border-collapse: separate;
-	  border-spacing: 0;
-	  margin-top: 2rem;
-	  margin-bottom: 2rem;
-	}
-	.table th {
-	  padding: 1rem 1.5rem;
-	  text-align: left;
-	  font-size: 0.875rem;
-	  line-height: 1.25rem;
-	  font-weight: 500;
-	  color: rgb(107 114 128);
-	  text-transform: uppercase;
-	  letter-spacing: 0.05em;
-	}
-	.table td {
-	  padding: 1rem 1.5rem;
-	  white-space: nowrap;
-	  font-size: 0.875rem;
-	  line-height: 1.25rem;
-	  color: rgb(75 85 99);
-	}
-	/* Article metadata */
-	.meta {
-	  display: flex;
-	  align-items: center;
-	  gap: 1rem;
-	  font-size: 0.875rem;
-	  line-height: 1.25rem;
-	  color: rgb(107 114 128);
-	  margin-bottom: 1.5rem;
-	}
-	/* Reading progress bar */
-	.progressBar {
-	  position: fixed;
-	  top: 0;
-	  left: 0;
-	  right: 0;
-	  height: 0.25rem;
-	  background-color: rgb(147 51 234);
-	  z-index: 50;
-	  transform-origin: left;
-	}
-	/* Table of contents */
-	.toc {
-	  display: flex;
-	  flex-direction: column;
-	  gap: 0.5rem;
-	  font-size: 0.875rem;
-	  line-height: 1.25rem;
-	  position: sticky;
-	  top: 6rem;
-	}
-	.tocLink {
-	  color: rgb(75 85 99);
-	  transition-property: color;
-	  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-	  transition-duration: 150ms;
-	  display: block;
-	  padding-top: 0.25rem;
-	  padding-bottom: 0.25rem;
-	}
-	.tocLink:hover {
-	  color: rgb(147 51 234);
-	}
-	.tocLinkActive {
-	  color: rgb(147 51 234);
-	  font-weight: 500;
-	}
-	/* Blog post cards */
-	.card {
-	  background-color: white;
-	  border-radius: 1rem;
-	  border: 1px solid rgb(243 244 246);
-	  overflow: hidden;
-	  transition-property: transform;
-	  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-	  transition-duration: 150ms;
-	}
-	.card:hover {
-	  transform: scale(1.02);
-	}
-	.cardImage {
-	  width: 100%;
-	  height: 12rem;
-	  object-fit: cover;
-	}
-	.cardContent {
-	  padding: 1.5rem;
-	}
-	/* Blog post tags */
-	.tag {
-	  display: inline-flex;
-	  align-items: center;
-	  padding-left: 0.75rem;
-	  padding-right: 0.75rem;
-	  padding-top: 0.25rem;
-	  padding-bottom: 0.25rem;
-	  border-radius: 9999px;
-	  font-size: 0.875rem;
-	  line-height: 1.25rem;
-	  font-weight: 500;
-	  background-color: rgb(243 232 255);
-	  color: rgb(107 33 168);
-	  margin-right: 0.5rem;
-	}
-	/* Author section */
-	.author {
-	  display: flex;
-	  align-items: center;
-	  gap: 1rem;
-	  border-top-width: 1px;
-	  border-color: rgb(243 244 246);
-	  margin-top: 2rem;
-	  padding-top: 2rem;
-	}
-	.authorImage {
-	  width: 3rem;
-	  height: 3rem;
-	  border-radius: 9999px;
-	}
-	.authorInfo {
-	  flex: 1 1 0%;
-	}
-	/* Related posts section */
-	.relatedPosts {
-	  display: grid;
-	  grid-template-columns: repeat(1, minmax(0, 1fr));
-	  gap: 1.5rem;
-	  margin-top: 3rem;
-	  background-color: rgb(250, 250, 250);
-	  padding: 2rem;
-	  border-radius: 1rem;
-	}
-	@media (min-width: 768px) {
+		/* Applying typography styles directly instead of using composes */
+		max-width: none;
+		/* You may need to add the specific styles from prose and prose-lg classes here */
+		font-size: 1.125rem;
+		line-height: 1.8;
+		color: #333;
+	  }
+	  .prose h2 {
+		font-size: 1.875rem;
+		line-height: 2.25rem;
+		font-weight: 300;
+		margin-top: 4rem;
+		margin-bottom: 1.5rem;
+	  }
+	  .prose h3 {
+		font-size: 1.5rem;
+		line-height: 2rem;
+		font-weight: 300;
+		margin-top: 3rem;
+		margin-bottom: 1rem;
+	  }
+	  .prose p {
+		color: rgb(75 85 99);
+		line-height: 1.75;
+		margin-bottom: 1.5rem;
+	  }
+	  .prose a {
+		color: rgb(147 51 234);
+		text-decoration: none;
+	  }
+	  .prose a:hover {
+		color: rgb(126 34 206);
+	  }
+	  .prose blockquote {
+		border-left-color: rgb(233 213 255);
+		background-color: rgba(250, 245, 255, 0.5);
+		padding: 0.5rem 1.5rem;
+		border-top-right-radius: 0.5rem;
+		border-bottom-right-radius: 0.5rem;
+		font-style: normal;
+		font-weight: 400;
+	  }
+	  .prose img {
+		border-radius: 1rem;
+	  }
+	  .prose strong {
+		color: rgb(17 24 39);
+		font-weight: 500;
+	  }
+	  .prose ul {
+		margin-top: 0.5rem;
+		margin-bottom: 0.5rem;
+	  }
+	  .prose li {
+		color: rgb(75 85 99);
+		margin-top: 0.25rem;
+		margin-bottom: 0.25rem;
+	  }
+	  .prose hr {
+		border-color: rgb(243 244 246);
+	  }
+	  /* Enhanced image captions */
+	  .imageCaption {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		color: rgb(107 114 128);
+		text-align: center;
+		margin-top: 0.5rem;
+		font-style: italic;
+	  }
+	  /* Pull quotes */
+	  .pullQuote {
+		font-size: 1.5rem;
+		line-height: 2rem;
+		font-weight: 300;
+		color: rgb(107 33 168);
+		margin-top: 3rem;
+		margin-bottom: 3rem;
+		padding-left: 2rem;
+		padding-right: 2rem;
+		text-align: center;
+	  }
+	  /* Code blocks */
+	  .code {
+		background-color: rgb(17 24 39);
+		color: rgb(243 244 246);
+		border-radius: 0.75rem;
+		padding: 1.5rem;
+		margin-top: 2rem;
+		margin-bottom: 2rem;
+		overflow-x: auto;
+	  }
+	  /* Table styles */
+	  .table {
+		min-width: 100%;
+		border-collapse: separate;
+		border-spacing: 0;
+		margin-top: 2rem;
+		margin-bottom: 2rem;
+	  }
+	  .table th {
+		padding: 1rem 1.5rem;
+		text-align: left;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 500;
+		color: rgb(107 114 128);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	  }
+	  .table td {
+		padding: 1rem 1.5rem;
+		white-space: nowrap;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		color: rgb(75 85 99);
+	  }
+	  /* Article metadata */
+	  .meta {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		color: rgb(107 114 128);
+		margin-bottom: 1.5rem;
+	  }
+	  /* Reading progress bar */
+	  .progressBar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 0.25rem;
+		background-color: rgb(147 51 234);
+		z-index: 50;
+		transform-origin: left;
+	  }
+	  /* Table of contents */
+	  .toc {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		position: sticky;
+		top: 6rem;
+	  }
+	  .tocLink {
+		color: rgb(75 85 99);
+		transition-property: color;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+		display: block;
+		padding-top: 0.25rem;
+		padding-bottom: 0.25rem;
+	  }
+	  .tocLink:hover {
+		color: rgb(147 51 234);
+	  }
+	  .tocLinkActive {
+		color: rgb(147 51 234);
+		font-weight: 500;
+	  }
+	  /* Blog post cards */
+	  .card {
+		background-color: white;
+		border-radius: 1rem;
+		border: 1px solid rgb(243 244 246);
+		overflow: hidden;
+		transition-property: transform;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+	  }
+	  .card:hover {
+		transform: scale(1.02);
+	  }
+	  .cardImage {
+		width: 100%;
+		height: 12rem;
+		object-fit: cover;
+	  }
+	  .cardContent {
+		padding: 1.5rem;
+	  }
+	  /* Blog post tags */
+	  .tag {
+		display: inline-flex;
+		align-items: center;
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+		padding-top: 0.25rem;
+		padding-bottom: 0.25rem;
+		border-radius: 9999px;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		font-weight: 500;
+		background-color: rgb(243 232 255);
+		color: rgb(107 33 168);
+		margin-right: 0.5rem;
+	  }
+	  /* Author section */
+	  .author {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		border-top-width: 1px;
+		border-color: rgb(243 244 246);
+		margin-top: 2rem;
+		padding-top: 2rem;
+	  }
+	  .authorImage {
+		width: 3rem;
+		height: 3rem;
+		border-radius: 9999px;
+	  }
+	  .authorInfo {
+		flex: 1 1 0%;
+	  }
+	  /* Related posts section */
 	  .relatedPosts {
-	    grid-template-columns: repeat(3, minmax(0, 1fr));
+		display: grid;
+		grid-template-columns: repeat(1, minmax(0, 1fr));
+		gap: 1.5rem;
+		margin-top: 3rem;
+		background-color: rgb(250, 250, 250);
+		padding: 2rem;
+		border-radius: 1rem;
 	  }
-	}
-	/* Newsletter signup */
-	.newsletter {
-	  background-color: rgb(250 245 255);
-	  border-radius: 1rem;
-	  padding: 2rem;
-	  margin-top: 3rem;
-	  margin-bottom: 3rem;
-	}
-	/* Comments section */
-	.comments {
-	  margin-top: 3rem;
-	  padding-top: 2rem;
-	  border-top-width: 1px;
-	  border-color: rgb(243 244 246);
-	}
-	/* Blog page styles */
-	.blogContainer {
-	  padding: 2rem 2rem;
-	  background-color: #fff;
-	  font-family: "Plus Jakarta Sans", "Plus Jakarta Sans Fallback", sans-serif;
-	  min-height: 100vh;
-	}
-	@media (max-width: 1200px) {
+	  @media (min-width: 768px) {
+		.relatedPosts {
+		  grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	  }
+	  /* Newsletter signup */
+	  .newsletter {
+		background-color: rgb(250 245 255);
+		border-radius: 1rem;
+		padding: 2rem;
+		margin-top: 3rem;
+		margin-bottom: 3rem;
+	  }
+	  /* Comments section */
+	  .comments {
+		margin-top: 3rem;
+		padding-top: 2rem;
+		border-top-width: 1px;
+		border-color: rgb(243 244 246);
+	  }
+	  /* Blog page styles */
 	  .blogContainer {
-	    padding: 2rem 4rem;
+		padding: 2rem 2rem;
+		background-color: #fff;
+		font-family: "Plus Jakarta Sans", "Plus Jakarta Sans Fallback", sans-serif;
+		min-height: 100vh;
 	  }
-	}
-	@media (max-width: 768px) {
-	  .blogContainer {
-	    padding: 1.5rem 4rem;
+	  @media (max-width: 1200px) {
+		.blogContainer {
+		  padding: 2rem 4rem;
+		}
 	  }
-	}
-	.blogTitle {
-	  font-size: 2.5rem;
-	  text-align: left;
-	  margin-bottom: 2rem;
-	  color: #333;
-	  font-family: "Plus Jakarta Sans", "Plus Jakarta Sans Fallback", sans-serif;
-	}
-	.cardGrid {
-	  display: grid;
-	  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-	  gap: 1.5rem;
-	}
-	.card {
-	  background: #fff;
-	  border-radius: 8px;
-	  border: 1px solid rgb(237, 237, 237);
-	  overflow: hidden;
-	  transition:
-	    transform 0.2s ease,
-	    border-color 0.2s ease;
-	}
-	.card:hover {
-	  transform: translateY(-5px);
-	  border: 1px solid rgb(220, 218, 218);
-	}
-	.cardImage {
-	  width: 100%;
-	  height: 270px;
-	  object-fit: cover;
-	}
-	.cardContent {
-	  padding: 1rem;
-	}
-	.cardTitle {
-	  font-size: 1.25rem;
-	  font-weight: bold;
-	  color: #323232;
-	  text-decoration: none;
-	  margin-bottom: 0.5rem;
-	  display: block;
-	}
-	.cardTitle:hover {
-	  text-decoration: underline;
-	}
-	.cardExtract {
-	  font-size: 1rem;
-	  color: #555;
-	  margin-bottom: 1rem;
-	}
-	.cardDate {
-	  font-size: 0.875rem;
-	  color: #888;
-	}
-	/* Blog Post Layout - New styles */
-	.postContainer {
-	  max-width: 800px;
-	  margin: 0 auto;
-	  padding: 1rem 2rem;
-	}
-	.headerMinimal {
-	  padding: 1rem 0;
-	  margin-bottom: 1rem;
-	  display: flex;
-	  justify-content: space-between;
-	  align-items: center;
-	}
-	.postDate {
-	  font-size: 0.875rem;
-	  color: #666;
-	  margin-bottom: 1.5rem;
-	}
-	.featuredImage {
-	  width: 100%;
-	  max-height: 500px;
-	  object-fit: cover;
-	  border-radius: 0.5rem;
-	  margin-bottom: 2rem;
-	}
-	.postTitle {
-	  font-size: 2.5rem;
-	  font-weight: 700;
-	  color: #111;
-	  margin-bottom: 1rem;
-	  line-height: 1.2;
-	}
-	.postExtract {
-	  font-size: 1.25rem;
-	  color: #444;
-	  margin-bottom: 2rem;
-	  font-weight: 400;
-	  line-height: 1.6;
-	}
-	.postBody {
-	  font-size: 1.125rem;
-	  line-height: 1.8;
-	  color: #333;
-	}
-	.postBody p {
-	  margin-bottom: 1.5rem;
-	}
-	.postBody h2 {
-	  font-size: 1.75rem;
-	  font-weight: 600;
-	  margin-top: 2.5rem;
-	  margin-bottom: 1rem;
-	  color: #222;
-	}
-	.postBody h3 {
-	  font-size: 1.5rem;
-	  font-weight: 600;
-	  margin-top: 2rem;
-	  margin-bottom: 1rem;
-	  color: #333;
-	}
-	.postBody ul, 
-	.postBody ol {
-	  margin-left: 1.5rem;
-	  margin-bottom: 1.5rem;
-	}
-	.postBody li {
-	  margin-bottom: 0.5rem;
-	}
-	/* Content image specific styles */
-	.imageContainer {
-	  margin: 2rem 0;
-	  width: 100%;
-	}
-	.contentImage {
-	  width: 100%;
-	  border-radius: 0.5rem;
-	  display: block;
-	}
-	/* Content link specific styles - Enhanced for visibility */
-	.contentLink {
-	  color: #1a74e4;
-	  text-decoration: none;
-	  border-bottom: 1px solid #1a74e4;
-	  font-weight: 500;
-	  transition: color 0.2s ease, background-color 0.2s ease;
-	  padding: 0 2px;
-	}
-	.contentLink:hover {
-	  background-color: rgba(26, 116, 228, 0.1);
-	  color: #0056b3;
-	}
-	/* HTML Block rendering */
-	.htmlBlock {
-	  margin-bottom: 1.5rem;
-	  width: 100%;
-	}
-	.htmlBlock a {
-	  color: #1a74e4;
-	  text-decoration: none;
-	  border-bottom: 1px solid #1a74e4;
-	  font-weight: 500;
-	  transition: color 0.2s ease, background-color 0.2s ease;
-	  padding: 0 2px;
-	}
-	.htmlBlock a:hover {
-	  background-color: rgba(26, 116, 228, 0.1);
-	  color: #0056b3;
-	}
-	/* Embed widgets styling */
-	.htmlBlock [data-gyg-href],
-	.htmlBlock iframe,
-	.htmlBlock .widget-container {
-	  width: 100%;
-	  margin: 1.5rem 0;
-	  border: 1px solid #eaeaea;
-	  border-radius: 0.5rem;
-	  overflow: hidden;
-	}
-	/* Code blocks and inline code */
-	.codeBlock {
-	  background-color: #f5f5f5;
-	  color: #333;
-	  border-radius: 0.5rem;
-	  padding: 1rem;
-	  margin: 1.5rem 0;
-	  overflow-x: auto;
-	  font-family: monospace;
-	  font-size: 0.9rem;
-	  line-height: 1.5;
-	  white-space: pre;
-	}
-	.inlineCode {
-	  background-color: #f5f5f5;
-	  color: #333;
-	  border-radius: 0.25rem;
-	  padding: 0.15rem 0.4rem;
-	  font-family: monospace;
-	  font-size: 0.9em;
-	}
-	/* Footer actions */
-	.footerActions {
-	  display: flex;
-	  justify-content: space-between;
-	  margin-top: 3rem;
-	  padding: 1rem 0;
-	  border-top: 1px solid #eee;
-	}
-	.footerActions a {
-	  color: #3182ce;
-	  text-decoration: none;
-	  transition: color 0.2s ease;
-	}
-	.footerActions a:hover {
-	  color: #2c5282;
-	}
-	/* Promotional Banner */
-	.promotionalBanner {
-	  margin: 3rem 0;
-	  padding: 2rem;
-	  border-radius: 0.5rem;
-	  background-color: #f8f4ff;
-	  display: flex;
-	  flex-direction: column;
-	  align-items: center;
-	  text-align: center;
-	  border: 1px solid #e6d8ff;
-	}
-	.promotionalBanner img {
-	  width: 200px;
-	  height: auto;
-	  border-radius: 0.5rem;
-	  margin-bottom: 1rem;
-	}
-	.promotionalBanner h3 {
-	  margin-bottom: 0.5rem;
-	  color: #6b21a8;
-	  font-size: 1.5rem;
-	}
-	.promotionalBanner p {
-	  margin-bottom: 1rem;
-	  color: #4b5563;
-	}
-	.promotionalButtons {
-	  display: flex;
-	  gap: 1rem;
-	  flex-wrap: wrap;
-	  justify-content: center;
-	}
-	.primaryButton {
-	  background-color: #7c3aed;
-	  color: white;
-	  padding: 0.5rem 1rem;
-	  border-radius: 0.25rem;
-	  text-decoration: none;
-	  font-weight: 500;
-	  transition: background-color 0.2s;
-	}
-	.primaryButton:hover {
-	  background-color: #6d28d9;
-	}
-	.secondaryButton {
-	  background-color: white;
-	  color: #7c3aed;
-	  border: 1px solid #7c3aed;
-	  padding: 0.5rem 1rem;
-	  border-radius: 0.25rem;
-	  text-decoration: none;
-	  font-weight: 500;
-	  transition: background-color 0.2s, color 0.2s;
-	}
-	.secondaryButton:hover {
-	  background-color: #f5f3ff;
-	}
-	/* Pinterest button */
-	.pinItButton {
-	  display: inline-flex;
-	  align-items: center;
-	  gap: 0.5rem;
-	  color: #e60023;
-	  transition: opacity 0.2s;
-	}
-	.pinItButton:hover {
-	  opacity: 0.8;
-	}
-	.relatedContentSection {
-	  margin-top: 4rem;
-	  padding-top: 2rem;
-	  border-top: 1px solid #eee;
-	}
-	.relatedContentTitle {
-	  font-size: 1.5rem;
-	  font-weight: 600;
-	  margin-bottom: 1.5rem;
-	}
-	.relatedPostsGrid {
-	  display: grid;
-	  grid-template-columns: repeat(3, 1fr);
-	  gap: 1.5rem;
-	}
-	@media (max-width: 768px) {
+	  @media (max-width: 768px) {
+		.blogContainer {
+		  padding: 1.5rem 4rem;
+		}
+	  }
+	  .blogTitle {
+		font-size: 2.5rem;
+		text-align: left;
+		margin-bottom: 2rem;
+		color: #333;
+		font-family: "Plus Jakarta Sans", "Plus Jakarta Sans Fallback", sans-serif;
+	  }
+	  .cardGrid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 1.5rem;
+	  }
+	  .card {
+		background: #fff;
+		border-radius: 8px;
+		border: 1px solid rgb(237, 237, 237);
+		overflow: hidden;
+		transition:
+		  transform 0.2s ease,
+		  border-color 0.2s ease;
+	  }
+	  .card:hover {
+		transform: translateY(-5px);
+		border: 1px solid rgb(220, 218, 218);
+	  }
+	  .cardImage {
+		width: 100%;
+		height: 270px;
+		object-fit: cover;
+	  }
+	  .cardContent {
+		padding: 1rem;
+	  }
+	  .cardTitle {
+		font-size: 1.25rem;
+		font-weight: bold;
+		color: #323232;
+		text-decoration: none;
+		margin-bottom: 0.5rem;
+		display: block;
+	  }
+	  .cardTitle:hover {
+		text-decoration: underline;
+	  }
+	  .cardExtract {
+		font-size: 1rem;
+		color: #555;
+		margin-bottom: 1rem;
+	  }
+	  .cardDate {
+		font-size: 0.875rem;
+		color: #888;
+	  }
+	  /* Blog Post Layout - New styles */
+	  .postContainer {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 1rem 2rem;
+	  }
+	  .headerMinimal {
+		padding: 1rem 0;
+		margin-bottom: 1rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	  }
+	  .postDate {
+		font-size: 0.875rem;
+		color: #666;
+		margin-bottom: 1.5rem;
+	  }
+	  .featuredImage {
+		width: 100%;
+		max-height: 500px;
+		object-fit: cover;
+		border-radius: 0.5rem;
+		margin-bottom: 2rem;
+	  }
+	  .postTitle {
+		font-size: 2.5rem;
+		font-weight: 700;
+		color: #111;
+		margin-bottom: 1rem;
+		line-height: 1.2;
+	  }
+	  .postExtract {
+		font-size: 1.25rem;
+		color: #444;
+		margin-bottom: 2rem;
+		font-weight: 400;
+		line-height: 1.6;
+	  }
+	  .postBody {
+		font-size: 1.125rem;
+		line-height: 1.8;
+		color: #333;
+	  }
+	  .postBody p {
+		margin-bottom: 1.5rem;
+	  }
+	  .postBody h2 {
+		font-size: 1.75rem;
+		font-weight: 600;
+		margin-top: 2.5rem;
+		margin-bottom: 1rem;
+		color: #222;
+	  }
+	  .postBody h3 {
+		font-size: 1.5rem;
+		font-weight: 600;
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		color: #333;
+	  }
+	  .postBody ul, 
+	  .postBody ol {
+		margin-left: 1.5rem;
+		margin-bottom: 1.5rem;
+	  }
+	  .postBody li {
+		margin-bottom: 0.5rem;
+	  }
+	  /* Content image specific styles */
+	  .imageContainer {
+		margin: 2rem 0;
+		width: 100%;
+	  }
+	  .contentImage {
+		width: 100%;
+		border-radius: 0.5rem;
+		display: block;
+	  }
+	  /* Content link specific styles - Enhanced for visibility */
+	  .contentLink {
+		color: #1a74e4;
+		text-decoration: none;
+		border-bottom: 1px solid #1a74e4;
+		font-weight: 500;
+		transition: color 0.2s ease, background-color 0.2s ease;
+		padding: 0 2px;
+	  }
+	  .contentLink:hover {
+		background-color: rgba(26, 116, 228, 0.1);
+		color: #0056b3;
+	  }
+	  /* HTML Block rendering */
+	  .htmlBlock {
+		margin-bottom: 1.5rem;
+		width: 100%;
+	  }
+	  .htmlBlock a {
+		color: #1a74e4;
+		text-decoration: none;
+		border-bottom: 1px solid #1a74e4;
+		font-weight: 500;
+		transition: color 0.2s ease, background-color 0.2s ease;
+		padding: 0 2px;
+	  }
+	  .htmlBlock a:hover {
+		background-color: rgba(26, 116, 228, 0.1);
+		color: #0056b3;
+	  }
+	  /* Embed widgets styling */
+	  .htmlBlock [data-gyg-href],
+	  .htmlBlock iframe,
+	  .htmlBlock .widget-container {
+		width: 100%;
+		margin: 1.5rem 0;
+		border: 1px solid #eaeaea;
+		border-radius: 0.5rem;
+		overflow: hidden;
+	  }
+	  /* Code blocks and inline code */
+	  .codeBlock {
+		background-color: #f5f5f5;
+		color: #333;
+		border-radius: 0.5rem;
+		padding: 1rem;
+		margin: 1.5rem 0;
+		overflow-x: auto;
+		font-family: monospace;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		white-space: pre;
+	  }
+	  .inlineCode {
+		background-color: #f5f5f5;
+		color: #333;
+		border-radius: 0.25rem;
+		padding: 0.15rem 0.4rem;
+		font-family: monospace;
+		font-size: 0.9em;
+	  }
+	  /* Footer actions */
+	  .footerActions {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 3rem;
+		padding: 1rem 0;
+		border-top: 1px solid #eee;
+	  }
+	  .footerActions a {
+		color: #3182ce;
+		text-decoration: none;
+		transition: color 0.2s ease;
+	  }
+	  .footerActions a:hover {
+		color: #2c5282;
+	  }
+	  /* Promotional Banner */
+	  .promotionalBanner {
+		margin: 3rem 0;
+		padding: 2rem;
+		border-radius: 0.5rem;
+		background-color: #f8f4ff;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		border: 1px solid #e6d8ff;
+	  }
+	  .promotionalBanner img {
+		width: 200px;
+		height: auto;
+		border-radius: 0.5rem;
+		margin-bottom: 1rem;
+	  }
+	  .promotionalBanner h3 {
+		margin-bottom: 0.5rem;
+		color: #6b21a8;
+		font-size: 1.5rem;
+	  }
+	  .promotionalBanner p {
+		margin-bottom: 1rem;
+		color: #4b5563;
+	  }
+	  .promotionalButtons {
+		display: flex;
+		gap: 1rem;
+		flex-wrap: wrap;
+		justify-content: center;
+	  }
+	  .primaryButton {
+		background-color: #7c3aed;
+		color: white;
+		padding: 0.5rem 1rem;
+		border-radius: 0.25rem;
+		text-decoration: none;
+		font-weight: 500;
+		transition: background-color 0.2s;
+	  }
+	  .primaryButton:hover {
+		background-color: #6d28d9;
+	  }
+	  .secondaryButton {
+		background-color: white;
+		color: #7c3aed;
+		border: 1px solid #7c3aed;
+		padding: 0.5rem 1rem;
+		border-radius: 0.25rem;
+		text-decoration: none;
+		font-weight: 500;
+		transition: background-color 0.2s, color 0.2s;
+	  }
+	  .secondaryButton:hover {
+		background-color: #f5f3ff;
+	  }
+	  /* Pinterest button */
+	  .pinItButton {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: #e60023;
+		transition: opacity 0.2s;
+	  }
+	  .pinItButton:hover {
+		opacity: 0.8;
+	  }
+	  .relatedContentSection {
+		margin-top: 4rem;
+		padding-top: 2rem;
+		border-top: 1px solid #eee;
+	  }
+	  .relatedContentTitle {
+		font-size: 1.5rem;
+		font-weight: 600;
+		margin-bottom: 1.5rem;
+	  }
 	  .relatedPostsGrid {
-	    grid-template-columns: repeat(1, 1fr);
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 1.5rem;
 	  }
-	}
-	.relatedPostCard {
-	  display: flex;
-	  flex-direction: column;
-	}
-	.relatedPostImage {
-	  width: 100%;
-	  height: 150px;
-	  object-fit: cover;
-	  border-radius: 0.5rem;
-	  margin-bottom: 0.75rem;
-	}
-	.relatedPostTitle {
-	  font-size: 1rem;
-	  font-weight: 600;
-	  color: #333;
-	  text-decoration: none;
-	  transition: color 0.2s ease;
-	}
-	.relatedPostTitle:hover {
-	  color: #3182ce;
-	}
-	.pageFooter {
-	  margin-top: 4rem;
-	  padding: 1rem 0;
-	  font-size: 0.875rem;
-	  color: #777;
-	  border-top: 1px solid #eee;
-	  display: flex;
-	  justify-content: space-between;
-	  align-items: center;
-	}
-	.footerLink {
-	  color: #666;
-	  text-decoration: none;
-	  transition: color 0.2s ease;
-	}
-	.footerLink:hover {
-	  color: #333;
-	}
+	  @media (max-width: 768px) {
+		.relatedPostsGrid {
+		  grid-template-columns: repeat(1, 1fr);
+		}
+	  }
+	  .relatedPostCard {
+		display: flex;
+		flex-direction: column;
+	  }
+	  .relatedPostImage {
+		width: 100%;
+		height: 150px;
+		object-fit: cover;
+		border-radius: 0.5rem;
+		margin-bottom: 0.75rem;
+	  }
+	  .relatedPostTitle {
+		font-size: 1rem;
+		font-weight: 600;
+		color: #333;
+		text-decoration: none;
+		transition: color 0.2s ease;
+	  }
+	  .relatedPostTitle:hover {
+		color: #3182ce;
+	  }
+	  .pageFooter {
+		margin-top: 4rem;
+		padding: 1rem 0;
+		font-size: 0.875rem;
+		color: #777;
+		border-top: 1px solid #eee;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	  }
+	  .footerLink {
+		color: #666;
+		text-decoration: none;
+		transition: color 0.2s ease;
+	  }
+	  .footerLink:hover {
+		color: #333;
+	  }
+	  
+  
