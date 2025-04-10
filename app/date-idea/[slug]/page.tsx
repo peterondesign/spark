@@ -98,78 +98,44 @@ export default function DateIdeaDetails() {
   const [loadingGygResults, setLoadingGygResults] = useState(false);
   const [crawlStarted, setCrawlStarted] = useState(false);
 
-  // Function to start the GetYourGuide crawl
-  const startGetYourGuideCrawl = async (city: string, dateIdeaTitle: string) => {
-    if (!city || !dateIdeaTitle || crawlStarted) return;
+  // Add state for Gemini suggestions
+  const [geminiSuggestions, setGeminiSuggestions] = useState<string>("");
+  const [loadingGemini, setLoadingGemini] = useState(false);
+  const [showGemini, setShowGemini] = useState(false);
+
+
+
+  // Function to get Gemini suggestions
+  const getGeminiSuggestions = async () => {
+    if (!dateIdea || !userCity) return;
     
-    setLoadingGygResults(true);
-    setCrawlStarted(true);
-    
+    setLoadingGemini(true);
     try {
-      // Format city for URL (lowercase, replace spaces with hyphens)
-      const formattedCity = city.toLowerCase().replace(/\s+/g, '-');
-      
-      const response = await fetch('/api/crawl', {
+      const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: `https://www.getyourguide.com/${formattedCity}/s?q=${encodeURIComponent(dateIdeaTitle)}`,
-          maxRequests: 5,
+          dateIdeaTitle: dateIdea.title,
+          dateIdeaCategory: dateIdea.category,
+          location: userCity
         }),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to start crawler');
+        throw new Error('Failed to get suggestions');
       }
       
-      // Crawler started, now poll for results
-      pollCrawlerResults();
+      const data = await response.json();
+      setGeminiSuggestions(data.suggestions || "No suggestions available at this time.");
+      setShowGemini(true);
     } catch (error) {
-      console.error('Error starting GetYourGuide crawler:', error);
-      setLoadingGygResults(false);
+      console.error('Error getting Gemini suggestions:', error);
+      setGeminiSuggestions("Sorry, we couldn't generate suggestions at this time.");
+    } finally {
+      setLoadingGemini(false);
     }
-  };
-  
-  // Function to poll for crawler results
-  const pollCrawlerResults = async () => {
-    let attempts = 0;
-    const maxAttempts = 20; // Poll for up to ~1 minute
-    const pollInterval = 3000; // 3 seconds
-    
-    const checkResults = async () => {
-      if (attempts >= maxAttempts) {
-        setLoadingGygResults(false);
-        return;
-      }
-      
-      try {
-        const response = await fetch('/api/results');
-        if (!response.ok) {
-          throw new Error('Failed to fetch results');
-        }
-        
-        const data = await response.json();
-        
-        if (data.items && data.items.length > 0) {
-          setGygResults(data.items);
-          setLoadingGygResults(false);
-          return;
-        }
-        
-        // No results yet, try again after interval
-        attempts++;
-        setTimeout(checkResults, pollInterval);
-      } catch (error) {
-        console.error('Error polling for results:', error);
-        attempts++;
-        setTimeout(checkResults, pollInterval);
-      }
-    };
-    
-    // Start polling
-    checkResults();
   };
 
   // Simple function for handling city selection
@@ -350,12 +316,7 @@ export default function DateIdeaDetails() {
     }
   }, [dateIdea]);
   
-  // Start GetYourGuide crawler when date idea and user city are set
-  useEffect(() => {
-    if (dateIdea && userCity && !crawlStarted) {
-      startGetYourGuideCrawl(userCity, dateIdea.title);
-    }
-  }, [dateIdea, userCity, crawlStarted]);
+
 
   // Function to fetch other random date ideas
   const fetchOtherDateIdeas = async (currentId: string) => {
@@ -429,46 +390,7 @@ export default function DateIdeaDetails() {
     }
   };
 
-  // Function to fetch activity suggestions based on date idea
-  const fetchActivitySuggestions = async (dateIdea: DateIdea) => {
-    if (!dateIdea) return;
-    
-    setLoadingActivities(true);
-    
-    try {
-      const query = `${dateIdea.title}, ${dateIdea.category}, ${userCity || ''}`.trim();
-      
-      const response = await fetch('/api/results', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch activity suggestions');
-      }
-      
-      const data = await response.json();
-      
-      if (data.results && Array.isArray(data.results)) {
-        setActivities(data.results);
-      }
-    } catch (error) {
-      console.error('Error fetching activity suggestions:', error);
-      setActivities([]);
-    } finally {
-      setLoadingActivities(false);
-    }
-  };
 
-  // Fetch activity suggestions when date idea and user city is set
-  useEffect(() => {
-    if (dateIdea && !loading) {
-      fetchActivitySuggestions(dateIdea);
-    }
-  }, [dateIdea, userCity, loading]);
 
   // Render function for other date ideas
   const renderOtherDateIdeas = () => {
@@ -529,166 +451,6 @@ export default function DateIdeaDetails() {
     );
   };
 
-  // GetYourGuide Results Component
-  const GetYourGuideResults = () => {
-    if (loadingGygResults) {
-      return (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">GetYourGuide Activities</h2>
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500 mb-4"></div>
-            <p className="text-gray-600">Searching for activities on GetYourGuide...</p>
-          </div>
-        </div>
-      );
-    }
-    
-    if (gygResults.length === 0) {
-      return (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">GetYourGuide Activities</h2>
-          <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
-            <p className="text-gray-600">No activities found. Try changing your location or searching directly on GetYourGuide.</p>
-            <a 
-              href={`https://www.getyourguide.com/s?q=${encodeURIComponent(dateIdea?.title || '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-block px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-            >
-              Search on GetYourGuide
-            </a>
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-          </svg>
-          GetYourGuide Activities
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {gygResults.slice(0, 6).map((activity, index) => (
-            <a 
-              key={index} 
-              href={activity.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-            >
-              <div className="relative h-48">
-                {activity.image ? (
-                  <Image
-                    src={activity.image}
-                    alt={activity.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-400">No image</span>
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2">{activity.title}</h3>
-                <div className="flex items-center mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span className="text-sm text-gray-600">{activity.rating} ({activity.reviewCount})</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">{activity.duration}</span>
-                  <span className="text-rose-600 font-medium">{activity.price}</span>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-        {gygResults.length > 6 && (
-          <div className="text-center mt-4">
-            <a 
-              href={`https://www.getyourguide.com/${userCity?.toLowerCase().replace(/\s+/g, '-')}/s?q=${encodeURIComponent(dateIdea?.title || '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-4 py-2 text-rose-600 hover:text-rose-700 transition-colors"
-            >
-              View all {gygResults.length} activities →
-            </a>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Activity suggestions component
-  const ActivitySuggestions = () => {
-    if (loadingActivities) {
-      return (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Activity Suggestions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
-                <div className="p-4">
-                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-1"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-1"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-1"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    
-    if (activities.length === 0) return null;
-    
-    return (
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Activity Suggestions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {activities.map((activity, index) => (
-            <div 
-              key={index} 
-              className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center mb-3">
-                <h3 className="text-lg font-semibold text-gray-800 flex-grow">{activity.title}</h3>
-                {activity.badges && activity.badges.length > 0 && (
-                  <span className="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">
-                    {activity.badges[0]}
-                  </span>
-                )}
-              </div>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                  <span>{activity.duration}</span>
-                </div>
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  <span>{activity.rating}</span>
-                </div>
-                <div className="font-medium text-rose-600">
-                  {activity.price}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   // Loading state
   if (loading) {
@@ -887,8 +649,44 @@ export default function DateIdeaDetails() {
           </div>
         )}
 
+        {/* Gemini AI Suggestions Section */}
+        {userCity && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-indigo-800">
+                <span className="mr-2">✨</span>
+                AI-Powered Suggestions
+              </h2>
+              {!showGemini && (
+                <button 
+                  onClick={getGeminiSuggestions}
+                  disabled={loadingGemini}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                >
+                  {loadingGemini ? 'Generating...' : 'Get Suggestions'}
+                </button>
+              )}
+            </div>
+            
+            {loadingGemini ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-700"></div>
+                <span className="ml-3 text-indigo-700">Generating ideas...</span>
+              </div>
+            ) : showGemini ? (
+              <div className="prose prose-indigo max-w-none">
+                <div dangerouslySetInnerHTML={{ __html: geminiSuggestions }} />
+              </div>
+            ) : (
+              <p className="text-indigo-700">
+                Get personalized suggestions for {dateIdea.title} in {userCity} using AI.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* GetYourGuide Activities Section */}
-        <GetYourGuideResults />
+        
 
         {/* Other details section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
