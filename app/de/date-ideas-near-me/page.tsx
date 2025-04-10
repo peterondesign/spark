@@ -4,7 +4,6 @@ import { getImageUrl } from "../../utils/imageService";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import PageTitle from "../../components/PageTitle";
-import CityEvents from "../../components/CityEvents";
 import { PAGE_TITLES } from "../../utils/titleUtils";
 import CountryCitySelector from '../../components/CountryCitySelector';
 import { CityItem } from '../../../utils/cityService';
@@ -151,7 +150,6 @@ export default function DateIdeasNearMePage() {
               <div className="space-y-8">
                 <div className="bg-white rounded-xl shadow-md p-6">
                   <h3 className="text-xl font-semibold mb-4">Date Ideas from Multiple Sources</h3>
-                  <CityEvents city={selectedCity} category={selectedCategory} />
                 </div>
                 
                 <div className="bg-rose-50 rounded-xl shadow-md p-6">

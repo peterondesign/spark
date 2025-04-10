@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import CityEvents from '../../components/CityEvents';
 import PageTitle from '../../components/PageTitle';
 import { PAGE_TITLES } from '../../utils/titleUtils';
 import { getCityBySlug } from '@/utils/cityService';
@@ -84,7 +83,6 @@ export async function generateMetadata(props: {
             <div className="space-y-8">
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h3 className="text-xl font-semibold mb-4">Romantic Activities in {cityInfo.name}</h3>
-                <CityEvents city={cityInfo.name} category={defaultCategory} />
               </div>
               
               {/* Category Selection Tabs */}

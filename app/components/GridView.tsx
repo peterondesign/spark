@@ -8,21 +8,13 @@ export interface DateIdea {
   id: number;
   title: string;
   category: string;
-  location: string | {
-    type?: string;
-    setting?: string;
-    [key: string]: any;
-  };
+  location: string;
   description: string;
   slug: string;
   image: string;
   timeOfDay?: string;
-  mood?: {
-    pace?: string;
-    vibe?: string;
-    [key: string]: any;
-  } | string;
-  priceLevel?: number | string;
+  mood?: string;
+  priceLevel?: number;
   tips?: string | null;
   longDescription?: string;
 }
@@ -110,31 +102,6 @@ export default function GridView({
                   <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">
                     {idea.category}
                   </span>
-                  
-                  {/* {typeof idea.location === 'object' && idea.location?.type && (
-                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      {idea.location.type}
-                    </span>
-                  )}
-                  
-                  {typeof idea.location === 'object' && idea.location?.setting && (
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      {idea.location.setting}
-                    </span>
-                  )} */}
-                  
-                  {/* Display mood pace/vibe if available */}
-                  {/* {typeof idea.mood === 'object' && idea.mood?.pace && (
-                    <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      {idea.mood.pace}
-                    </span>
-                  )}
-                  
-                  {typeof idea.mood === 'object' && idea.mood?.vibe && (
-                    <span className="bg-pink-100 text-pink-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                      {idea.mood.vibe}
-                    </span>
-                  )} */}
                 </div>
 
                 <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors">
@@ -144,13 +111,6 @@ export default function GridView({
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                   {idea.description}
                 </p>
-                
-                {/* {idea.tips && (
-                  <div className="mt-2 text-xs text-gray-500">
-                    <span className="font-semibold">Tip:</span> {idea.tips}
-                  </div>
-                )} */}
-                
               </div>
             </div>
           </Link>
