@@ -13,6 +13,10 @@ import { supabase } from "@/utils/supabaseClient";
 import CountryCitySelector from "@/app/components/CountryCitySelector";
 import RelatedDateIdea from "../../components/RelatedDateIdea";
 import GetYourGuideActivities from "../../components/GetYourGuideActivities";
+import { ScrapedData } from '../../types/interfaces';
+import ScraperForm from "@/app/components/ScraperForm";
+import Results from "@/app/components/Results";
+
 
 // TypeScript interfaces for GetYourGuide crawler
 interface CrawlOptions {
@@ -65,14 +69,6 @@ interface CityItem {
   id: string;
 }
 
-// Activity interface for Gemini responses
-interface Activity {
-  title: string;
-  duration: string;
-  rating: string;
-  price: string;
-  badges?: string[];
-}
 
 export default function DateIdeaDetails() {
   const params = useParams<{ slug: string }>();
@@ -89,54 +85,39 @@ export default function DateIdeaDetails() {
   const [loadingOtherIdeas, setLoadingOtherIdeas] = useState(false);
   const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
 
-  // Activity suggestions state
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loadingActivities, setLoadingActivities] = useState(false);
-  
-  // GetYourGuide crawler results state
-  const [gygResults, setGygResults] = useState<CrawlResult[]>([]);
-  const [loadingGygResults, setLoadingGygResults] = useState(false);
-  const [crawlStarted, setCrawlStarted] = useState(false);
+  const [results, setResults] = useState<ScrapedData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Add state for Gemini suggestions
-  const [geminiSuggestions, setGeminiSuggestions] = useState<string>("");
-  const [loadingGemini, setLoadingGemini] = useState(false);
-  const [showGemini, setShowGemini] = useState(false);
+  const handleScrape = async (url: string) => {
+    setIsLoading(true);
+    setError(null);
 
-
-
-  // Function to get Gemini suggestions
-  const getGeminiSuggestions = async () => {
-    if (!dateIdea || !userCity) return;
-    
-    setLoadingGemini(true);
     try {
-      const response = await fetch('/api/gemini', {
+      const response = await fetch('/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          dateIdeaTitle: dateIdea.title,
-          dateIdeaCategory: dateIdea.category,
-          location: userCity
-        }),
+        body: JSON.stringify({ url }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to get suggestions');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to scrape website');
       }
-      
+
       const data = await response.json();
-      setGeminiSuggestions(data.suggestions || "No suggestions available at this time.");
-      setShowGemini(true);
-    } catch (error) {
-      console.error('Error getting Gemini suggestions:', error);
-      setGeminiSuggestions("Sorry, we couldn't generate suggestions at this time.");
+      setResults(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setResults(null);
     } finally {
-      setLoadingGemini(false);
+      setIsLoading(false);
     }
   };
+
+
 
   // Simple function for handling city selection
   const handleCitySelect = (city: CityItem) => {
@@ -625,6 +606,32 @@ export default function DateIdeaDetails() {
         {/* Location selector */}
         <LocationSelector />
 
+        <main>
+          <section className="form-section">
+            <ScraperForm onScrape={handleScrape} />
+          </section>
+
+          {isLoading && (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Scraping website... This may take a few moments.</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="error-container">
+              <h2>Error</h2>
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!isLoading && results && (
+            <section className="results-section">
+              <Results data={results} />
+            </section>
+          )}
+        </main>
+
         {/* Description section */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">About This Date Idea</h2>
@@ -646,42 +653,6 @@ export default function DateIdeaDetails() {
               Insider Tips
             </h2>
             <p className="text-amber-800">{dateIdea.tips}</p>
-          </div>
-        )}
-
-        {/* Gemini AI Suggestions Section */}
-        {userCity && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-indigo-800">
-                <span className="mr-2">✨</span>
-                AI-Powered Suggestions
-              </h2>
-              {!showGemini && (
-                <button 
-                  onClick={getGeminiSuggestions}
-                  disabled={loadingGemini}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                  {loadingGemini ? 'Generating...' : 'Get Suggestions'}
-                </button>
-              )}
-            </div>
-            
-            {loadingGemini ? (
-              <div className="flex items-center justify-center py-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-700"></div>
-                <span className="ml-3 text-indigo-700">Generating ideas...</span>
-              </div>
-            ) : showGemini ? (
-              <div className="prose prose-indigo max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: geminiSuggestions }} />
-              </div>
-            ) : (
-              <p className="text-indigo-700">
-                Get personalized suggestions for {dateIdea.title} in {userCity} using AI.
-              </p>
-            )}
           </div>
         )}
 

@@ -103,7 +103,29 @@ const nextConfig = {
                 ]
             }
         ];
-    }
+    },
+    serverExternalPackages: [
+        '@puppeteer/core',
+        'puppeteer-extra',
+        'puppeteer-extra-plugin-stealth',
+        'puppeteer-extra-plugin-recaptcha',
+        'puppeteer-extra-plugin-adblocker'
+    ],
+    experimental: {
+        serverComponentsExternalPackages: [
+            'puppeteer-extra', 
+            'puppeteer-extra-plugin-stealth',
+            'puppeteer-extra-plugin-recaptcha',
+            'puppeteer-extra-plugin-adblocker',
+            'merge-deep',
+            'clone-deep',
+            'lazy-cache',
+            'is-plain-object',
+            'shallow-clone',
+            'kind-of',
+            'for-own'
+        ],
+    },
 }
 
 export default nextConfig;

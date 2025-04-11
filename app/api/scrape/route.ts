@@ -1,25 +1,25 @@
-// This file will handle the communication between our Next.js app and Python scraping script
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
-import fs from 'fs';
+import { scrapeWebsite } from '../../lib/scraper';
 
-const execPromise = promisify(exec);
+export async function POST(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { url } = body;
 
-// This API route is no longer needed since we're removing external scraping functionality
-// We're creating a static implementation that doesn't rely on external API calls
+        if (!url) {
+            return NextResponse.json(
+                { message: 'URL is required' },
+                { status: 400 }
+            );
+        }
 
-export async function POST() {
-  return new Response(
-    JSON.stringify({ 
-      success: false, 
-      message: "This endpoint has been disabled as part of moving to a static implementation." 
-    }),
-    { 
-      status: 410, 
-      headers: { 'Content-Type': 'application/json' } 
+        const data = await scrapeWebsite(url);
+        return NextResponse.json(data);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return NextResponse.json(
+            { message: 'Error scraping the website', error: errorMessage },
+            { status: 500 }
+        );
     }
-  );
 }
-

@@ -44,3 +44,15 @@ export interface Event {
   imageUrl: string;
   url: string;
 }
+
+export interface ScrapedData {
+  title: string;
+  description?: string;
+  content: string;
+  links: string[];
+  metadata: {
+    url: string;
+    scrapedAt: string;
+    imageUrls?: string[];
+  };
+}
