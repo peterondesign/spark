@@ -3,64 +3,124 @@ import { ScrapedData } from '../types/interfaces';
 
 interface ResultProps {
   data: ScrapedData;
+  isLoading?: boolean;
 }
 
-const Results: React.FC<ResultProps> = ({ data }) => {
+const Results: React.FC<ResultProps> = ({ data, isLoading = false }) => {
+  if (isLoading) {
+    return <SkeletonGrid />;
+  }
+
   if (!data) {
     return <div>No results found.</div>;
   }
 
   // Getting links 7-22 (index 6 to 21)
   const selectedLinks = data.links.slice(6, 22);
+  
+  // Extract titles from links - use domain name or path segments
+  const extractTitle = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      // Get the hostname without www. and the pathname
+      const domain = urlObj.hostname.replace('www.', '');
+      // Get the path segments and filter out empty ones
+      const pathSegments = urlObj.pathname.split('/').filter(segment => segment);
+      
+      if (pathSegments.length > 0) {
+        // Replace hyphens with spaces and capitalize first letter of each word
+        return pathSegments[pathSegments.length - 1]
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, char => char.toUpperCase());
+      }
+      
+      return domain;
+    } catch {
+      // If URL parsing fails, return a portion of the URL
+      return url.substring(0, 30) + '...';
+    }
+  };
 
   return (
-    <div className="my-8">
+    <div className="my-8 px-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {selectedLinks.map((link, index) => (
-          <div key={index} className="result-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02]">
-            {/* Image section */}
-            <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-700">
-              {data.metadata.imageUrls && data.metadata.imageUrls.length > index + 6 ? (
-                <img 
-                  src={data.metadata.imageUrls[index + 6]} 
-                  alt={`Image for link ${index + 7}`}
-                  className="object-cover w-full h-full"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.jpg'; // Fallback image
-                  }}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full bg-gray-200 dark:bg-gray-600">
-                  <span className="text-gray-400 dark:text-gray-300">No image available</span>
+        {selectedLinks.map((link, index) => {
+          // For images after index 8, loop back to the beginning
+          const imageIndex = index < 9 ? index + 6 : (index - 9) % 9 + 6;
+          
+          return (
+            <div key={index} className="rounded-xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+              {/* Image section */}
+              <div className="relative aspect-[4/3] overflow-hidden">
+                {data.metadata.imageUrls && data.metadata.imageUrls.length > imageIndex ? (
+                  <img 
+                    src={data.metadata.imageUrls[imageIndex]} 
+                    alt={`Image for ${extractTitle(link)}`}
+                    className="object-cover w-full h-full hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gray-100">
+                    <span className="text-gray-400">No image available</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Content section */}
+              <div className="p-4">
+                <h3 className="text-base font-medium text-gray-900 mb-1 line-clamp-1">
+                  {extractTitle(link)}
+                </h3>
+                
+                <p className="text-sm text-gray-500 mb-3 line-clamp-1">
+                  <a 
+                    href={link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {link.length > 40 ? `${link.substring(0, 40)}...` : link}
+                  </a>
+                </p>
+                
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-xs font-medium text-gray-500">#{index + 7}</span>
+                  <a 
+                    href={link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-pink-600 hover:text-pink-700"
+                  >
+                    View
+                  </a>
                 </div>
-              )}
-              <div className="absolute top-2 right-2 bg-white dark:bg-gray-700 rounded-full px-2 py-1 text-xs font-semibold">
-                #{index + 7}
               </div>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const SkeletonGrid: React.FC = () => {
+  return (
+    <div className="my-8 px-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 16 }).map((_, index) => (
+          <div key={index} className="rounded-xl overflow-hidden bg-white border border-gray-100 shadow-sm animate-pulse">
+            {/* Skeleton image */}
+            <div className="relative aspect-[4/3] bg-gray-200"></div>
             
-            {/* Content section */}
+            {/* Skeleton content */}
             <div className="p-4">
-              <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-gray-800 dark:text-gray-100">
-                <a 
-                  href={link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                  {link.length > 60 ? `${link.substring(0, 60)}...` : link}
-                </a>
-              </h3>
-              
-              <div className="flex justify-end mt-3">
-                <a 
-                  href={link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                >
-                  Visit Link →
-                </a>
+              <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-full mb-3"></div>
+              <div className="flex justify-between items-center mt-2">
+                <div className="h-3 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-16"></div>
               </div>
             </div>
           </div>

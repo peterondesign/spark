@@ -611,23 +611,15 @@ export default function DateIdeaDetails() {
             <ScraperForm onScrape={handleScrape} />
           </section>
 
-          {isLoading && (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Scraping website... This may take a few moments.</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="error-container">
-              <h2>Error</h2>
-              <p>{error}</p>
-            </div>
-          )}
-
           {!isLoading && results && (
             <section className="results-section">
-              <Results data={results} />
+              <Results data={results} isLoading={false} />
+            </section>
+          )}
+          
+          {isLoading && (
+            <section className="results-section">
+              <Results isLoading={true} data={undefined as any} />
             </section>
           )}
         </main>
