@@ -10,82 +10,61 @@ const Results: React.FC<ResultProps> = ({ data }) => {
     return <div>No results found.</div>;
   }
 
+  // Getting links 7-22 (index 6 to 21)
+  const selectedLinks = data.links.slice(6, 22);
+
   return (
-    <div className="results-container">
-      <h2>Scraping Results</h2>
-      
-      <div className="result-section">
-        <h3>Title</h3>
-        <p>{data.title}</p>
-      </div>
-      
-      {data.description && (
-        <div className="result-section">
-          <h3>Description</h3>
-          <p>{data.description}</p>
-        </div>
-      )}
-      
-      <div className="result-section">
-        <h3>Content Preview</h3>
-        <div className="content-preview">
-          {data.content.length > 500 
-            ? `${data.content.substring(0, 500)}...` 
-            : data.content}
-        </div>
-        <details>
-          <summary>Full Content</summary>
-          <div className="full-content">
-            {data.content.split('\n').map((paragraph: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | Iterable<React.ReactNode> | null | undefined, i: React.Key | null | undefined) => (
-              <p key={i}>{paragraph}</p>
-            ))}
-          </div>
-        </details>
-      </div>
-      
-      <div className="result-section">
-        <h3>Links Found ({data.links.length})</h3>
-        <details>
-          <summary>Show Links</summary>
-          <ul className="links-list">
-            {data.links.slice(0, 50).map((link, index) => (
-              <li key={index}>
-                <a href={link} target="_blank" rel="noopener noreferrer">
-                  {link.length > 60 ? `${link.substring(0, 60)}...` : link}
-                </a>
-              </li>
-            ))}
-            {data.links.length > 50 && <li>...and {data.links.length - 50} more links</li>}
-          </ul>
-        </details>
-      </div>
-      
-      {data.metadata.imageUrls && data.metadata.imageUrls.length > 0 && (
-        <div className="result-section">
-          <h3>Images Found ({data.metadata.imageUrls.length})</h3>
-          <div className="images-preview">
-            {data.metadata.imageUrls.slice(0, 5).map((imgUrl, index) => (
-              <div key={index} className="image-thumbnail">
+    <div className="my-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {selectedLinks.map((link, index) => (
+          <div key={index} className="result-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02]">
+            {/* Image section */}
+            <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-700">
+              {data.metadata.imageUrls && data.metadata.imageUrls.length > index + 6 ? (
                 <img 
-                  src={imgUrl} 
-                  alt={`Thumbnail ${index + 1}`} 
+                  src={data.metadata.imageUrls[index + 6]} 
+                  alt={`Image for link ${index + 7}`}
+                  className="object-cover w-full h-full"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).src = '/placeholder.jpg'; // Fallback image
                   }}
                 />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gray-200 dark:bg-gray-600">
+                  <span className="text-gray-400 dark:text-gray-300">No image available</span>
+                </div>
+              )}
+              <div className="absolute top-2 right-2 bg-white dark:bg-gray-700 rounded-full px-2 py-1 text-xs font-semibold">
+                #{index + 7}
               </div>
-            ))}
-            {data.metadata.imageUrls.length > 5 && (
-              <p>...and {data.metadata.imageUrls.length - 5} more images</p>
-            )}
+            </div>
+            
+            {/* Content section */}
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-gray-800 dark:text-gray-100">
+                <a 
+                  href={link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  {link.length > 60 ? `${link.substring(0, 60)}...` : link}
+                </a>
+              </h3>
+              
+              <div className="flex justify-end mt-3">
+                <a 
+                  href={link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                >
+                  Visit Link →
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-      
-      <div className="result-section">
-        <h3>Metadata</h3>
-        <p><strong>URL:</strong> <a href={data.metadata.url} target="_blank" rel="noopener noreferrer">{data.metadata.url}</a></p>
-        <p><strong>Scraped At:</strong> {new Date(data.metadata.scrapedAt).toLocaleString()}</p>
+        ))}
       </div>
     </div>
   );
