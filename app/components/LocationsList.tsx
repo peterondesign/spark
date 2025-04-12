@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getOSMMappingForDateIdea, buildOverpassQuery, OSMActivityMapping } from '../services/osMmappingService';
+import { getOSMMappingForDateIdea, buildOverpassQuery, OSMActivityMapping } from '../services/osmMappingService';
 
 interface LocationResult {
   id: number;
