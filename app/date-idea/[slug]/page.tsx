@@ -608,7 +608,11 @@ export default function DateIdeaDetails() {
 
         <main>
           <section className="form-section">
-            <ScraperForm onScrape={handleScrape} />
+            <ScraperForm 
+              onScrape={handleScrape} 
+              dateIdeaTitle={dateIdea.title} 
+              userCity={userCity || ''} 
+            />
           </section>
 
           {!isLoading && results && (
