@@ -606,11 +606,13 @@ export default function CountryCitySelector({
       },
       padding: '0.25rem',
       minHeight: '42px',
+      minWidth: '200px',
     }),
     option: (base, state) => ({
       ...base,
       backgroundColor: state.isFocused ? '#fff1f2' : 'white',
       color: '#1f2937',
+      minWidth: '200px',
       padding: '8px 12px',
       ':hover': {
         backgroundColor: '#fff1f2',
@@ -622,10 +624,12 @@ export default function CountryCitySelector({
       overflow: 'hidden',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       border: '1px solid #e2e8f0',
+      minWidth: '200px',
     }),
     valueContainer: (base) => ({
       ...base,
       padding: '2px 8px',
+      minWidth: '200px',
     }),
   };
 

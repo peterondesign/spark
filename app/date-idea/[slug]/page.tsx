@@ -16,7 +16,7 @@ import GetYourGuideActivities from "../../components/GetYourGuideActivities";
 import { ScrapedData } from '../../types/interfaces';
 import ScraperForm from "@/app/components/ScraperForm";
 import Results from "@/app/components/Results";
-
+import NewSiteResults from '@/app/components/NewSiteResults';
 
 // TypeScript interfaces for GetYourGuide crawler
 interface CrawlOptions {
@@ -89,6 +89,10 @@ export default function DateIdeaDetails() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Add state for NewSite results
+  const [newSiteResults, setNewSiteResults] = useState(null);
+  const [newSiteError, setNewSiteError] = useState<string | null>(null);
+
   const handleScrape = async (url: string) => {
     setIsLoading(true);
     setError(null);
@@ -117,7 +121,72 @@ export default function DateIdeaDetails() {
     }
   };
 
+  // Add logic to fetch results for datetitle and usercity
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!dateIdea || !userCity) return;
 
+      try {
+        const response = await fetch('/api/scrape-example', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: `${userCity} ${dateIdea.title}` }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch results');
+        }
+
+        const data = await response.json();
+        setResults(data);
+      } catch (err) {
+        console.error('Error fetching results:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      }
+    };
+
+    fetchResults();
+  }, [dateIdea, userCity]);
+
+  // Fetch results from NewSite
+  useEffect(() => {
+    const fetchNewSiteResults = async () => {
+      if (!dateIdea || !userCity) return;
+
+      try {
+        const response = await fetch('/api/scrape-newsite', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ query: `${userCity} ${dateIdea.title}` }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch results from NewSite');
+        }
+
+        const data = await response.json();
+        setNewSiteResults(data);
+      } catch (err) {
+        console.error('Error fetching NewSite results:', err);
+        setNewSiteError(err instanceof Error ? err.message : 'An unknown error occurred');
+      }
+    };
+
+    fetchNewSiteResults();
+  }, [dateIdea, userCity]);
+
+  // Log the results of NewSite scrape
+  useEffect(() => {
+    if (newSiteResults) {
+      console.log('NewSite Results:', newSiteResults);
+    }
+  }, [newSiteResults]);
 
   // Simple function for handling city selection
   const handleCitySelect = (city: CityItem) => {
@@ -170,7 +239,7 @@ export default function DateIdeaDetails() {
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => setShowLocationPrompt(true)}
+                onClick={clearUserCity}
                 className="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1 rounded-full flex items-center transition-colors"
               >
                 Change
@@ -626,6 +695,7 @@ export default function DateIdeaDetails() {
               <Results isLoading={true} data={undefined as any} />
             </section>
           )}
+
         </main>
 
         {/* Description section */}
@@ -664,16 +734,7 @@ export default function DateIdeaDetails() {
             </div>
           )}
           
-          {dateIdea.mood && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Mood</h3>
-              <p className="text-gray-600">
-                {typeof dateIdea.mood === 'object' && dateIdea.mood !== null
-                  ? `${dateIdea.mood.pace || ''} ${dateIdea.mood.vibe || ''}`.trim()
-                  : dateIdea.mood}
-              </p>
-            </div>
-          )}
+
           
           {dateIdea.timeOfDay && (
             <div className="bg-white border border-gray-200 rounded-lg p-4">
