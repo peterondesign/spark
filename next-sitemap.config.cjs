@@ -8,4 +8,6 @@ module.exports = {
     ],
   },
   outDir: './public',
+  // Ensure the build manifest location is explicitly set
+  sourceDir: './.next',
 }

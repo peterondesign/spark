@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { runCrawler } from '@/utils/crawler';
 
 // Mock results to return when polling
 const mockResults = {

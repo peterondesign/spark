@@ -104,28 +104,26 @@ const nextConfig = {
             }
         ];
     },
+    // Updated configuration for external packages in Next.js 15.1.0
     serverExternalPackages: [
         '@puppeteer/core',
         'puppeteer-extra',
         'puppeteer-extra-plugin-stealth',
         'puppeteer-extra-plugin-recaptcha',
-        'puppeteer-extra-plugin-adblocker'
+        'puppeteer-extra-plugin-adblocker',
+        'merge-deep',
+        'clone-deep',
+        'lazy-cache',
+        'is-plain-object',
+        'shallow-clone',
+        'kind-of',
+        'for-own'
     ],
     experimental: {
-        serverComponentsExternalPackages: [
-            'puppeteer-extra', 
-            'puppeteer-extra-plugin-stealth',
-            'puppeteer-extra-plugin-recaptcha',
-            'puppeteer-extra-plugin-adblocker',
-            'merge-deep',
-            'clone-deep',
-            'lazy-cache',
-            'is-plain-object',
-            'shallow-clone',
-            'kind-of',
-            'for-own'
-        ],
+        // Remove the deprecated option from experimental
     },
+    // Required for next-sitemap to work correctly with Next.js 15.1.0
+    distDir: '.next'
 }
 
 export default nextConfig;
