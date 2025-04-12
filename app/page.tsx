@@ -1414,12 +1414,14 @@ const Home = () => {
                   id: idea.id,
                   title: idea.title,
                   category: idea.category || '',
-                  location: idea.location || '',
+                  location: typeof idea.location === 'object' && idea.location !== null ? (idea.location.name || '') : idea.location || '',
                   description: idea.description || '',
                   slug: idea.slug,
                   image: idea.image || '/placeholder.svg?height=300&width=400',
                   timeOfDay: idea.timeOfDay || '',
-                  mood: idea.mood || '',
+                  mood: typeof idea.mood === 'object' ? 
+                    `${idea.mood?.pace || ''} ${idea.mood?.vibe || ''}`.trim() : 
+                    (idea.mood || ''),
                   priceLevel: idea.priceLevel,
                   tips: idea.tips || '',
                   longDescription: idea.longDescription || '',
