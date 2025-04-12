@@ -17,14 +17,14 @@ const ScraperForm: React.FC<ScraperFormProps> = ({ onScrape, dateIdeaTitle = '',
     const formattedTitle = dateIdeaTitle.replace(/\s+/g, '+');
     const formattedCity = userCity.replace(/\s+/g, '+');
     const searchUrl = `https://getyourguide.com/s/?q=${formattedTitle}%2C+${formattedCity}&searchSource=3`;
-    setUrl(searchUrl);
+        setUrl(searchUrl);
     
     // Automatically trigger scrape after a brief delay
     const timer = setTimeout(() => {
       if (buttonRef.current && searchUrl) {
         buttonRef.current.click();
       }
-    }, 1);
+    }, 500); // Increased delay to 500ms to ensure proper initialization
     
     return () => clearTimeout(timer);
   }, [dateIdeaTitle, userCity]);
