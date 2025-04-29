@@ -12,30 +12,6 @@ import Footer from "@/app/components/Footer";
 import { supabase } from "@/utils/supabaseClient";
 import CountryCitySelector from "@/app/components/CountryCitySelector";
 import RelatedDateIdea from "../../components/RelatedDateIdea";
-import GetYourGuideActivities from "../../components/GetYourGuideActivities";
-import { ScrapedData } from '../../types/interfaces';
-import ScraperForm from "@/app/components/ScraperForm";
-import Results from "@/app/components/Results";
-import NewSiteResults from '@/app/components/NewSiteResults';
-
-// TypeScript interfaces for GetYourGuide crawler
-interface CrawlOptions {
-  city: string;
-  dateIdea: string;
-  maxPages?: number;
-  headless?: boolean;
-}
-
-interface CrawlResult {
-  title: string;
-  url: string;
-  price: string;
-  rating: string;
-  reviewCount: number;
-  duration: string;
-  image: string;
-  description?: string;
-}
 
 // Define DateIdea interface
 interface DateIdea {
@@ -69,6 +45,25 @@ interface CityItem {
   id: string;
 }
 
+// Perplexity result interfaces
+interface PerplexityResult {
+  title: string;
+  imageUrl: string;
+  sourceUrl: string;
+  section: 'GetYourGuide' | 'Google' | 'Luma';
+}
+
+interface PerplexitySections {
+  GetYourGuide: PerplexityResult[];
+  Google: PerplexityResult[];
+  Luma: PerplexityResult[];
+}
+
+const initialSections: PerplexitySections = {
+  GetYourGuide: [],
+  Google: [],
+  Luma: [],
+};
 
 export default function DateIdeaDetails() {
   const params = useParams<{ slug: string }>();
@@ -79,114 +74,16 @@ export default function DateIdeaDetails() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [userCity, setUserCity] = useState<string | null>(null);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  
+
   // Add state for other date ideas
   const [otherDateIdeas, setOtherDateIdeas] = useState<DateIdea[]>([]);
   const [loadingOtherIdeas, setLoadingOtherIdeas] = useState(false);
   const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
 
-  const [results, setResults] = useState<ScrapedData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Add state for NewSite results
-  const [newSiteResults, setNewSiteResults] = useState(null);
-  const [newSiteError, setNewSiteError] = useState<string | null>(null);
-
-  const handleScrape = async (url: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to scrape website');
-      }
-
-      const data = await response.json();
-      setResults(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      setResults(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Add logic to fetch results for datetitle and usercity
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!dateIdea || !userCity) return;
-
-      try {
-        const response = await fetch('/api/scrape-example', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ query: `${userCity} ${dateIdea.title}` }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch results');
-        }
-
-        const data = await response.json();
-        setResults(data);
-      } catch (err) {
-        console.error('Error fetching results:', err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      }
-    };
-
-    fetchResults();
-  }, [dateIdea, userCity]);
-
-  // Fetch results from NewSite
-  useEffect(() => {
-    const fetchNewSiteResults = async () => {
-      if (!dateIdea || !userCity) return;
-
-      try {
-        const response = await fetch('/api/scrape-newsite', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ query: `${userCity} ${dateIdea.title}` }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch results from NewSite');
-        }
-
-        const data = await response.json();
-        setNewSiteResults(data);
-      } catch (err) {
-        console.error('Error fetching NewSite results:', err);
-        setNewSiteError(err instanceof Error ? err.message : 'An unknown error occurred');
-      }
-    };
-
-    fetchNewSiteResults();
-  }, [dateIdea, userCity]);
-
-  // Log the results of NewSite scrape
-  useEffect(() => {
-    if (newSiteResults) {
-      console.log('NewSite Results:', newSiteResults);
-    }
-  }, [newSiteResults]);
+  // Add state for Perplexity results
+  const [perplexitySections, setPerplexitySections] = useState<PerplexitySections>(initialSections);
+  const [perplexityLoading, setPerplexityLoading] = useState(false);
+  const [perplexityError, setPerplexityError] = useState<string | null>(null);
 
   // Simple function for handling city selection
   const handleCitySelect = (city: CityItem) => {
@@ -365,8 +262,6 @@ export default function DateIdeaDetails() {
       fetchOtherDateIdeas(dateIdea.id);
     }
   }, [dateIdea]);
-  
-
 
   // Function to fetch other random date ideas
   const fetchOtherDateIdeas = async (currentId: string) => {
@@ -440,7 +335,34 @@ export default function DateIdeaDetails() {
     }
   };
 
-
+  // Fetch Perplexity results
+  useEffect(() => {
+    const fetchPerplexityResults = async () => {
+      if (!dateIdea || !userCity) return;
+      setPerplexityLoading(true);
+      setPerplexityError(null);
+      setPerplexitySections(initialSections);
+      try {
+        const response = await fetch('/api/perplexity-date-ideas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // Send both city and date idea title
+          body: JSON.stringify({ city: userCity, dateIdeaTitle: dateIdea.title }), 
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch results');
+        }
+        const data = await response.json();
+        setPerplexitySections(data.sections || initialSections);
+      } catch (err) {
+        setPerplexityError(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setPerplexityLoading(false);
+      }
+    };
+    fetchPerplexityResults();
+  }, [dateIdea, userCity]);
 
   // Render function for other date ideas
   const renderOtherDateIdeas = () => {
@@ -500,7 +422,6 @@ export default function DateIdeaDetails() {
       </div>
     );
   };
-
 
   // Loading state
   if (loading) {
@@ -675,28 +596,90 @@ export default function DateIdeaDetails() {
         {/* Location selector */}
         <LocationSelector />
 
-        <main>
-          <section className="form-section">
-            <ScraperForm 
-              onScrape={handleScrape} 
-              dateIdeaTitle={dateIdea.title} 
-              userCity={userCity || ''} 
-            />
-          </section>
-
-          {!isLoading && results && (
-            <section className="results-section">
-              <Results data={results} isLoading={false} />
-            </section>
+        {/* Perplexity Results Section */}
+        <section className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Find Date Ideas in {userCity || 'your city'}</h2>
+          {perplexityLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[1,2,3].map(i => (
+                <div key={i} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
+                  <div className="h-40 bg-gray-200"></div>
+                  <div className="p-4">
+                    <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : perplexityError ? (
+            <div className="text-red-600">{perplexityError}</div>
+          ) : (
+            <>
+              {/* GetYourGuide Results */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">GetYourGuide Results</h3>
+                {perplexitySections.GetYourGuide.length === 0 ? (
+                  <div className="text-gray-500">No results found</div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {perplexitySections.GetYourGuide.map((item, idx) => (
+                      <a key={idx} href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                        <div className="relative h-40">
+                          <Image src={item.imageUrl || getPlaceholderImage(400,200,item.title)} alt={item.title} fill className="object-cover" />
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-semibold text-gray-800 mb-2 group-hover:text-rose-600 transition-colors">{item.title}</h4>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Google Results */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Google Maps Results</h3>
+                {perplexitySections.Google.length === 0 || (perplexitySections.Google[0]?.title === "No results found") ? (
+                  <div className="text-gray-500">No results found</div>
+                ) : (
+                  <ul className="list-disc list-inside space-y-1">
+                    {perplexitySections.Google.map((item, idx) => (
+                      <li key={idx}>
+                        <a 
+                          href={item.sourceUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-600 hover:underline"
+                        >
+                          Search for "{item.title}" on Google Maps
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              {/* Luma Results */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-2">Luma Results</h3>
+                {perplexitySections.Luma.length === 0 ? (
+                  <div className="text-gray-500">No results found</div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {perplexitySections.Luma.map((item, idx) => (
+                      <a key={idx} href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                        <div className="relative h-40">
+                          <Image src={item.imageUrl || getPlaceholderImage(400,200,item.title)} alt={item.title} fill className="object-cover" />
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-semibold text-gray-800 mb-2 group-hover:text-rose-600 transition-colors">{item.title}</h4>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
-          
-          {isLoading && (
-            <section className="results-section">
-              <Results isLoading={true} data={undefined as any} />
-            </section>
-          )}
-
-        </main>
+        </section>
 
         {/* Description section */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
@@ -721,9 +704,6 @@ export default function DateIdeaDetails() {
             <p className="text-amber-800">{dateIdea.tips}</p>
           </div>
         )}
-
-        {/* GetYourGuide Activities Section */}
-        
 
         {/* Other details section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">

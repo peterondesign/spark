@@ -100,10 +100,10 @@ export default function Header() {
                         )}
                         <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
                         <Link href="/calendar" className={getLinkStyle('/calendar')}>Date Calendar</Link>
-                        <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
+                        {/* <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link> */}
                         
                         {/* Tools Dropdown - Simplified to only toggle on click */}
-                        <div className="relative" ref={toolsMenuRef}>
+                        {/* <div className="relative" ref={toolsMenuRef}>
                             <button 
                                 id="tools-button"
                                 className={`flex items-center space-x-1 px-1 py-2 rounded-md ${
@@ -151,11 +151,13 @@ export default function Header() {
                                     </Link>
                                 </div>
                             )}
-                        </div>
-                        
-                        <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link>
-                        {/* <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link> */}
-                        {/* <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link> */}
+                        </div> */}
+
+
+                        <Link href="/shop" className={getLinkStyle('/shop')}>Shop</Link>
+                        {/* <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link> */}
+                        <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link>
+                        <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link>
                     </div>
                     
                     {/* Mobile Hamburger Button */}
@@ -200,7 +202,7 @@ export default function Header() {
                                     </Link>
                                 </div>
                             </div>
-                            
+                            <Link href="/shop" className={getMobileLinkStyle('/shop')}>Shop</Link>
                             <Link href="/date-night-box-subscription" className={getMobileLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link>
                             <Link href="/blog" className={getMobileLinkStyle('/blog')}>Blog</Link>
                             <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-800 hover:text-gray-900 text-sm font-medium py-1 border-b border-gray-100">Contact Us</Link>
