@@ -857,7 +857,21 @@ const Home = () => {
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Trending Date Ideas for Couples this Week</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {trendingIdeas.length === 0 && (
-              <div className="col-span-4 text-gray-500 text-center">No trending ideas this week.</div>
+                <div className="col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md flex flex-col h-full">
+                  <div className="relative h-48 w-full bg-gray-200 animate-pulse"></div>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <div className="flex items-center mb-2">
+                    <div className="bg-gray-200 animate-pulse h-5 w-16 rounded mb-2"></div>
+                    </div>
+                    <div className="bg-gray-200 animate-pulse h-6 w-4/5 rounded mb-1"></div>
+                    <div className="bg-gray-200 animate-pulse h-4 w-full rounded mb-1"></div>
+                    <div className="bg-gray-200 animate-pulse h-4 w-2/3 rounded mb-2"></div>
+                  </div>
+                  </div>
+                ))}
+                </div>
             )}
             {trendingIdeas.map((idea, index) => (
               <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
@@ -872,7 +886,9 @@ const Home = () => {
                     <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3" />
                   </div>
                   <div className="p-4 flex-1 flex flex-col">
-                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded mb-2">{idea.category}</span>
+                    <div className="flex items-center mb-2 flex-wrap gap-1">
+                      <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded mb-2">{idea.category}</span>
+                    </div>
                     <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors line-clamp-2">{idea.title}</h3>
                     <p className="text-sm text-gray-600 mb-2 line-clamp-2">{idea.description}</p>
                   </div>
@@ -885,7 +901,7 @@ const Home = () => {
 
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">All Date Ideas</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">All Date Ideas</h2>
           {/* Filters */}
           <div className="sticky top-12 z-20 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
             {/* Active filters chips - visible on mobile */}
@@ -979,92 +995,40 @@ const Home = () => {
             {/* Main filter controls - desktop only */}
             <div className="hidden md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
               {/* City filter - compact on mobile */}
-              {/* <div className="col-span-2 md:col-span-1">
+              <div className="col-span-2 md:col-span-1">
                 <CountryCitySelector
                   onCitySelect={(city) => handleCitySelect(city)}
                   defaultCity={userCity || undefined}
                   label="City"
                 />
-              </div> */}
+              </div>
 
-              {/* Price Range Filter - compact design */}
-              <div className="flex flex-row gap-2">
-                <div>
-                  {/* Search input */}
-                  <label className="text-xs text-gray-500 block mb-1">Search by title</label>
-                  <div className="search-container relative w-full max-w-xl" style={{ position: 'relative', zIndex: 50 }}>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search for date ideas..."
-                        value={searchQuery}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="w-full px-5 py-3 pl-12 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      />
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                        <SearchIcon className="h-5 w-5 text-gray-500" />
-                      </div>
-                    </div>
-                    {/* Search dropdown results */}
-                    {showSearchResults && searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
-                        {searchResults.map(idea => (
-                          <Link
-                            href={`/date-idea/${idea.slug}`}
-                            key={idea.id}
-                            onClick={() => handleSelectSearchResult(idea.slug)}
-                            className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                          >
-                            <div className="relative h-14 w-14 rounded-md overflow-hidden flex-shrink-0">
-                              <Image
-                                src={allDateIdeaImages[idea.slug] || '/placeholder.jpg'}
-                                alt={idea.title}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div className="ml-3 flex-grow">
-                              <h4 className="font-medium text-gray-800">{idea.title}</h4>
-                              <p className="text-xs text-gray-500">{idea.category}</p>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
-                        <p className="text-gray-600">No date ideas found. Try a different search term.</p>
-                      </div>
-                    )}
+
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Price</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+                    <DollarSign className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <select
+                    value={activeFilters.price}
+                    className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
+                    onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                  >
+                    <option value="all">All Prices</option>
+                    <option value="free">Free</option>
+                    <option value="affordable">Under $25</option>
+                    <option value="moderate">Under $50</option>
+                    <option value="high">Under $75</option>
+                    <option value="luxury">Above $100</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </div>
                 </div>
               </div>
-
-              <div>
-                  <label className="text-xs text-gray-500 block mb-1">Price</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-2">
-                      <DollarSign className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <select
-                      value={activeFilters.price}
-                      className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
-                      onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
-                    >
-                      <option value="all">All Prices</option>
-                      <option value="free">Free</option>
-                      <option value="affordable">Under $25</option>
-                      <option value="moderate">Under $50</option>
-                      <option value="high">Under $75</option>
-                      <option value="luxury">Above $100</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
 
               {/* Time of Day Filter - compact design */}
               <div className="hidden lg:block">

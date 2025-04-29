@@ -11,11 +11,23 @@ export interface CityItem {
   slug?: string;
 }
 
-// List of popular cities for showing initially
-export const POPULAR_CITIES = [
-  "New York", "London", "Paris", "Tokyo", "Sydney", 
-  "Los Angeles", "Berlin", "Rome", "Dubai", "Singapore",
-  "Barcelona", "Toronto", "Amsterdam", "Hong Kong", "San Francisco"
+// Updated list of popular cities with country codes for uniqueness
+export const POPULAR_CITIES: { name: string; countryCode: string }[] = [
+  { name: "New York", countryCode: "US" },
+  { name: "London", countryCode: "GB" },
+  { name: "Paris", countryCode: "FR" },
+  { name: "Tokyo", countryCode: "JP" },
+  { name: "Sydney", countryCode: "AU" },
+  { name: "Los Angeles", countryCode: "US" },
+  { name: "Berlin", countryCode: "DE" },
+  { name: "Rome", countryCode: "IT" },
+  { name: "Dubai", countryCode: "AE" },
+  { name: "Singapore", countryCode: "SG" },
+  { name: "Barcelona", countryCode: "ES" },
+  { name: "Toronto", countryCode: "CA" },
+  { name: "Amsterdam", countryCode: "NL" },
+  { name: "Hong Kong", countryCode: "HK" },
+  { name: "San Francisco", countryCode: "US" }
 ];
 
 // Re-export the City class for easy access
@@ -50,7 +62,8 @@ export async function getCityBySlug(slug: string): Promise<CityItem | null> {
         name: city.name,
         countryCode: city.countryCode,
         countryName,
-        isPopular: POPULAR_CITIES.includes(city.name),
+        // Check against the new POPULAR_CITIES structure
+        isPopular: POPULAR_CITIES.some(pc => pc.name === city.name && pc.countryCode === city.countryCode),
         id: `${city.name}-${city.countryCode}`,
         region: state?.name || undefined,
         slug: citySlug
@@ -108,13 +121,14 @@ export class CountryService {
       countryMap.set(country.isoCode, country.name);
     });
     
-    // Find the popular cities
+    // Find the popular cities based on the new structure
     const popularCities: CityItem[] = [];
     
-    for (const popularCityName of POPULAR_CITIES) {
-      const matchingCities = allCities.filter(city => city.name === popularCityName);
+    for (const popularCityInfo of POPULAR_CITIES) {
+      // Find the specific city instance from the library
+      const city = allCities.find(c => c.name === popularCityInfo.name && c.countryCode === popularCityInfo.countryCode);
       
-      matchingCities.forEach(city => {
+      if (city) {
         const countryName = countryMap.get(city.countryCode) || city.countryCode;
         popularCities.push({
           name: city.name,
@@ -124,7 +138,7 @@ export class CountryService {
           id: `${city.name}-${city.countryCode}-${countryName}`,
           slug: createSlug(city.name)
         });
-      });
+      }
     }
     
     return popularCities.sort((a, b) => a.name.localeCompare(b.name));

@@ -270,7 +270,7 @@ export default function CountryCitySelector({
             name: detectedCity.name,
             countryCode: detectedCity.countryCode,
             countryName: countryName,
-            isPopular: POPULAR_CITIES.includes(detectedCity.name),
+            isPopular: POPULAR_CITIES.some(pc => pc.name === detectedCity.name && pc.countryCode === detectedCity.countryCode),
             id: `${detectedCity.name}-${detectedCity.countryCode}-ip`
           };
           
@@ -430,10 +430,10 @@ export default function CountryCitySelector({
       });
 
       // Process popular cities
-      for (const popularCity of POPULAR_CITIES) {
+      for (const popularCityInfo of POPULAR_CITIES) {
         // Find all instances of this popular city across countries
         const allCities = City.getAllCities();
-        const matchingCities = allCities.filter(city => city.name === popularCity);
+        const matchingCities = allCities.filter(city => city.name === popularCityInfo.name && city.countryCode === popularCityInfo.countryCode);
         
         // Add each instance with its country info
         matchingCities.forEach((city, index) => {
@@ -442,7 +442,7 @@ export default function CountryCitySelector({
             name: city.name,
             countryCode: city.countryCode,
             countryName: countryName,
-            isPopular: true,
+            isPopular: POPULAR_CITIES.some(pc => pc.name === city.name && pc.countryCode === city.countryCode),
             id: generateUniqueId(city, countryName, index)
           });
         });
@@ -501,7 +501,7 @@ export default function CountryCitySelector({
             name: city.name,
             countryCode: city.countryCode,
             countryName: countryName,
-            isPopular: POPULAR_CITIES.includes(city.name),
+            isPopular: POPULAR_CITIES.some(pc => pc.name === city.name && pc.countryCode === city.countryCode),
             id: generateUniqueId(city, countryName, index)
           };
         })
@@ -662,7 +662,7 @@ export default function CountryCitySelector({
           classNamePrefix="react-select"
           components={{
             DropdownIndicator: () => (
-              <SearchIcon className="h-5 w-5 text-gray-500 mr-2" />
+              <SearchIcon className="h-1 w-1 text-gray-500 mr-2" />
             ),
           }}
         />
