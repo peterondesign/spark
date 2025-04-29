@@ -591,12 +591,12 @@ export default function DateIdeaDetails() {
 
         {/* Simplified Perplexity Results Section */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Find "{dateIdea.title}" Activities in {userCity || 'your city'}
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            {dateIdea.title} Activities in {userCity || 'your city'}
           </h2>
           {/* Show search action steps */}
           <p className="text-sm text-gray-500 mb-4">
-            Searching GetYourGuide, Google Maps, and Luma for the best options...
+            Searching GetYourGuide, Google Maps, and 100+ websites for the best options...
           </p>
           {perplexityLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
