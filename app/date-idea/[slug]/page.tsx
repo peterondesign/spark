@@ -591,9 +591,13 @@ export default function DateIdeaDetails() {
 
         {/* Simplified Perplexity Results Section */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Find "{dateIdea.title}" Activities in {userCity || 'your city'}
           </h2>
+          {/* Show search action steps */}
+          <p className="text-sm text-gray-500 mb-4">
+            Searching GetYourGuide, Google Maps, and Luma for the best options...
+          </p>
           {perplexityLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1, 2, 3].map(i => (
@@ -617,28 +621,51 @@ export default function DateIdeaDetails() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {perplexityEvents.map((item, idx) => (
-                <a 
-                  key={idx} 
-                  href={item.event_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  key={idx}
+                  href={item.event_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md flex flex-col"
                 >
-                  <div className="relative h-40 flex-shrink-0">
+                    <div className="relative h-40 flex-shrink-0">
                     <Image 
                       src={item.image_url || getPlaceholderImage(400, 200, item.title)} 
                       alt={item.title} 
                       fill 
                       className="object-cover" 
                     />
-                  </div>
+                    {item.event_url.includes('getyourguide.com') && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded absolute top-2 right-2">
+                      Recommended
+                      </span>
+                    )}
+                    </div>
                   <div className="p-4 flex flex-col flex-grow">
-                    <h4 className="font-semibold text-gray-800 mb-1 group-hover:text-rose-600 transition-colors text-sm leading-snug">
-                      {item.title}
-                    </h4>
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-semibold text-gray-800 group-hover:text-rose-600 transition-colors text-sm leading-snug">
+                        {item.title}
+                      </h4>
+                     
+                    </div>
                     <p className="text-gray-600 text-xs line-clamp-2 flex-grow">
                       {item.description}
                     </p>
+                    <div className="mt-2">
+                      <a
+                        href={item.event_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={
+                          `break-all hover:underline ` +
+                          (item.event_url.includes('getyourguide.com')
+                            ? 'text-base font-semibold text-blue-700'
+                            : 'text-sm text-blue-600')
+                        }
+                      >
+                        {item.event_url}
+                      </a>
+                    </div>
                   </div>
                 </a>
               ))}
