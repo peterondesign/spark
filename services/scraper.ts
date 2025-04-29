@@ -84,7 +84,7 @@ async function scrapeWithJsdom(url: string): Promise<ScrapedData> {
       const imageUrls = Array.from(imageElements)
         .map((img) => {
         // Resolve relative image URLs to absolute URLs
-        const src = imgElement.getAttribute('src');
+        const src = imageElements.getAttribute('src');
         if (!src) return '';
         if (!src) return '';
         try {
