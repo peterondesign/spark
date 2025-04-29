@@ -841,52 +841,60 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* Search input */}
-                <div className="search-container relative w-full max-w-xl" style={{ position: 'relative', zIndex: 50 }}>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search for date ideas..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="w-full px-5 py-3 pl-12 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                    />
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                      <SearchIcon className="h-5 w-5 text-gray-500" />
-                    </div>
+                {/* Trending Date Ideas cards */}
+                <div className="mb-8 w-full">
+                  <h3 className="text-xl font-medium text-white/90 mb-4">Trending Date Ideas</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {[...allDateIdeas]
+                      // Shuffle the array using Fisher-Yates algorithm
+                      .sort(() => Math.random() - 0.5)
+                      .slice(0, 3)
+                      .map((idea, index) => {
+                        // Define gradient colors based on category or index
+                        const gradients = [
+                          "from-rose-400 to-pink-600",
+                          "from-amber-400 to-orange-500",
+                          "from-purple-400 to-indigo-500",
+                          "from-blue-400 to-cyan-500",
+                          "from-green-400 to-emerald-500"
+                        ];
+
+                        // Pick emoji based on category or a default set
+                        const getEmoji = (category: string) => {
+                          const emojiMap: { [key: string]: string } = {
+                            "Dining": "🍽️",
+                            "Outdoor": "🌲",
+                            "Adventure": "🧗‍♀️",
+                            "Relaxation": "🧘‍♀️",
+                            "Entertainment": "🎭",
+                            "Art": "🎨",
+                            "Music": "🎵",
+                            "Culinary": "🍷",
+                            "Sports": "🏀",
+                            "Educational": "📚",
+                          };
+                          return emojiMap[category] || "💖";
+                        };
+
+                        return (
+                          <Link
+                            href={`/date-idea/${idea.slug}`}
+                            key={idea.id}
+                            className={`relative group cursor-pointer bg-gradient-to-br ${gradients[index % gradients.length]} p-4 rounded-2xl shadow-lg w-[calc(33.33%-0.75rem)] min-w-[100px] transition-all duration-300 hover:scale-105 hover:shadow-xl hover:-translate-y-1`}
+                          >
+                            <div className="backdrop-blur-sm bg-white/10 rounded-xl p-3 h-full flex flex-col items-center justify-center text-center">
+                              <span className="text-2xl mb-2">{getEmoji(idea.category)}</span>
+                              <h4 className="text-white font-medium text-sm line-clamp-2">{idea.title}</h4>
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-2xl transition-colors duration-300"></div>
+                            </div>
+                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-white/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          </Link>
+                        );
+                      })}
                   </div>
-                  {/* Search dropdown results */}
-                  {showSearchResults && searchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
-                      {searchResults.map(idea => (
-                        <Link
-                          href={`/date-idea/${idea.slug}`}
-                          key={idea.id}
-                          onClick={() => handleSelectSearchResult(idea.slug)}
-                          className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                        >
-                          <div className="relative h-14 w-14 rounded-md overflow-hidden flex-shrink-0">
-                            <Image
-                              src={allDateIdeaImages[idea.slug] || '/placeholder.jpg'}
-                              alt={idea.title}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="ml-3 flex-grow">
-                            <h4 className="font-medium text-gray-800">{idea.title}</h4>
-                            <p className="text-xs text-gray-500">{idea.category}</p>
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                  {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
-                      <p className="text-gray-600">No date ideas found. Try a different search term.</p>
-                    </div>
-                  )}
                 </div>
+
+
               </div>
 
               {/* Right column: Video */}
@@ -1016,31 +1024,83 @@ const Home = () => {
               </div> */}
 
               {/* Price Range Filter - compact design */}
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Price</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-2">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <select
-                    value={activeFilters.price}
-                    className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
-                  >
-                    <option value="all">All Prices</option>
-                    <option value="free">Free</option>
-                    <option value="affordable">Under $25</option>
-                    <option value="moderate">Under $50</option>
-                    <option value="high">Under $75</option>
-                    <option value="luxury">Above $100</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
+              <div className="flex flex-row gap-2">
+                <div>
+                  {/* Search input */}
+                  <label className="text-xs text-gray-500 block mb-1">Search by title</label>
+                  <div className="search-container relative w-full max-w-xl" style={{ position: 'relative', zIndex: 50 }}>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search for date ideas..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearch(e.target.value)}
+                        className="w-full px-5 py-3 pl-12 rounded-full bg-white/90 backdrop-blur-sm text-gray-800 shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                        <SearchIcon className="h-5 w-5 text-gray-500" />
+                      </div>
+                    </div>
+                    {/* Search dropdown results */}
+                    {showSearchResults && searchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl max-h-96 overflow-y-auto">
+                        {searchResults.map(idea => (
+                          <Link
+                            href={`/date-idea/${idea.slug}`}
+                            key={idea.id}
+                            onClick={() => handleSelectSearchResult(idea.slug)}
+                            className="flex items-center p-3 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                          >
+                            <div className="relative h-14 w-14 rounded-md overflow-hidden flex-shrink-0">
+                              <Image
+                                src={allDateIdeaImages[idea.slug] || '/placeholder.jpg'}
+                                alt={idea.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="ml-3 flex-grow">
+                              <h4 className="font-medium text-gray-800">{idea.title}</h4>
+                              <p className="text-xs text-gray-500">{idea.category}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {showSearchResults && searchResults.length === 0 && searchQuery.trim() !== '' && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl z-[60] p-4 text-center">
+                        <p className="text-gray-600">No date ideas found. Try a different search term.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+
+              <div>
+                  <label className="text-xs text-gray-500 block mb-1">Price</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+                      <DollarSign className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <select
+                      value={activeFilters.price}
+                      className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
+                      onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
+                    >
+                      <option value="all">All Prices</option>
+                      <option value="free">Free</option>
+                      <option value="affordable">Under $25</option>
+                      <option value="moderate">Under $50</option>
+                      <option value="high">Under $75</option>
+                      <option value="luxury">Above $100</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
 
               {/* Time of Day Filter - compact design */}
               <div className="hidden lg:block">
@@ -1212,7 +1272,7 @@ const Home = () => {
               <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
                 <div className="flex items-center justify-between p-4 border-b">
                   <h3 className="text-xl font-semibold">Filters</h3>
-                  <button 
+                  <button
                     onClick={() => setShowFilterModal(false)}
                     className="p-2 rounded-full hover:bg-gray-100"
                     aria-label="Close filters"
@@ -1220,7 +1280,7 @@ const Home = () => {
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                
+
                 <div className="overflow-y-auto flex-grow p-4 space-y-6">
                   {/* City filter */}
                   <div className="space-y-2">
@@ -1285,7 +1345,7 @@ const Home = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Categories */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Categories</label>
@@ -1304,7 +1364,7 @@ const Home = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Location Types */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Location Types</label>
@@ -1323,26 +1383,8 @@ const Home = () => {
                       ))}
                     </div>
                   </div>
-                  
-                  {/* Location Settings */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Location Settings</label>
-                    <div className="flex flex-wrap gap-2">
-                      {filterOptions.locationSettings.map((setting) => (
-                        <button
-                          key={setting}
-                          onClick={() => handleFilterChange('locationSettings', setting, !selectedFilters.locationSettings.includes(setting))}
-                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.locationSettings.includes(setting)
-                            ? 'bg-rose-100 text-rose-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          {setting}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
+
+
                   {/* Mood Paces */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Mood Pace</label>
@@ -1361,7 +1403,7 @@ const Home = () => {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* Mood Vibes */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Mood Vibe</label>
@@ -1381,7 +1423,7 @@ const Home = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-4 border-t flex justify-between">
                   <button
                     onClick={clearAllFilters}
@@ -1399,7 +1441,7 @@ const Home = () => {
               </div>
             </div>
           )}
-          
+
           {/* end of Filters */}
           {loading ? (
             <div className="h-96 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -1419,8 +1461,8 @@ const Home = () => {
                   slug: idea.slug,
                   image: idea.image || '/placeholder.svg?height=300&width=400',
                   timeOfDay: idea.timeOfDay || '',
-                  mood: typeof idea.mood === 'object' ? 
-                    `${idea.mood?.pace || ''} ${idea.mood?.vibe || ''}`.trim() : 
+                  mood: typeof idea.mood === 'object' ?
+                    `${idea.mood?.pace || ''} ${idea.mood?.vibe || ''}`.trim() :
                     (idea.mood || ''),
                   priceLevel: idea.priceLevel,
                   tips: idea.tips || '',
@@ -1561,28 +1603,28 @@ const Home = () => {
         <div className="container mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
           {/* Text Content */}
           <div className="text-center md:text-left">
-        <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
-        <p className="text-gray-700 leading-relaxed mb-6">
-          We created this site to solve the "what should we do tonight?" dilemma.
-          Finding fresh and exciting date ideas can be challenging, so we've curated a diverse collection to spark inspiration and create memorable moments.
-          Our goal is to help couples and friends strengthen their connections through unique and personalized experiences.
-        </p>
-        <p className="text-gray-700 leading-relaxed">
-          We believe that shared experiences are the cornerstone of strong relationships. That's why we're dedicated to providing you with a wide array
-          of date ideas, from cozy nights in to adventurous outings. Let us help you create lasting memories and strengthen your bond with those you care about most.
-        </p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
+            <p className="text-gray-700 leading-relaxed mb-6">
+              We created this site to solve the "what should we do tonight?" dilemma.
+              Finding fresh and exciting date ideas can be challenging, so we've curated a diverse collection to spark inspiration and create memorable moments.
+              Our goal is to help couples and friends strengthen their connections through unique and personalized experiences.
+            </p>
+            <p className="text-gray-700 leading-relaxed">
+              We believe that shared experiences are the cornerstone of strong relationships. That's why we're dedicated to providing you with a wide array
+              of date ideas, from cozy nights in to adventurous outings. Let us help you create lasting memories and strengthen your bond with those you care about most.
+            </p>
           </div>
 
           {/* Image */}
           <div className="rounded-lg overflow-hidden shadow-md">
-        <Image
-          src="/bikeriding.webp"
-          alt="Couple enjoying a date"
-          width={500}
-          height={300}
-          layout="responsive"
-          objectFit="cover"
-        />
+            <Image
+              src="/bikeriding.webp"
+              alt="Couple enjoying a date"
+              width={500}
+              height={300}
+              layout="responsive"
+              objectFit="cover"
+            />
           </div>
         </div>
       </section>
