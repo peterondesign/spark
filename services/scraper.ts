@@ -7,7 +7,19 @@ const { JSDOM } = require('jsdom');
  * @param {string} url - The URL to scrape
  * @returns {Promise<Object>} - Promise with the scraped data
  */
-async function scrapeWithJsdom(url) {
+interface ScrapedData {
+  title: string;
+  description: string;
+  content: string;
+  links: string[];
+  metadata: {
+    url: string;
+    scrapedAt: string;
+    imageUrls: string[];
+  };
+}
+
+async function scrapeWithJsdom(url: string): Promise<ScrapedData> {
   // Validate the URL
   try {
     new URL(url);
@@ -64,15 +76,16 @@ async function scrapeWithJsdom(url) {
     // Get all links from the page
     const linkElements = document.querySelectorAll('a');
     const links = Array.from(linkElements)
-      .map(link => link.href)
+      .map((link) => (link as HTMLAnchorElement).href)
       .filter(href => href && !href.startsWith('javascript:') && !href.startsWith('#'));
     
     // Get all images
-    const imageElements = document.querySelectorAll('img');
-    const imageUrls = Array.from(imageElements)
-      .map(img => {
+      const imageElements = document.querySelectorAll('img');
+      const imageUrls = Array.from(imageElements)
+        .map((img) => {
         // Resolve relative image URLs to absolute URLs
-        const src = img.getAttribute('src');
+        const src = imgElement.getAttribute('src');
+        if (!src) return '';
         if (!src) return '';
         try {
           return new URL(src, url).href;
@@ -96,7 +109,7 @@ async function scrapeWithJsdom(url) {
         imageUrls: Array.from(new Set(imageUrls)),
       },
     };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     throw new Error(`Failed to scrape website: ${errorMessage}`);
   }

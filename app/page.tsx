@@ -128,6 +128,8 @@ const Home = () => {
     setUserCity(laCity.name);
   };
 
+  const [trendingIdeas, setTrendingIdeas] = useState<DateIdea[]>([]);
+
   useEffect(() => {
     // Fetch only the 20 most popular cities initially
     const fetchPopularCities = async () => {
@@ -298,6 +300,8 @@ const Home = () => {
           });
 
           setAllDateIdeas(data);
+          // Filter trending ideas (assuming a boolean 'trending' field)
+          setTrendingIdeas(data.filter((idea: any) => idea.trending === true).slice(0, 4));
         }
 
         // Load images for all date ideas
@@ -822,79 +826,8 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
               {/* Left column: Title and search */}
               <div className="flex flex-col items-start justify-center">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">Date Ideas Near You</h1>
-                <p className="text-3xl mb-8">Personalised for you and your person</p>
-
-                {/* Steps */}
-                <div className="mb-8">
-                  <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center mr-3">
-                      <span className="text-white font-bold">1</span>
-                    </div>
-                    <p className="text-xl">We research things to do</p>
-                  </div>
-                  <div className="flex items-center mb-3">
-                    <div className="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center mr-3">
-                      <span className="text-white font-bold">2</span>
-                    </div>
-                    <p className="text-xl">We share links with the best things happening near you</p>
-                  </div>
-                </div>
-
-                {/* Trending Date Ideas cards */}
-                <div className="mb-8 w-full">
-                  <h3 className="text-xl font-medium text-white/90 mb-4">Trending Date Ideas</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {[...allDateIdeas]
-                      // Shuffle the array using Fisher-Yates algorithm
-                      .sort(() => Math.random() - 0.5)
-                      .slice(0, 3)
-                      .map((idea, index) => {
-                        // Define gradient colors based on category or index
-                        const gradients = [
-                          "from-rose-400 to-pink-600",
-                          "from-amber-400 to-orange-500",
-                          "from-purple-400 to-indigo-500",
-                          "from-blue-400 to-cyan-500",
-                          "from-green-400 to-emerald-500"
-                        ];
-
-                        // Pick emoji based on category or a default set
-                        const getEmoji = (category: string) => {
-                          const emojiMap: { [key: string]: string } = {
-                            "Dining": "🍽️",
-                            "Outdoor": "🌲",
-                            "Adventure": "🧗‍♀️",
-                            "Relaxation": "🧘‍♀️",
-                            "Entertainment": "🎭",
-                            "Art": "🎨",
-                            "Music": "🎵",
-                            "Culinary": "🍷",
-                            "Sports": "🏀",
-                            "Educational": "📚",
-                          };
-                          return emojiMap[category] || "💖";
-                        };
-
-                        return (
-                          <Link
-                            href={`/date-idea/${idea.slug}`}
-                            key={idea.id}
-                            className={`relative group cursor-pointer bg-gradient-to-br ${gradients[index % gradients.length]} p-4 rounded-2xl shadow-lg w-[calc(33.33%-0.75rem)] min-w-[100px] transition-all duration-300 hover:scale-105 hover:shadow-xl hover:-translate-y-1`}
-                          >
-                            <div className="backdrop-blur-sm bg-white/10 rounded-xl p-3 h-full flex flex-col items-center justify-center text-center">
-                              <span className="text-2xl mb-2">{getEmoji(idea.category)}</span>
-                              <h4 className="text-white font-medium text-sm line-clamp-2">{idea.title}</h4>
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-2xl transition-colors duration-300"></div>
-                            </div>
-                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-white/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          </Link>
-                        );
-                      })}
-                  </div>
-                </div>
-
-
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">Your Next Best Date Is Waiting</h1>
+                <p className="text-2xl mb-8">Get exciting date ideas — and a link to do them near you.</p>
               </div>
 
               {/* Right column: Video */}
@@ -919,9 +852,40 @@ const Home = () => {
         </div>
       </section>
 
+      <section className="py-10">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Trending Date Ideas for Couples this Week</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {trendingIdeas.length === 0 && (
+              <div className="col-span-4 text-gray-500 text-center">No trending ideas this week.</div>
+            )}
+            {trendingIdeas.map((idea, index) => (
+              <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
+                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow flex flex-col h-full">
+                  <div className="relative h-48 w-full">
+                    <Image
+                      src={allDateIdeaImages[idea.slug] || idea.image || '/placeholder.svg?height=300&width=400'}
+                      alt={idea.title}
+                      fill
+                      className="object-cover w-full h-full"
+                    />
+                    <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3" />
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded mb-2">{idea.category}</span>
+                    <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors line-clamp-2">{idea.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">{idea.description}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-
+        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">All Date Ideas</h2>
           {/* Filters */}
           <div className="sticky top-12 z-20 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
             {/* Active filters chips - visible on mobile */}
