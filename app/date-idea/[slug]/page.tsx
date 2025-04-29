@@ -45,25 +45,13 @@ interface CityItem {
   id: string;
 }
 
-// Perplexity result interfaces
-interface PerplexityResult {
+// Define the simplified Event interface based on the new API response
+interface EventItem {
+  image_url: string;
   title: string;
-  imageUrl: string;
-  sourceUrl: string;
-  section: 'GetYourGuide' | 'Google' | 'Luma';
+  description: string;
+  event_url: string;
 }
-
-interface PerplexitySections {
-  GetYourGuide: PerplexityResult[];
-  Google: PerplexityResult[];
-  Luma: PerplexityResult[];
-}
-
-const initialSections: PerplexitySections = {
-  GetYourGuide: [],
-  Google: [],
-  Luma: [],
-};
 
 export default function DateIdeaDetails() {
   const params = useParams<{ slug: string }>();
@@ -80,8 +68,8 @@ export default function DateIdeaDetails() {
   const [loadingOtherIdeas, setLoadingOtherIdeas] = useState(false);
   const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
 
-  // Add state for Perplexity results
-  const [perplexitySections, setPerplexitySections] = useState<PerplexitySections>(initialSections);
+  // Add state for the simplified events array
+  const [perplexityEvents, setPerplexityEvents] = useState<EventItem[]>([]);
   const [perplexityLoading, setPerplexityLoading] = useState(false);
   const [perplexityError, setPerplexityError] = useState<string | null>(null);
 
@@ -335,26 +323,31 @@ export default function DateIdeaDetails() {
     }
   };
 
-  // Fetch Perplexity results
+  // Fetch Perplexity results (updated)
   useEffect(() => {
     const fetchPerplexityResults = async () => {
       if (!dateIdea || !userCity) return;
       setPerplexityLoading(true);
       setPerplexityError(null);
-      setPerplexitySections(initialSections);
+      setPerplexityEvents([]); // Clear previous events
       try {
         const response = await fetch('/api/perplexity-date-ideas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // Send both city and date idea title
           body: JSON.stringify({ city: userCity, dateIdeaTitle: dateIdea.title }), 
         });
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to fetch results');
+          throw new Error(errorData.error || 'Failed to fetch results'); // Use error field from response
         }
         const data = await response.json();
-        setPerplexitySections(data.sections || initialSections);
+        // Expecting { events: [...] }
+        if (data && Array.isArray(data.events)) {
+          setPerplexityEvents(data.events);
+        } else {
+          console.warn("Received unexpected data structure from Perplexity API:", data);
+          setPerplexityEvents([]); // Set to empty array if structure is wrong
+        }
       } catch (err) {
         setPerplexityError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
@@ -596,12 +589,14 @@ export default function DateIdeaDetails() {
         {/* Location selector */}
         <LocationSelector />
 
-        {/* Perplexity Results Section */}
+        {/* Simplified Perplexity Results Section */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Find Date Ideas in {userCity || 'your city'}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Find "{dateIdea.title}" Activities in {userCity || 'your city'}
+          </h2>
           {perplexityLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1,2,3].map(i => (
+              {[1, 2, 3].map(i => (
                 <div key={i} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
                   <div className="h-40 bg-gray-200"></div>
                   <div className="p-4">
@@ -612,72 +607,42 @@ export default function DateIdeaDetails() {
               ))}
             </div>
           ) : perplexityError ? (
-            <div className="text-red-600">{perplexityError}</div>
+            <div className="text-red-600 bg-red-50 border border-red-200 rounded p-3">
+              Error finding activities: {perplexityError}
+            </div>
+          ) : perplexityEvents.length === 0 ? (
+            <div className="text-gray-500 bg-gray-50 border border-gray-200 rounded p-3">
+              No specific activities found for "{dateIdea.title}" in {userCity || 'your city'} via our partners.
+            </div>
           ) : (
-            <>
-              {/* GetYourGuide Results */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">GetYourGuide Results</h3>
-                {perplexitySections.GetYourGuide.length === 0 ? (
-                  <div className="text-gray-500">No results found</div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {perplexitySections.GetYourGuide.map((item, idx) => (
-                      <a key={idx} href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-                        <div className="relative h-40">
-                          <Image src={item.imageUrl || getPlaceholderImage(400,200,item.title)} alt={item.title} fill className="object-cover" />
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-semibold text-gray-800 mb-2 group-hover:text-rose-600 transition-colors">{item.title}</h4>
-                        </div>
-                      </a>
-                    ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {perplexityEvents.map((item, idx) => (
+                <a 
+                  key={idx} 
+                  href={item.event_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md flex flex-col"
+                >
+                  <div className="relative h-40 flex-shrink-0">
+                    <Image 
+                      src={item.image_url || getPlaceholderImage(400, 200, item.title)} 
+                      alt={item.title} 
+                      fill 
+                      className="object-cover" 
+                    />
                   </div>
-                )}
-              </div>
-              {/* Google Results */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Google Maps Results</h3>
-                {perplexitySections.Google.length === 0 || (perplexitySections.Google[0]?.title === "No results found") ? (
-                  <div className="text-gray-500">No results found</div>
-                ) : (
-                  <ul className="list-disc list-inside space-y-1">
-                    {perplexitySections.Google.map((item, idx) => (
-                      <li key={idx}>
-                        <a 
-                          href={item.sourceUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline"
-                        >
-                          Search for "{item.title}" on Google Maps
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {/* Luma Results */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Luma Results</h3>
-                {perplexitySections.Luma.length === 0 ? (
-                  <div className="text-gray-500">No results found</div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {perplexitySections.Luma.map((item, idx) => (
-                      <a key={idx} href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-                        <div className="relative h-40">
-                          <Image src={item.imageUrl || getPlaceholderImage(400,200,item.title)} alt={item.title} fill className="object-cover" />
-                        </div>
-                        <div className="p-4">
-                          <h4 className="font-semibold text-gray-800 mb-2 group-hover:text-rose-600 transition-colors">{item.title}</h4>
-                        </div>
-                      </a>
-                    ))}
+                  <div className="p-4 flex flex-col flex-grow">
+                    <h4 className="font-semibold text-gray-800 mb-1 group-hover:text-rose-600 transition-colors text-sm leading-snug">
+                      {item.title}
+                    </h4>
+                    <p className="text-gray-600 text-xs line-clamp-2 flex-grow">
+                      {item.description}
+                    </p>
                   </div>
-                )}
-              </div>
-            </>
+                </a>
+              ))}
+            </div>
           )}
         </section>
 

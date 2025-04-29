@@ -1,31 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+// Assuming imageService is accessible from here, adjust path if needed
+import { getImageUrl, getPlaceholderImage } from '@/app/utils/imageService'; 
 
-interface DateIdea {
+// Define the expected event structure from Perplexity
+interface PerplexityEvent {
+  image_url?: string; // Make optional as it might be missing
   title: string;
-  imageUrl: string;
-  sourceUrl: string;
-  section?: string;
+  description: string;
+  event_url: string;
 }
 
-// Define the type for the sections result
-interface PerplexityResult {
-  title: string;
-  imageUrl: string;
-  sourceUrl: string;
-  section: 'GetYourGuide' | 'Google' | 'Luma';
-}
-
-interface DateSections {
-  GetYourGuide: PerplexityResult[];
-  Google: PerplexityResult[];
-  Luma: PerplexityResult[];
+// Define the expected overall JSON structure from Perplexity
+interface PerplexityResponse {
+  events: PerplexityEvent[];
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { city } = await req.json();
-    if (!city) {
-      return NextResponse.json({ error: 'City is required' }, { status: 400 });
+    const { city, dateIdeaTitle } = await req.json(); // Get dateIdeaTitle as well
+    if (!city || !dateIdeaTitle) {
+      return NextResponse.json({ error: 'City and dateIdeaTitle are required' }, { status: 400 });
     }
 
     const apiKey = process.env.PERPLEXITY_API_KEY;
@@ -33,15 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Perplexity API key not set' }, { status: 500 });
     }
 
-    // Updated Perplexity prompt
-    const prompt = `You are a search assistant specialized in finding *date ideas* based on a city input: ${city}.
-
-Task:
-- Search GetYourGuide (site:getyourguide.com) for "best date ideas in ${city}" or "romantic activities in ${city}". Extract Title, Image URL (if available, otherwise state "Not available"), and Source URL for each result. List under "## GetYourGuide Results".
-- Search Google Maps for relevant date idea locations in ${city} (e.g., "romantic restaurants", "parks", "museums", "cinemas", "theaters"). Provide the Google Maps search URL for each category found. List under "## Google Maps Results". Example URL format: https://www.google.com/maps/search/romantic+restaurants+${city}/
-- Search Luma (https://lu.ma/${city.toLowerCase().replace(/\s+/g, '-')}) for relevant upcoming events suitable for dates (e.g., workshops, concerts, meetups). Extract Title, Image URL (if available), and Source URL. List under "## Luma Results".
-- If no results are found for a section, clearly state: "No results found".
-- Output results cleanly in markdown format with the specified section headers.`;
+    // Simplified Perplexity prompt requesting JSON
+    const prompt = `Find me "${dateIdeaTitle}" events or related activities in ${city} on GetYourGuide, Google Maps, or Luma. Return results as a JSON object containing a single key "events" which is an array of objects. Each object in the array should have the following keys: "image_url" (string, use an empty string "" if no image is found), "title" (string), "description" (string), and "event_url" (string). Output ONLY the JSON object and nothing else.`;
 
     // Call Perplexity API
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -49,103 +36,151 @@ Task:
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json', // Request JSON response
       },
       body: JSON.stringify({
-        model: 'sonar-pro', // Using sonar as per previous context
+        model: 'sonar-pro', 
         messages: [
-          { role: 'system', content: 'You are a helpful assistant outputting markdown.' },
+          { role: 'system', content: 'You are an AI assistant that ONLY outputs valid JSON in the specified format. Respond with only the JSON object and nothing else.' },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 1500, // Increased slightly for potentially longer markdown
-        temperature: 0.2,
+        max_tokens: 2000, // Adjust as needed
+        temperature: 0.0, // Force deterministic JSON output
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Perplexity API Error:", errorText);
+      console.error("Perplexity API Error:", response.status, errorText);
       return NextResponse.json({ error: `Perplexity API Error: ${response.statusText}`, details: errorText }, { status: response.status });
     }
 
     const data = await response.json();
-    // Log the raw Perplexity response for debugging
-    console.log('Perplexity raw response:', JSON.stringify(data, null, 2));
+    const rawContent = data.choices?.[0]?.message?.content;
 
-    // --- Markdown Parsing Logic ---
-    let sections: DateSections = { GetYourGuide: [], Google: [], Luma: [] };
-    const content = data.choices?.[0]?.message?.content || '';
+    if (!rawContent) {
+        console.error("Perplexity response missing content:", data);
+        return NextResponse.json({ error: 'Perplexity returned empty content' }, { status: 500 });
+    }
 
-    const parseSection = (sectionTitle: 'GetYourGuide' | 'Google' | 'Luma', regex: RegExp): PerplexityResult[] => {
-        const sectionHeader = `## ${sectionTitle}${sectionTitle === 'Google' ? ' Maps' : ''} Results`;
-        const sectionMatch = content.split(sectionHeader);
-        if (sectionMatch.length < 2) return [];
-
-        const sectionContent = sectionMatch[1].split('\n## ')[0]; // Get content until the next section or end
-        const results: PerplexityResult[] = [];
-        let match;
-
-        while ((match = regex.exec(sectionContent)) !== null) {
-            // Handle potential variations in markdown list format (e.g., '-', '*')
-            const title = match[1]?.trim() || 'Unknown Title';
-            // Handle "Not available" for image URL
-            const imageUrl = match[2]?.trim();
-            const sourceUrl = match[3]?.trim();
-
-            results.push({
-                title: title,
-                // Use placeholder or empty string if image URL is "Not available" or missing
-                imageUrl: (imageUrl && !/not available/i.test(imageUrl)) ? imageUrl : '',
-                sourceUrl: sourceUrl || '',
-                section: sectionTitle,
-            });
+    // --- JSON Parsing Logic ---
+    let parsedResponse: PerplexityResponse | null = null;
+    try {
+        // Attempt 1: Parse the content directly as JSON
+        parsedResponse = JSON.parse(rawContent);
+        if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
+            console.warn("Parsed JSON, but invalid structure (Attempt 1):");
+            parsedResponse = null; // Reset if structure is wrong
         }
-        return results;
-    };
+    } catch (parseError) {
+        console.warn("Failed direct JSON parse (Attempt 1):", parseError);
+        // Attempt 2: Try to extract JSON from potential markdown code blocks
+        const jsonMatchMarkdown = rawContent.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatchMarkdown && jsonMatchMarkdown[1]) {
+            try {
+                parsedResponse = JSON.parse(jsonMatchMarkdown[1]);
+                 if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
+                    console.warn("Parsed JSON from markdown, but invalid structure (Attempt 2):");
+                    parsedResponse = null; // Reset if structure is wrong
+                }
+            } catch (fallbackParseError) {
+                 console.warn("Failed to parse fallback JSON from markdown (Attempt 2):", fallbackParseError);
+            }
+        }
 
-    // Regex for GetYourGuide and Luma (Title, Image URL, Source URL)
-    // Handles optional numbering/bullets, optional image URL line
-    const standardRegex = /^[\*\-\d]+\.\s+\*\*(.*?)\*\*(?:\n\s+-\s+Image URL:\s*(.*?))?\n\s+-\s+Source URL:\s*\[?(.+?)\]?\(?\3?\)?/gm;
-
-    // Regex for Google Maps (Description/Category, Google Maps URL)
-    // Assumes a format like: - **Category:** [URL](URL) or similar
-    const googleMapsRegex = /-\s+\*\*(.*?):\*\*\s+(?:\(?\[?(.+?)\]?\)?)/gm;
-
-
-    sections.GetYourGuide = parseSection('GetYourGuide', standardRegex);
-
-    // Custom parsing for Google Maps URLs
-    const googleSectionHeader = "## Google Maps Results";
-    const googleSectionMatch = content.split(googleSectionHeader);
-    if (googleSectionMatch.length >= 2) {
-        const googleSectionContent = googleSectionMatch[1].split('\n## ')[0];
-        let googleMatch;
-        while ((googleMatch = googleMapsRegex.exec(googleSectionContent)) !== null) {
-            sections.Google.push({
-                title: googleMatch[1]?.trim() || 'Google Maps Search',
-                imageUrl: '', // No image for Google Maps links
-                sourceUrl: googleMatch[2]?.trim() || '',
-                section: 'Google',
-            });
+        // Attempt 3: Try to extract JSON object embedded in text if previous attempts failed
+        if (!parsedResponse) {
+            const jsonMatchEmbedded = rawContent.match(/{\s*"events"\s*:\s*\[[\s\S]*?\]\s*}/);
+            if (jsonMatchEmbedded && jsonMatchEmbedded[0]) {
+                try {
+                    parsedResponse = JSON.parse(jsonMatchEmbedded[0]);
+                    if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
+                        console.warn("Parsed embedded JSON, but invalid structure (Attempt 3):");
+                        parsedResponse = null; // Reset if structure is wrong
+                    }
+                } catch (embeddedParseError) {
+                    console.warn("Failed to parse embedded JSON (Attempt 3):", embeddedParseError);
+                }
+            }
         }
     }
 
-
-    sections.Luma = parseSection('Luma', standardRegex);
-
-    // Check if sections are empty and add "No results found" placeholder if needed
-    if (sections.GetYourGuide.length === 0 && content.includes("## GetYourGuide Results\n\nNo results found")) {
-        sections.GetYourGuide.push({ title: "No results found", imageUrl: "", sourceUrl: "", section: 'GetYourGuide' });
-    }
-     if (sections.Google.length === 0 && content.includes("## Google Maps Results\n\nNo results found")) {
-        sections.Google.push({ title: "No results found", imageUrl: "", sourceUrl: "", section: 'Google' });
-    }
-     if (sections.Luma.length === 0 && content.includes("## Luma Results\n\nNo results found")) {
-        sections.Luma.push({ title: "No results found", imageUrl: "", sourceUrl: "", section: 'Luma' });
+    // Check if we successfully parsed a valid structure
+    if (!parsedResponse) {
+        console.error("Failed to extract valid JSON response from Perplexity after all attempts.");
+        console.error("Raw content received:", rawContent);
+        return NextResponse.json({ error: 'Failed to parse valid JSON response from Perplexity', details: rawContent }, { status: 500 });
     }
 
+    // --- Image URL Handling & Affiliate Link Appending ---
+    const affiliateParams = "partner_id=5QQHAHP&utm_medium=online_publisher";
 
-    // Return both parsed sections and the raw Perplexity response
-    return NextResponse.json({ sections, rawPerplexityResponse: data });
+    const processedEvents = await Promise.all(
+        parsedResponse.events.map(async (event) => {
+            let imageUrl = event.image_url;
+            let eventUrl = event.event_url;
+
+            // Normalize provided imageUrl: if it's not a valid URL, reset to fallback logic
+            if (imageUrl && !/^https?:\/\//.test(imageUrl)) {
+                imageUrl = '';
+            }
+
+            // Append affiliate parameters to GetYourGuide links
+            if (eventUrl && eventUrl.startsWith('https://www.getyourguide.com/')) {
+                if (eventUrl.includes('?')) {
+                    eventUrl += `&${affiliateParams}`;
+                } else {
+                    eventUrl += `?${affiliateParams}`;
+                }
+            }
+
+            // If image_url is missing or empty, try to fetch one
+            if (!imageUrl || imageUrl.trim() === "") {
+                // First, attempt to scrape the event page for og:image
+                try {
+                    const pageRes = await fetch(eventUrl);
+                    if (pageRes.ok) {
+                        const html = await pageRes.text();
+                        const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+                        if (ogMatch && ogMatch[1]) {
+                            imageUrl = ogMatch[1];
+                        }
+                    }
+                } catch (scrapeError) {
+                    console.warn(`Failed to scrape OG image for "${event.title}":`, scrapeError);
+                }
+
+                // If still no imageUrl, use Pexels fallback
+                if (!imageUrl || imageUrl.trim() === "") {
+                    try {
+                        const imageQuery = `${event.title} ${city}`;
+                        imageUrl = await getImageUrl(imageQuery, event.title, 400, 200);
+                    } catch (imageError) {
+                        console.warn(`Failed to fetch image for "${event.title}":`, imageError);
+                        imageUrl = getPlaceholderImage(400, 200, event.title);
+                    }
+                }
+            } else {
+                 // Ensure the provided image_url is treated as the source
+                 // No action needed here, just use the provided imageUrl
+            }
+
+            // If after attempting fetch, imageUrl is still empty or just a placeholder path was generated by getImageUrl,
+            // ensure it's the placeholder path.
+            if (!imageUrl || imageUrl.trim() === "" || imageUrl.startsWith('/placeholder.svg')) {
+                 imageUrl = getPlaceholderImage(400, 200, event.title); // Ensure placeholder path format
+            }
+
+            return { 
+                ...event, 
+                image_url: imageUrl, // This will be the external URL or the placeholder path
+                event_url: eventUrl // Updated URL with affiliate params if applicable
+            };
+        })
+    );
+
+    // Return the processed events array
+    return NextResponse.json({ events: processedEvents });
 
   } catch (err) {
     console.error("API Route Error:", err);
