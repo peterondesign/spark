@@ -52,14 +52,7 @@ export default function GridView({
   onFilterChange
 }: GridViewProps) {
   // Shuffle dateIdeas synchronously using useMemo to avoid visible reorders
-  const shuffledIdeas = useMemo(() => {
-    const shuffled = [...dateIdeas];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }, [dateIdeas]);
+
 
   // Helper function to display price level
   const renderPriceLevel = (level: number | string | undefined) => {
@@ -88,7 +81,7 @@ export default function GridView({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {shuffledIdeas.slice(0, visibleIdeas).map((idea) => (
+        {dateIdeas.slice(0, visibleIdeas).map((idea) => (
           <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group relative">
             <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
               <div className="relative">
@@ -123,7 +116,7 @@ export default function GridView({
         ))}
       </div>
 
-      {shuffledIdeas.length > visibleIdeas && (
+      {dateIdeas.length > visibleIdeas && (
         <div className="text-center mt-8">
           <button
             onClick={onLoadMore}

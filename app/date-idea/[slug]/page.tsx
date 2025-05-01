@@ -615,49 +615,84 @@ export default function DateIdeaDetails() {
             <div className="text-red-600 bg-red-50 border border-red-200 rounded p-3">
               Error finding activities: {perplexityError}
             </div>
-          ) : perplexityEvents.length === 0 ? (
-            <div className="text-gray-500 bg-gray-50 border border-gray-200 rounded p-3">
-              No specific activities found for "{dateIdea.title}" in {userCity || 'your city'} via our partners.
-            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {perplexityEvents.map((item, idx) => (
-                <a
-                  key={idx}
-                  href={item.event_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md flex flex-col"
-                >
-                  <div className="relative h-40 flex-shrink-0">
-                    <Image 
-                      src={getValidImage(item.image_url, item.title)} 
-                      alt={item.title} 
-                      fill 
-                      className="object-cover" 
-                    />
-                    {(item.event_url.includes('getyourguide.com') || item.event_url.includes('getyourguide.co.uk')) && (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded absolute top-2 right-2">
-                        Recommended
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-semibold text-gray-800 group-hover:text-rose-600 transition-colors text-sm leading-snug">
-                        {item.title}
-                      </h4>
-                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-                        {item.source}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 text-xs line-clamp-2 flex-grow">
-                      {item.description}
-                    </p>
-                  </div>
-                </a>
-              ))}
-            </div>
+            <>
+              {/* --- Recommended GetYourGuide Section for this date idea --- */}
+              {(() => {
+                const gygEvents = perplexityEvents.filter(e => e.event_url && e.event_url.toLowerCase().includes('getyourguide'));
+                const otherEvents = perplexityEvents.filter(e => !e.event_url || !e.event_url.toLowerCase().includes('getyourguide'));
+                if (gygEvents.length > 0) {
+                  return (
+                    <section className="mt-10">
+                      <h3 className="text-xl font-bold mb-4 text-gray-900">Recommended Experiences</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
+                        {gygEvents.map((item, idx) => (
+                          <a
+                            key={idx}
+                            href={item.event_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-2xl border-4 border-rose-400/80 shadow-xl bg-white p-4 animate-pulse-glow flex flex-col"
+                          >
+                            <div className="relative h-40 mb-3">
+                              <Image src={getValidImage(item.image_url, item.title)} alt={item.title} fill className="object-cover rounded-xl" />
+                            </div>
+                            <h4 className="font-semibold text-lg text-rose-700 mb-2">{item.title}</h4>
+                            <p className="text-gray-600 mb-2">{item.description}</p>
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded mb-2 self-start">Recommended</span>
+                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded self-start">GetYourGuide</span>
+                          </a>
+                        ))}
+                      </div>
+                      <div className="flex items-center my-8">
+                        <div className="flex-grow border-t border-gray-300"></div>
+                        <span className="mx-4 text-gray-400 font-semibold uppercase text-xs tracking-widest">Other Options</span>
+                        <div className="flex-grow border-t border-gray-300"></div>
+                      </div>
+                    </section>
+                  );
+                } else if (perplexityEvents.length > 0) {
+                  return (
+                    <section className="mt-10">
+                      <div className="mb-10 text-center text-gray-700 text-lg">
+                        <span className="block mb-4">We couldn't find our recommended places, but try these others:</span>
+                        <div className="flex items-center my-8">
+                          <div className="flex-grow border-t border-gray-300"></div>
+                          <span className="mx-4 text-gray-400 font-semibold uppercase text-xs tracking-widest">Other Options</span>
+                          <div className="flex-grow border-t border-gray-300"></div>
+                        </div>
+                      </div>
+                    </section>
+                  );
+                }
+                return null;
+              })()}
+              {/* --- Other Options Section --- */}
+              {perplexityEvents.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {perplexityEvents.filter(e => !e.event_url || !e.event_url.toLowerCase().includes('getyourguide')).map((item, idx) => (
+                    <a
+                      key={idx}
+                      href={item.event_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md flex flex-col"
+                    >
+                      <div className="relative h-40 flex-shrink-0 mb-3">
+                        <Image src={getValidImage(item.image_url, item.title)} alt={item.title} fill className="object-cover rounded-xl" />
+                      </div>
+                      <div className="p-4 flex flex-col flex-grow">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-semibold text-gray-800 group-hover:text-rose-600 transition-colors text-sm leading-snug">{item.title}</h4>
+                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">{item.source}</span>
+                        </div>
+                        <p className="text-gray-600 text-xs line-clamp-2 flex-grow">{item.description}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </section>
 

@@ -25,6 +25,7 @@ import CountryCitySelector, { CityItem } from "./components/CountryCitySelector"
 import { POPULAR_CITIES } from "../utils/cityService";
 import Script from 'next/script';
 import { TikTokEmbed } from 'react-social-media-embed';
+import { shuffleArray } from "../utils/arrayUtils"; // Utility function to shuffle arrays
 
 // DO NOT export metadata from this client component - it's now moved to metadata.ts
 
@@ -46,6 +47,7 @@ interface DateIdea {
   mood?: string | { pace?: string; vibe?: string }; // Updated property
   timeOfDay?: string; // Added property
   longDescription?: string;
+  event_url?: string; // Added property for event URL
 }
 
 const Home = () => {
@@ -265,44 +267,12 @@ const Home = () => {
         }
 
         if (data) {
-          // Extract all unique filter values from data
-          const categories = new Set<string>();
-          const locationTypes = new Set<string>();
-          const locationSettings = new Set<string>();
-          const moodPaces = new Set<string>();
-          const moodVibes = new Set<string>();
+          // Shuffle the data before setting it to ensure randomization is invisible
+          const shuffledData = shuffleArray(data);
+          setAllDateIdeas(shuffledData);
 
-          data.forEach(idea => {
-            // Extract category
-            if (idea.category) {
-              categories.add(idea.category);
-            }
-
-            // Extract location type and setting
-            if (typeof idea.location === 'object' && idea.location) {
-              if (idea.location.type) locationTypes.add(idea.location.type);
-              if (idea.location.setting) locationSettings.add(idea.location.setting);
-            }
-
-            // Extract mood pace and vibe
-            if (typeof idea.mood === 'object' && idea.mood) {
-              if (idea.mood.pace) moodPaces.add(idea.mood.pace);
-              if (idea.mood.vibe) moodVibes.add(idea.mood.vibe);
-            }
-          });
-
-          // Set filter options
-          setFilterOptions({
-            categories: Array.from(categories).sort(),
-            locationTypes: Array.from(locationTypes).sort(),
-            locationSettings: Array.from(locationSettings).sort(),
-            moodPaces: Array.from(moodPaces).sort(),
-            moodVibes: Array.from(moodVibes).sort()
-          });
-
-          setAllDateIdeas(data);
           // Filter trending ideas (assuming a boolean 'trending' field)
-          setTrendingIdeas(data.filter((idea: any) => idea.trending === true).slice(0, 4));
+          setTrendingIdeas(shuffledData.filter((idea: any) => idea.trending === true).slice(0, 4));
         }
 
         // Load images for all date ideas

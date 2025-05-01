@@ -222,11 +222,25 @@ export async function POST(req: NextRequest) {
     });
     const combined = Array.from(uniqueMap.values());
 
-    // Filter valid events then sort recommended first
+    // Filter valid events
     const valid = combined.filter(e => e.title && e.description && e.event_url);
-    const recommended = valid.filter(e => e.source === 'GetYourGuide');
-    const others = valid.filter(e => e.source !== 'GetYourGuide');
-    const ordered = [...recommended, ...others];
+
+    // Enhanced GetYourGuide prioritization: boost GYG events that match city or date idea in URL or title
+    const cityLower = city.toLowerCase();
+    const ideaLower = dateIdeaTitle.toLowerCase();
+    const gygStrong = valid.filter(e =>
+      e.event_url && e.event_url.toLowerCase().includes('getyourguide') &&
+      (e.event_url.toLowerCase().includes(cityLower) ||
+       e.event_url.toLowerCase().includes(ideaLower) ||
+       (e.title && (e.title.toLowerCase().includes(cityLower) || e.title.toLowerCase().includes(ideaLower)))
+      )
+    );
+    const gygOther = valid.filter(e =>
+      e.event_url && e.event_url.toLowerCase().includes('getyourguide') &&
+      !gygStrong.includes(e)
+    );
+    const notGyg = valid.filter(e => !e.event_url || !e.event_url.toLowerCase().includes('getyourguide'));
+    const ordered = [...gygStrong, ...gygOther, ...notGyg];
 
     // Return the processed events array
     return NextResponse.json({ events: ordered });
