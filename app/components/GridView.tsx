@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import SaveButton from './SaveButton';
+import { Hash } from 'lucide-react';
 
 // Export the DateIdea interface so it can be imported elsewhere
 export interface DateIdea {
@@ -50,22 +51,31 @@ export default function GridView({
   selectedFilters,
   onFilterChange
 }: GridViewProps) {
+  // Shuffle dateIdeas synchronously using useMemo to avoid visible reorders
+  const shuffledIdeas = useMemo(() => {
+    const shuffled = [...dateIdeas];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }, [dateIdeas]);
+
   // Helper function to display price level
   const renderPriceLevel = (level: number | string | undefined) => {
     if (level === undefined) return null;
-    
+
     const priceText = typeof level === 'string' 
       ? level 
       : level === 1 ? 'Low' : level === 2 ? 'Moderate' : level === 3 ? 'High' : 'Luxury';
-      
+
     return (
       <span className="bg-blue-100 text-blue-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded">
         {priceText}
       </span>
     );
   };
-  
-  
+
   // Check if we have any data to display
   if (dateIdeas.length === 0) {
     return (
@@ -75,15 +85,11 @@ export default function GridView({
     );
   }
 
-  
-  
   return (
     <>
-     
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {dateIdeas.slice(0, visibleIdeas).map((idea, index) => (
-          <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
+        {shuffledIdeas.slice(0, visibleIdeas).map((idea) => (
+          <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group relative">
             <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
               <div className="relative">
                 <Image
@@ -92,7 +98,7 @@ export default function GridView({
                   width={400}
                   height={300}
                   className="w-full h-48 object-cover"
-                  loading={index < 4 ? "eager" : "lazy"} // Only load top 4 images eagerly
+                  loading="lazy"
                 />
                 <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3" />
               </div>
@@ -117,7 +123,7 @@ export default function GridView({
         ))}
       </div>
 
-      {dateIdeas.length > visibleIdeas && (
+      {shuffledIdeas.length > visibleIdeas && (
         <div className="text-center mt-8">
           <button
             onClick={onLoadMore}

@@ -8,6 +8,7 @@ interface PerplexityEvent {
   title: string;
   description: string;
   event_url: string;
+  source?: string; // add source field
 }
 
 // Define the expected overall JSON structure from Perplexity
@@ -177,21 +178,40 @@ export async function POST(req: NextRequest) {
                  imageUrl = getPlaceholderImage(400, 200, event.title); // Ensure placeholder path format
             }
 
+            // Determine source from URL
+            let source = 'Other';
+            if (eventUrl.includes('getyourguide.com')) {
+                source = 'GetYourGuide';
+            } else if (eventUrl.includes('google.com/maps')) {
+                source = 'Google Maps';
+            } else if (eventUrl.includes('luma.org')) {
+                source = 'Luma';
+            }
+
             return { 
                 ...event, 
                 image_url: imageUrl, // This will be the external URL or the placeholder path
-                event_url: eventUrl // Updated URL with affiliate params if applicable
+                event_url: eventUrl, // Updated URL with affiliate params if applicable
+                source // include source
             };
         })
     );
 
     // Map Google Places results
     const googleEvents = (placesData.results || []).map((place: any) => {
+      const photoRef = place.photos && place.photos[0]?.photo_reference;
+      const imageUrl = photoRef
+        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=${googleApiKey}`
+        : place.icon || '';
+      const url = place.place_id
+        ? `https://www.google.com/maps/place/?q=place_id:${place.place_id}`
+        : '';
       return {
-        image_url: '', // Placeholder, as Google Places API doesn't provide images directly
+        image_url: imageUrl,
         title: place.name,
         description: place.formatted_address || '',
-        event_url: place.url || '',
+        event_url: url,
+        source: 'Google Maps' // add source
       };
     });
 
@@ -204,8 +224,8 @@ export async function POST(req: NextRequest) {
 
     // Filter valid events then sort recommended first
     const valid = combined.filter(e => e.title && e.description && e.event_url);
-    const recommended = valid.filter(e => e.event_url.includes('getyourguide.com'));
-    const others = valid.filter(e => !e.event_url.includes('getyourguide.com'));
+    const recommended = valid.filter(e => e.source === 'GetYourGuide');
+    const others = valid.filter(e => e.source !== 'GetYourGuide');
     const ordered = [...recommended, ...others];
 
     // Return the processed events array

@@ -367,26 +367,6 @@ export default function Favorites() {
             )}
           </div>
 
-          {/* Newsletter subscription embed */}
-          <div className="mb-8 bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-3">Subscribe to Our Date Ideas Newsletter</h2>
-            <p className="text-gray-600 mb-4">Get fresh date ideas delivered right to your inbox!</p>
-            <div className="newsletter-embed" style={{ width: '100%', overflow: 'hidden' }}>
-              <iframe 
-                src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true" 
-                data-test-id="beehiiv-embed" 
-                width="100%" 
-                height="320" 
-                frameBorder="0" 
-                scrolling="no" 
-                style={{ margin: 0, borderRadius: '0px !important', backgroundColor: 'transparent' }}
-                title="Date Ideas Newsletter"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-          </div>
-
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
@@ -440,6 +420,40 @@ export default function Favorites() {
             </div>
           )}
         </div>
+
+        <section className="mt-16 py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">
+          <div className="container mx-auto px-6">
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center">Turn Your Favorites into a Date Calendar</h2>
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Plan Memorable Dates</h3>
+                  <p className="text-lg text-gray-600 mb-6">
+                    Use your saved favorites to create a personalized date calendar. Schedule your favorite ideas and make planning your next date night effortless.
+                  </p>
+                  <Link
+                    href="/calendar"
+                    className="inline-flex items-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
+                  >
+                    Open Date Calendar
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </Link>
+                </div>
+                <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
+                  <Image
+                    src="/calendar-preview.jpg"
+                    alt="Date calendar preview"
+                    fill
+                    className="object-cover transition-transform duration-700 hover:scale-105"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
       <Footer />
     </>

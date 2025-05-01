@@ -24,6 +24,7 @@ import { useAsyncList } from "@react-stately/data";
 import CountryCitySelector, { CityItem } from "./components/CountryCitySelector";
 import { POPULAR_CITIES } from "../utils/cityService";
 import Script from 'next/script';
+import { TikTokEmbed } from 'react-social-media-embed';
 
 // DO NOT export metadata from this client component - it's now moved to metadata.ts
 
@@ -826,8 +827,9 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
               {/* Left column: Title and search */}
               <div className="flex flex-col items-start justify-center">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">Your Next Best Date Is Waiting</h1>
-                <p className="text-2xl mb-8">Get exciting date ideas — and a link to do them near you.</p>
+                <h1 className="text-4xl md:text-4xl lg:text-4xl font-bold mb-6">Surprise them with something unforgettable
+                </h1>
+                <p className="text-2xl mb-8">Get exciting date ideas — and a link to do them near you</p>
               </div>
 
               {/* Right column: Video */}
@@ -857,21 +859,21 @@ const Home = () => {
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Trending Date Ideas for Couples this Week</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {trendingIdeas.length === 0 && (
-                <div className="col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md flex flex-col h-full">
-                  <div className="relative h-48 w-full bg-gray-200 animate-pulse"></div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <div className="flex items-center mb-2">
-                    <div className="bg-gray-200 animate-pulse h-5 w-16 rounded mb-2"></div>
+                    <div className="relative h-48 w-full bg-gray-200 animate-pulse"></div>
+                    <div className="p-4 flex-1 flex flex-col">
+                      <div className="flex items-center mb-2">
+                        <div className="bg-gray-200 animate-pulse h-5 w-16 rounded mb-2"></div>
+                      </div>
+                      <div className="bg-gray-200 animate-pulse h-6 w-4/5 rounded mb-1"></div>
+                      <div className="bg-gray-200 animate-pulse h-4 w-full rounded mb-1"></div>
+                      <div className="bg-gray-200 animate-pulse h-4 w-2/3 rounded mb-2"></div>
                     </div>
-                    <div className="bg-gray-200 animate-pulse h-6 w-4/5 rounded mb-1"></div>
-                    <div className="bg-gray-200 animate-pulse h-4 w-full rounded mb-1"></div>
-                    <div className="bg-gray-200 animate-pulse h-4 w-2/3 rounded mb-2"></div>
-                  </div>
                   </div>
                 ))}
-                </div>
+              </div>
             )}
             {trendingIdeas.map((idea, index) => (
               <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
@@ -918,7 +920,7 @@ const Home = () => {
                           aria-label="Remove city filter"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                           </svg>
                         </button>
                       </span>
@@ -932,7 +934,7 @@ const Home = () => {
                           aria-label="Remove price filter"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                           </svg>
                         </button>
                       </span>
@@ -946,7 +948,7 @@ const Home = () => {
                           aria-label="Remove time filter"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                           </svg>
                         </button>
                       </span>
@@ -1115,23 +1117,6 @@ const Home = () => {
                         </div>
                       </div>
 
-                      <div className="p-2 border-b border-gray-100">
-                        <h3 className="text-xs font-medium text-gray-700">Location Settings</h3>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {filterOptions.locationSettings.map((setting) => (
-                            <button
-                              key={setting}
-                              onClick={() => handleFilterChange('locationSettings', setting, !selectedFilters.locationSettings.includes(setting))}
-                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.locationSettings.includes(setting)
-                                ? 'bg-rose-100 text-rose-700 font-medium'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                              {setting}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
 
                       <div className="p-2 border-b border-gray-100">
                         <h3 className="text-xs font-medium text-gray-700">Mood Paces</h3>
@@ -1151,7 +1136,7 @@ const Home = () => {
                         </div>
                       </div>
 
-                      <div className="p-2">
+                      {/* <div className="p-2">
                         <h3 className="text-xs font-medium text-gray-700">Mood Vibes</h3>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {filterOptions.moodVibes.map((vibe) => (
@@ -1168,6 +1153,7 @@ const Home = () => {
                           ))}
                         </div>
                       </div>
+                       */}
                     </div>
                   )}
                 </div>
@@ -1225,7 +1211,7 @@ const Home = () => {
                     <label className="text-sm font-medium text-gray-700">Price</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        {/* <DollarSign className="h-4 w-4 text-gray-400" /> */}
                       </div>
                       <select
                         value={activeFilters.price}
@@ -1252,7 +1238,7 @@ const Home = () => {
                     <label className="text-sm font-medium text-gray-700">Time of Day</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <ClockIcon className="h-4 w-4 text-gray-400" />
+                        {/* <ClockIcon className="h-4 w-4 text-gray-400" /> */}
                       </div>
                       <select
                         value={activeFilters.timeOfDay || 'all'}
@@ -1333,7 +1319,8 @@ const Home = () => {
                   </div>
 
                   {/* Mood Vibes */}
-                  <div className="space-y-2">
+
+                  {/* <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700">Mood Vibe</label>
                     <div className="flex flex-wrap gap-2">
                       {filterOptions.moodVibes.map((vibe) => (
@@ -1349,7 +1336,8 @@ const Home = () => {
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </div> */}
+
                 </div>
 
                 <div className="p-4 border-t flex justify-between">
@@ -1410,7 +1398,7 @@ const Home = () => {
         {showScrollButton && (
           <button
             onClick={scrollToTop}
-            className="fixed bottom-10 right-10 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-4 shadow-lg transition-all duration-300 z-50"
+            className="fixed bottom-10 right-10 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-4 shadow-lg transition-all duration-300 z-20"
             aria-label="Scroll to top"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1420,22 +1408,6 @@ const Home = () => {
         )}
       </section>
 
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Get Fresh Date Ideas & Gift Idea Suggestions Every Week</h2>
-            <p className="text-gray-600 mb-6">Subscribe to receive the latest date night ideas and relationship tips delivered to your inbox.</p>
-            <iframe
-              src="https://embeds.beehiiv.com/724c50db-5cf6-4dc9-a783-2b7c0fd5eaed?slim=true"
-              data-test-id="beehiiv-embed"
-              height="52"
-              frameBorder="0"
-              scrolling="no"
-              style={{ margin: 0, borderRadius: 0, backgroundColor: 'transparent', width: '100%' }}
-            />
-          </div>
-        </div>
-      </section>
 
       <section className="py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">
         <div className="container mx-auto px-6">
@@ -1513,50 +1485,37 @@ const Home = () => {
                 </div>
               </div>
             </div>
-
-            <div className="rounded-2xl shadow-lg overflow-hidden">
-              <div className="h-full bg-gray-800 text-white p-8 text-center">
-                <h2 className="text-2xl font-extrabold mb-4">Date Ideas Near Me</h2>
-                <p className="text-lg mb-6 px-4">Discover local date night spots and activities perfect for couples in your area!</p>
-                <Link href="/date-ideas-near-me" className="bg-white text-gray-800 px-6 py-3 rounded-full hover:bg-gray-200 transition-colors font-semibold shadow-md">
-                  Find Local Dates
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-6 grid md:grid-cols-2 gap-8 items-center">
-          {/* Text Content */}
-          <div className="text-center md:text-left">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
-            <p className="text-gray-700 leading-relaxed mb-6">
-              We created this site to solve the "what should we do tonight?" dilemma.
-              Finding fresh and exciting date ideas can be challenging, so we've curated a diverse collection to spark inspiration and create memorable moments.
-              Our goal is to help couples and friends strengthen their connections through unique and personalized experiences.
-            </p>
-            <p className="text-gray-700 leading-relaxed">
-              We believe that shared experiences are the cornerstone of strong relationships. That's why we're dedicated to providing you with a wide array
-              of date ideas, from cozy nights in to adventurous outings. Let us help you create lasting memories and strengthen your bond with those you care about most.
-            </p>
-          </div>
-
-          {/* Image */}
-          <div className="rounded-lg overflow-hidden shadow-md">
-            <Image
-              src="/bikeriding.webp"
-              alt="Couple enjoying a date"
-              width={500}
-              height={300}
-              layout="responsive"
-              objectFit="cover"
-            />
+        <div className="container mx-auto px-6">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Follow Us on TikTok</h2>
+          <div className="flex flex-col items-center max-w-2xl mx-auto">
+            <div className="w-full aspect-[9/16] max-w-sm mx-auto">
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <TikTokEmbed url="https://www.tiktok.com/@epicgardening/video/7055411162212633903" width={325} />
+              </div>
+            </div>
+            <div className="mt-8 text-center">
+              <p className="text-gray-700 mb-6">
+                Watch real couples share their favorite date ideas and dating experiences on our TikTok!
+              </p>
+              <Link
+                href="https://www.tiktok.com/@sparkuscc"
+                target="_blank"
+                className="bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors font-semibold shadow-md inline-flex items-center"
+              >
+                <span>Follow on TikTok</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="w-4 h-4 ml-2">
+                  <path fill="currentColor" d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z" />
+                </svg>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
-
       <Footer />
     </div>
   );

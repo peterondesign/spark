@@ -39,8 +39,9 @@ export default function Footer() {
                             <li><Link href="/favorites" className="text-gray-600 hover:text-gray-900">Favorites</Link></li>
                             <li><Link href="/calendar" className="text-gray-600 hover:text-gray-900">Calendar</Link></li>
                             <li><Link href="/date-idea-generator" className="text-gray-600 hover:text-gray-900">Date Idea Generator</Link></li>
-                            <li><Link href="/date-night-box-subscription" className="text-gray-600 hover:text-gray-900">Couples’ Gift Box Subscription</Link></li>
-                            <li><Link href="/date-ideas-near-me" className="text-gray-600 hover:text-gray-900">Date Ideas Near Me</Link></li>
+                            <li><Link href="/shop" className="text-gray-600 hover:text-gray-900">Shop</Link></li>
+                            {/* <li><Link href="/date-night-box-subscription" className="text-gray-600 hover:text-gray-900">Couples’ Gift Box Subscription</Link></li> */}
+                            {/* <li><Link href="/date-ideas-near-me" className="text-gray-600 hover:text-gray-900">Date Ideas Near Me</Link></li> */}
                             <li><Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
                         </ul>
                     </div>

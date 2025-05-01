@@ -18,7 +18,7 @@ const productData = [
         description: 'A deck of creative prompts to spark meaningful conversations and deeper connections.',
         price: '$19.99 USD',
         buyUrl: 'https://buy.stripe.com/test-convo',
-        images: ['/placeholder.jpg', '/couplegift.webp', '/giftbox.png'],
+        images: ['/starters.webp', '/starters2.webp'],
         preview: 'Preview a few sample cards below.'
     },
     {
@@ -26,7 +26,7 @@ const productData = [
         description: 'A curated collection of 250 unique date ideas for couples, friends, and more.',
         price: '$24.99 USD',
         buyUrl: 'https://buy.stripe.com/test-dateideas',
-        images: ['/dateideas.png', '/couple-happy.webp', '/romanticpaint.jpg'],
+        images: ['/ideas.webp', '/ideas2.webp', '/ideas4.webp'],
         preview: 'See a few date ideas below.'
     }
 ];
@@ -96,9 +96,6 @@ export default function ShopPage() {
                                 >
                                     <AutoplayCarousel images={product.images} />
                                     <div className="w-full mt-6">
-                                        <span className="inline-block bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full mb-2">
-                                            {product.title.toUpperCase()}
-                                        </span>
                                         <h2 className="text-xl font-bold mb-2 text-gray-900">{product.title}</h2>
                                         <p className="text-gray-600 mb-3 text-sm">{product.description}</p>
                                         <div className="font-semibold text-lg mb-4">{product.price}</div>
