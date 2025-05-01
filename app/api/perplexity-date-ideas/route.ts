@@ -2,13 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // Assuming imageService is accessible from here, adjust path if needed
 import { getImageUrl, getPlaceholderImage } from '@/app/utils/imageService'; 
 
-// Cache for scraped OG images to avoid repeated fetches
-const ogImageCache = new Map<string, string>();
-
-// In-memory cache for API responses
-const responseCache = new Map<string, { data: PerplexityResponse; timestamp: number }>();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
 // Define the expected event structure from Perplexity
 interface PerplexityEvent {
   image_url?: string; // Make optional as it might be missing
@@ -34,120 +27,189 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Perplexity API key not set' }, { status: 500 });
     }
 
-    // Check cache first
-    const cacheKey = `${city}::${dateIdeaTitle}`;
-    if (responseCache.has(cacheKey)) {
-      const { data, timestamp } = responseCache.get(cacheKey)!;
-      if (Date.now() - timestamp < CACHE_TTL) {
-        return NextResponse.json(data);
-      }
-    }
-
     // Simplified Perplexity prompt requesting JSON
     const prompt = `Find me "${dateIdeaTitle}" events or related activities in ${city} on GetYourGuide, Google Maps, or Luma. Return results as a JSON object containing a single key "events" which is an array of objects. Each object in the array should have the following keys: "image_url" (string, use an empty string "" if no image is found), "title" (string), "description" (string), and "event_url" (string). Output ONLY the JSON object and nothing else.`;
 
-    // Call Perplexity API
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    // Prepare parallel fetches: Perplexity and Google Places
+    const perplexityPromise = fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json', // Request JSON response
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar', 
+        model: 'sonar',
         messages: [
           { role: 'system', content: 'You are an AI assistant that ONLY outputs valid JSON in the specified format. Respond with only the JSON object and nothing else.' },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 2000, // Adjust as needed
-        temperature: 0.0, // Force deterministic JSON output
+        max_tokens: 1000, // reduce tokens to speed up
+        temperature: 0.0,
       }),
+    }).then(async res => {
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Perplexity API Error: ${res.status} ${err}`);
+      }
+      return res.json();
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Perplexity API Error:", response.status, errorText);
-      return NextResponse.json({ error: `Perplexity API Error: ${response.statusText}`, details: errorText }, { status: response.status });
-    }
+    const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+    const placeQuery = `${dateIdeaTitle} in ${city}`;
+    const placesPromise = googleApiKey
+      ? fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(placeQuery)}&key=${googleApiKey}`)
+          .then(res => (res.ok ? res.json() : { results: [] }))
+          .catch(() => ({ results: [] }))
+      : Promise.resolve({ results: [] });
 
-    const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content || '';
+    // Await both calls concurrently
+    const [perplexityData, placesData] = await Promise.all([perplexityPromise, placesPromise]);
 
-    // --- Preprocess raw content: remove markdown fences, trim to first JSON object ---
-    let sanitized = rawContent.trim();
-    // Remove any ```json or ``` fences
-    sanitized = sanitized.replace(/```json/g, '').replace(/```/g, '');
-    // Extract substring between first '{' and last '}'
-    const first = sanitized.indexOf('{');
-    const last = sanitized.lastIndexOf('}');
-    if (first !== -1 && last !== -1 && last > first) {
-      sanitized = sanitized.slice(first, last + 1);
-    }
+    // Extract and sanitize LLM response
+    const rawContent = perplexityData.choices?.[0]?.message?.content || '';
 
-    // --- JSON Parsing Logic (2 attempts) ---
+    // --- JSON Parsing Logic ---
     let parsedResponse: PerplexityResponse | null = null;
     try {
-      parsedResponse = JSON.parse(sanitized);
-      if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
-        parsedResponse = null;
-      }
-    } catch (e) {
-      console.warn('JSON parse failed, invalid structure:', e);
-    }
-    if (!parsedResponse) {
-      console.error('Unable to parse JSON after sanitization. Raw:', rawContent);
-      return NextResponse.json({ error: 'Invalid JSON from AI', details: rawContent }, { status: 500 });
-    }
-
-    // --- Handle events with parallel image & affiliate logic ---
-    const affiliateParams = 'partner_id=5QQHAHP&utm_medium=online_publisher';
-    const processedEvents = await Promise.all(
-      parsedResponse.events.map(async event => {
-        let imageUrl = event.image_url || '';
-        let eventUrl = event.event_url;
-
-        // Normalize and append affiliate params
-        if (/^https:\/\/www\.getyourguide\.com\//.test(eventUrl)) {
-          eventUrl += eventUrl.includes('?') ? `&${affiliateParams}` : `?${affiliateParams}`;
+        // Attempt 1: Parse the content directly as JSON
+        parsedResponse = JSON.parse(rawContent);
+        if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
+            console.warn("Parsed JSON, but invalid structure (Attempt 1):");
+            parsedResponse = null; // Reset if structure is wrong
         }
-        // Ensure valid URL or reset
-        if (!/^https?:\/\//.test(imageUrl)) imageUrl = '';
-
-        // If missing image, scrape or fallback
-        if (!imageUrl) {
-          // Check cache
-          if (ogImageCache.has(event.event_url)) {
-            imageUrl = ogImageCache.get(event.event_url)!;
-          } else {
+    } catch (parseError) {
+        console.warn("Failed direct JSON parse (Attempt 1):", parseError);
+        // Attempt 2: Try to extract JSON from potential markdown code blocks
+        const jsonMatchMarkdown = rawContent.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatchMarkdown && jsonMatchMarkdown[1]) {
             try {
-              const html = await (await fetch(eventUrl)).text();
-              const m = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
-              if (m && m[1]) {
-                imageUrl = m[1];
-                ogImageCache.set(event.event_url, imageUrl);
-              }
-            } catch {}
-          }
-          // Fallback to Pexels or placeholder
-          if (!imageUrl) {
-            try {
-              imageUrl = await getImageUrl(`${event.title} ${city}`, event.title, 400, 200);
-            } catch {
-              imageUrl = getPlaceholderImage(400, 200, event.title);
+                parsedResponse = JSON.parse(jsonMatchMarkdown[1]);
+                 if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
+                    console.warn("Parsed JSON from markdown, but invalid structure (Attempt 2):");
+                    parsedResponse = null; // Reset if structure is wrong
+                }
+            } catch (fallbackParseError) {
+                 console.warn("Failed to parse fallback JSON from markdown (Attempt 2):", fallbackParseError);
             }
-          }
         }
 
-        return { ...event, image_url: imageUrl, event_url: eventUrl };
-      })
+        // Attempt 3: Try to extract JSON object embedded in text if previous attempts failed
+        if (!parsedResponse) {
+            const jsonMatchEmbedded = rawContent.match(/{\s*"events"\s*:\s*\[[\s\S]*?\]\s*}/);
+            if (jsonMatchEmbedded && jsonMatchEmbedded[0]) {
+                try {
+                    parsedResponse = JSON.parse(jsonMatchEmbedded[0]);
+                    if (!parsedResponse || !Array.isArray(parsedResponse.events)) {
+                        console.warn("Parsed embedded JSON, but invalid structure (Attempt 3):");
+                        parsedResponse = null; // Reset if structure is wrong
+                    }
+                } catch (embeddedParseError) {
+                    console.warn("Failed to parse embedded JSON (Attempt 3):", embeddedParseError);
+                }
+            }
+        }
+    }
+
+    // Check if we successfully parsed a valid structure
+    if (!parsedResponse) {
+        console.error("Failed to extract valid JSON response from Perplexity after all attempts.");
+        console.error("Raw content received:", rawContent);
+        return NextResponse.json({ error: 'Failed to parse valid JSON response from Perplexity', details: rawContent }, { status: 500 });
+    }
+
+    // --- Image URL Handling & Affiliate Link Appending ---
+    const affiliateParams = "partner_id=5QQHAHP&utm_medium=online_publisher";
+
+    const processedEvents = await Promise.all(
+        parsedResponse.events.map(async (event) => {
+            let imageUrl = event.image_url;
+            let eventUrl = event.event_url;
+
+            // Normalize provided imageUrl: if it's not a valid URL, reset to fallback logic
+            if (imageUrl && !/^https?:\/\//.test(imageUrl)) {
+                imageUrl = '';
+            }
+
+            // Append affiliate parameters to GetYourGuide links
+            if (eventUrl && eventUrl.startsWith('https://www.getyourguide.com/')) {
+                if (eventUrl.includes('?')) {
+                    eventUrl += `&${affiliateParams}`;
+                } else {
+                    eventUrl += `?${affiliateParams}`;
+                }
+            }
+
+            // If image_url is missing or empty, try to fetch one
+            if (!imageUrl || imageUrl.trim() === "") {
+                // First, attempt to scrape the event page for og:image
+                try {
+                    const pageRes = await fetch(eventUrl);
+                    if (pageRes.ok) {
+                        const html = await pageRes.text();
+                        const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+                        if (ogMatch && ogMatch[1]) {
+                            imageUrl = ogMatch[1];
+                        }
+                    }
+                } catch (scrapeError) {
+                    console.warn(`Failed to scrape OG image for "${event.title}":`, scrapeError);
+                }
+
+                // If still no imageUrl, use Pexels fallback
+                if (!imageUrl || imageUrl.trim() === "") {
+                    try {
+                        const imageQuery = `${event.title} ${city}`;
+                        imageUrl = await getImageUrl(imageQuery, event.title, 400, 200);
+                    } catch (imageError) {
+                        console.warn(`Failed to fetch image for "${event.title}":`, imageError);
+                        imageUrl = getPlaceholderImage(400, 200, event.title);
+                    }
+                }
+            } else {
+                 // Ensure the provided image_url is treated as the source
+                 // No action needed here, just use the provided imageUrl
+            }
+
+            // If after attempting fetch, imageUrl is still empty or just a placeholder path was generated by getImageUrl,
+            // ensure it's the placeholder path.
+            if (!imageUrl || imageUrl.trim() === "" || imageUrl.startsWith('/placeholder.svg')) {
+                 imageUrl = getPlaceholderImage(400, 200, event.title); // Ensure placeholder path format
+            }
+
+            return { 
+                ...event, 
+                image_url: imageUrl, // This will be the external URL or the placeholder path
+                event_url: eventUrl // Updated URL with affiliate params if applicable
+            };
+        })
     );
 
-    const filtered = processedEvents.filter(e => e.title && e.description && e.event_url);
-    const result = { events: filtered };
-    // Store in cache
-    responseCache.set(cacheKey, { data: result, timestamp: Date.now() });
-    return NextResponse.json(result);
+    // Map Google Places results
+    const googleEvents = (placesData.results || []).map((place: any) => {
+      return {
+        image_url: '', // Placeholder, as Google Places API doesn't provide images directly
+        title: place.name,
+        description: place.formatted_address || '',
+        event_url: place.url || '',
+      };
+    });
+
+    // Combine and dedupe
+    const uniqueMap = new Map<string, PerplexityEvent>();
+    [...processedEvents, ...googleEvents].forEach(ev => {
+      if (ev.event_url && !uniqueMap.has(ev.event_url)) uniqueMap.set(ev.event_url, ev);
+    });
+    const combined = Array.from(uniqueMap.values());
+
+    // Filter valid events then sort recommended first
+    const valid = combined.filter(e => e.title && e.description && e.event_url);
+    const recommended = valid.filter(e => e.event_url.includes('getyourguide.com'));
+    const others = valid.filter(e => !e.event_url.includes('getyourguide.com'));
+    const ordered = [...recommended, ...others];
+
+    // Return the processed events array
+    return NextResponse.json({ events: ordered });
 
   } catch (err) {
     console.error("API Route Error:", err);

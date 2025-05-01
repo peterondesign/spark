@@ -651,20 +651,12 @@ export default function DateIdeaDetails() {
                     <p className="text-gray-600 text-xs line-clamp-2 flex-grow">
                       {item.description}
                     </p>
-                    <div className="mt-2">
-                      <a
-                        href={item.event_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={
-                          `break-all hover:underline ` +
-                          (item.event_url.includes('getyourguide.com')
-                            ? 'text-base font-semibold text-blue-700'
-                            : 'text-sm text-blue-600')
-                        }
-                      >
-                        {item.event_url}
-                      </a>
+                    <div className="mt-2 text-xs text-gray-400">
+                      Source: {item.event_url.includes('getyourguide.com')
+                        ? 'GetYourGuide'
+                        : item.event_url.includes('google.com/maps')
+                        ? 'Google Maps'
+                        : 'Luma'}
                     </div>
                   </div>
                 </a>
