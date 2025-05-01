@@ -73,6 +73,11 @@ export default function DateIdeaDetails() {
   const [perplexityLoading, setPerplexityLoading] = useState(false);
   const [perplexityError, setPerplexityError] = useState<string | null>(null);
 
+  // Helper to ensure valid image URL
+  const getValidImage = (url: string | undefined, title: string) => {
+    return url && url.startsWith('http') ? url : getPlaceholderImage(400, 200, title);
+  };
+
   // Simple function for handling city selection
   const handleCitySelect = (city: CityItem) => {
     setUserCity(city.name);
@@ -591,24 +596,19 @@ export default function DateIdeaDetails() {
 
         {/* Simplified Perplexity Results Section */}
         <section className="mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            {dateIdea.title} Activities in {userCity || 'your city'}
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Find "{dateIdea.title}" Activities in {userCity || 'your city'}
           </h2>
           {/* Show search action steps */}
           <p className="text-sm text-gray-500 mb-4">
-            Searching GetYourGuide, Google Maps, and 100+ websites for the best options...
+            Searching GetYourGuide, Google Maps, Viator, Expedia, Airbnb Experiences, Luma and 30+ websites for the best options...
           </p>
           {perplexityLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
-                  <div className="h-40 bg-gray-200"></div>
-                  <div className="p-4">
-                    <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
+              <p className="mt-4 text-gray-600 text-sm text-center">
+                Searching the web for "{dateIdea.title}" in {userCity || 'your city'}… Found {perplexityEvents.length} so far
+              </p>
             </div>
           ) : perplexityError ? (
             <div className="text-red-600 bg-red-50 border border-red-200 rounded p-3">
@@ -628,35 +628,34 @@ export default function DateIdeaDetails() {
                   rel="noopener noreferrer"
                   className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md flex flex-col"
                 >
-                    <div className="relative h-40 flex-shrink-0">
+                  <div className="relative h-40 flex-shrink-0">
                     <Image 
-                      src={item.image_url || getPlaceholderImage(400, 200, item.title)} 
+                      src={getValidImage(item.image_url, item.title)} 
                       alt={item.title} 
                       fill 
                       className="object-cover" 
                     />
-                    {item.event_url.includes('getyourguide.com') && (
+                    {(item.event_url.includes('getyourguide.com') || item.event_url.includes('getyourguide.co.uk')) && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded absolute top-2 right-2">
-                      Recommended
+                        Recommended
                       </span>
                     )}
-                    </div>
+                  </div>
                   <div className="p-4 flex flex-col flex-grow">
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-semibold text-gray-800 group-hover:text-rose-600 transition-colors text-sm leading-snug">
                         {item.title}
                       </h4>
-                     
                     </div>
                     <p className="text-gray-600 text-xs line-clamp-2 flex-grow">
                       {item.description}
                     </p>
                     <div className="mt-2 text-xs text-gray-400">
-                      Source: {item.event_url.includes('getyourguide.com')
-                        ? 'GetYourGuide'
-                        : item.event_url.includes('google.com/maps')
-                        ? 'Google Maps'
-                        : 'Luma'}
+                      Source: {item.event_url.includes('getyourguide.com') || item.event_url.includes('getyourguide.co.uk')
+                      ? 'GetYourGuide'
+                      : item.event_url.includes('google.com/maps')
+                      ? 'Google Maps'
+                      : ''}
                     </div>
                   </div>
                 </a>
