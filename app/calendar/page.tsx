@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, momentLocalizer, Event, Views } from 'react-big-calendar';
+import { Calendar as RBCalendar, momentLocalizer, Event, Views, EventProps } from 'react-big-calendar';
+import withDragAndDrop, { withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import './calendar.css';
 import { supabase } from "@/utils/supabaseClient";
 import Header from '../components/Header';
@@ -17,10 +19,11 @@ import { favoritesService } from '../services/favoritesService';
 import { generateMetadata } from "../../utils/metadataUtils";
 import { Toast, ToastProvider } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
-import { Heart, Calendar as CalendarIcon, Clock, Check, Copy } from 'lucide-react';
+import { Heart, Calendar as CalendarIcon, Clock, Check, Copy, MoreVertical } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
 
 const metadata = generateMetadata({
   title: 'Date Night Calendar | Plan Your Perfect Dates',
@@ -41,7 +44,11 @@ interface CalendarEvent extends Event {
   dateIdea?: DateIdea;
   id: string;
   allDay?: boolean;
+  start: Date;
+  end: Date;
 }
+
+const TypedDragAndDropCalendar = withDragAndDrop<CalendarEvent, object>(RBCalendar);
 
 const CalendarPage: React.FC = () => {
   const localizer = momentLocalizer(moment);
@@ -64,6 +71,28 @@ const CalendarPage: React.FC = () => {
     time: '18:00',
   });
   const { toast } = useToast();
+  const [history, setHistory] = useState<CalendarEvent[][]>([]);
+  const [future, setFuture] = useState<CalendarEvent[][]>([]);
+
+  const pushHistory = (newEvents: CalendarEvent[]) => {
+    setHistory((prev) => [...prev, events]);
+    setFuture([]);
+    setEvents(newEvents);
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    setFuture((f) => [events, ...f]);
+    setEvents(history[history.length - 1]);
+    setHistory((h) => h.slice(0, -1));
+  };
+
+  const handleRedo = () => {
+    if (future.length === 0) return;
+    setHistory((h) => [...h, events]);
+    setEvents(future[0]);
+    setFuture((f) => f.slice(1));
+  };
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -112,7 +141,7 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleGoogleCalendarExport = async () => {
-    if (typeof window === 'undefined') return; // Ensure this runs only in the browser
+    if (typeof window === 'undefined') return;
 
     try {
       const { gapi } = await import('gapi-script');
@@ -143,7 +172,7 @@ const CalendarPage: React.FC = () => {
             start: { dateTime: event.start.toISOString() },
             end: { dateTime: event.end.toISOString() },
           };
-        }).filter(Boolean); // Filter out null values
+        }).filter(Boolean);
 
         for (const event of calendarEvents) {
           await gapi.client.calendar.events.insert({
@@ -237,7 +266,7 @@ const CalendarPage: React.FC = () => {
     if (!schedulingDateIdea) return;
     
     const startDateTime = moment(`${scheduledDateTime.date} ${scheduledDateTime.time}`);
-    const endDateTime = moment(startDateTime).add(2, 'hours'); // Default 2 hour duration
+    const endDateTime = moment(startDateTime).add(2, 'hours');
     
     const newEvent: CalendarEvent = {
       id: `${schedulingDateIdea.id}-${Date.now()}`,
@@ -248,7 +277,7 @@ const CalendarPage: React.FC = () => {
       allDay: false,
     };
     
-    setEvents(prev => [...prev, newEvent]);
+    pushHistory([...events, newEvent]);
     setSchedulingDateIdea(null);
     
     toast({
@@ -257,39 +286,104 @@ const CalendarPage: React.FC = () => {
     });
   };
 
-  const EventComponent = ({ event }: { event: CalendarEvent }) => {
-    const handleRemoveEvent = (e: React.MouseEvent, eventId: string) => {
-      e.stopPropagation();
-      setEvents(prevEvents => prevEvents.filter(ev => ev.id !== eventId));
+  const handleSelectSlot = (slotInfo: any) => {
+    if (!schedulingDateIdea) return;
+    const startDateTime = moment(slotInfo.start);
+    const endDateTime = moment(slotInfo.end);
+    const newEvent: CalendarEvent = {
+      id: `${schedulingDateIdea.id}-${Date.now()}`,
+      title: schedulingDateIdea.title,
+      start: startDateTime.toDate(),
+      end: endDateTime.toDate(),
+      dateIdea: schedulingDateIdea,
+      allDay: slotInfo.action === 'select' && slotInfo.slots.length === 1,
     };
+    pushHistory([...events, newEvent]);
+    setSchedulingDateIdea(null);
+    toast({
+      title: "Added to Calendar",
+      description: `${schedulingDateIdea.title} scheduled for ${startDateTime.format('MMM DD, YYYY [at] h:mm A')}`,
+    });
+  };
 
+  const handleEventDrop = ({ event, start, end, allDay }: any) => {
+    const updatedEvents = events.map(ev =>
+      ev.id === event.id ? { ...ev, start, end, allDay } : ev
+    );
+    pushHistory(updatedEvents);
+    toast({
+      title: "Event Updated",
+      description: `${event.title} moved to ${moment(start).format('MMM DD, YYYY [at] h:mm A')}`,
+    });
+  };
+
+  const handleEditEvent = (eventId: string) => {
+    const eventToEdit = events.find(ev => ev.id === eventId);
+    if (!eventToEdit) return;
+
+    const updatedEvents = events.map(ev =>
+      ev.id === eventId ? {
+        ...ev,
+        start: moment().add(1, 'day').toDate(),
+        end: moment().add(1, 'day').add(2, 'hours').toDate()
+      } : ev
+    );
+    pushHistory(updatedEvents);
+    toast({ title: "Event Edited", description: `Event "${eventToEdit.title}" rescheduled.` });
+  };
+
+  const handleRemoveEvent = (eventId: string) => {
+    pushHistory(events.filter(ev => ev.id !== eventId));
+    toast({ title: "Event Removed", description: "Event deleted from calendar." });
+  };
+
+  const EventComponent = ({ event }: EventProps<CalendarEvent>) => {
     const dateIdea = event.dateIdea;
-    if (!dateIdea) return <div className="px-3 py-2 text-gray-700">{event.title}</div>;
 
     return (
       <div className="relative group calendar-event transform transition-transform duration-200 hover:scale-[1.02]">
         <div className="px-3 py-2 flex items-center gap-3 bg-white rounded-lg shadow-sm">
-          <div className="relative h-10 w-10 flex-shrink-0 rounded-full overflow-hidden border-2 border-white shadow-sm">
-            <Image
-              src={dateIdea.image || "/placeholder-date.jpg"}
-              alt={dateIdea.title}
-              fill
-              className="object-cover"
-            />
-          </div>
+          {dateIdea && (
+            <div className="relative h-10 w-10 flex-shrink-0 rounded-full overflow-hidden border-2 border-white shadow-sm">
+              <Image
+                src={dateIdea.image || "/placeholder-date.jpg"}
+                alt={dateIdea.title}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <span className="truncate text-sm font-medium text-gray-800 block">{event.title}</span>
           </div>
+          <Menu as="div" className="relative inline-block text-left ml-2">
+            <MenuButton className="p-1 rounded-full hover:bg-gray-100">
+              <MoreVertical className="h-4 w-4 text-gray-500" />
+            </MenuButton>
+            <MenuItems className="absolute right-0 z-10 mt-2 w-36 origin-top-right bg-white border border-gray-200 rounded-md shadow-lg focus:outline-none">
+              <MenuItem>
+                {({ active }) => (
+                  <button
+                    className={`w-full text-left px-4 py-2 text-sm ${active ? 'bg-gray-100' : ''}`}
+                    onClick={() => handleEditEvent(event.id)}
+                  >
+                    Edit
+                  </button>
+                )}
+              </MenuItem>
+              <MenuItem>
+                {({ active }) => (
+                  <button
+                    className={`w-full text-left px-4 py-2 text-sm text-red-600 ${active ? 'bg-gray-100' : ''}`}
+                    onClick={() => handleRemoveEvent(event.id)}
+                  >
+                    Delete
+                  </button>
+                )}
+              </MenuItem>
+            </MenuItems>
+          </Menu>
         </div>
-        <button
-          onClick={(e) => handleRemoveEvent(e, event.id)}
-          className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md hover:bg-red-50"
-          aria-label="Remove event"
-        >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
     );
   };
@@ -300,7 +394,6 @@ const CalendarPage: React.FC = () => {
         <Header />
 
         <main className="max-w-[1400px] mx-auto py-16 px-6 lg:px-16">
-          {/* Hero Section */}
           <div className="text-center mb-16 space-y-6">
             <h1 className="text-5xl font-bold text-gray-900 tracking-tight">
               Your Interactive Date Planning Calendar
@@ -428,7 +521,6 @@ const CalendarPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Left Panel - Favorites */}
             <div className="space-y-8">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 space-y-6">
@@ -442,7 +534,6 @@ const CalendarPage: React.FC = () => {
                     />
                   </div>
 
-                  {/* Partner's Favorites Section */}
                   <div className="space-y-4 pt-6 border-t border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-900">Partner's Favorites</h3>
                     {partnerId ? (
@@ -452,7 +543,6 @@ const CalendarPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Joint Favorites Section */}
                   <div className="space-y-4 pt-6 border-t border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-900">Joint Favorites</h3>
                     {partnerId ? (
@@ -464,7 +554,6 @@ const CalendarPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Calendar ID Section */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-6">
                 <h3 className="text-lg font-semibold text-gray-900">Calendar ID</h3>
                 <p className="text-sm text-gray-500 mb-2">Share this ID with your partner to connect calendars</p>
@@ -502,7 +591,6 @@ const CalendarPage: React.FC = () => {
                 />
               </div>
 
-              {/* Benefits Card */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">Benefits of Regular Date Nights</h3>
                 <ul className="space-y-3">
@@ -526,15 +614,18 @@ const CalendarPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Calendar Section */}
             <div ref={calendarRef} className="lg:col-span-2 space-y-8">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                <Calendar
+                <div className="flex justify-end mb-2 gap-2">
+                  <Button onClick={handleUndo} disabled={history.length === 0} variant="outline">Undo</Button>
+                  <Button onClick={handleRedo} disabled={future.length === 0} variant="outline">Redo</Button>
+                </div>
+                <TypedDragAndDropCalendar
                   localizer={localizer}
                   events={events}
                   defaultView="month"
-                  startAccessor="start"
-                  endAccessor="end"
+                  startAccessor={(event) => event.start}
+                  endAccessor={(event) => event.end}
                   style={{ height: 700 }}
                   className="font-light"
                   views={[Views.MONTH, Views.WEEK]}
@@ -542,6 +633,10 @@ const CalendarPage: React.FC = () => {
                     event: EventComponent
                   }}
                   popup
+                  selectable
+                  onSelectSlot={handleSelectSlot}
+                  onEventDrop={handleEventDrop as withDragAndDropProps<CalendarEvent>['onEventDrop']}
+                  draggableAccessor={() => true}
                 />
               </div>
 
@@ -554,7 +649,6 @@ const CalendarPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* How to Use Guide */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6">How to Use Your Calendar</h3>
                 <div className="grid md:grid-cols-2 gap-8">
