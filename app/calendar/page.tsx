@@ -13,6 +13,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { processDateIdeaImages, getPlaceholderImage } from '../utils/imageService';
 import toast, { Toaster } from 'react-hot-toast';
+import { favoritesService } from '@/app/services/favoritesService';
 
 const metadata = generateMetadata({
   title: 'Date Night Calendar | Plan Your Perfect Dates',
@@ -106,6 +107,23 @@ export default function DateIdeasCalendar() {
     fetchDateIdeas();
   }, []);
 
+  useEffect(() => {
+    // Sync favorites
+    favoritesService.syncFavorites().catch(err => console.warn(err));
+    // Load my favorites
+    favoritesService.getRecentFavorites()
+      .then(data => setMyFavorites(data))
+      .catch(console.error);
+    // Load saved ideas from localStorage
+    const loadSavedIdeas = () => {
+      const saved = localStorage.getItem("savedDateIdeas");
+      if (saved) {
+        setMyFavorites(JSON.parse(saved));
+      }
+    };
+    loadSavedIdeas();
+  }, []);
+
   // Filter date ideas based on search query
   const filteredDateIdeas = dateIdeas.filter(idea =>
     idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -113,10 +131,13 @@ export default function DateIdeasCalendar() {
     idea.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const toggleFavorite = (idea: DateIdea) => {
+  // Toggle favorite persists to localStorage and Supabase
+  const toggleFavorite = async (idea: DateIdea) => {
     if (myFavorites.some(fav => fav.id === idea.id)) {
+      await favoritesService.removeFavorite(idea.id);
       setMyFavorites(myFavorites.filter(fav => fav.id !== idea.id));
     } else {
+      await favoritesService.saveFavorite(idea);
       setMyFavorites([...myFavorites, idea]);
     }
   };
@@ -177,17 +198,17 @@ export default function DateIdeasCalendar() {
     toast.success('Event removed');
   };
 
-  // Mock function to sync with partner's calendar
-  const syncWithPartner = () => {
+  // Sync partner favorites via Supabase only
+  const syncWithPartner = async () => {
     if (!partnerId) return;
-
-    // In a real app, this would make an API call
-    // For demo purposes, let's pretend we got some data back
-    setPartnerFavorites([
-      { ...dateIdeas[1], rating: 0, location: '', price: '', duration: '', slug: '' },
-      { ...dateIdeas[3], rating: 0, location: '', price: '', duration: '', slug: '' }
-    ]);
-    toast.success('Successfully synced with partner!');
+    try {
+      const data = await favoritesService.getRecentFavorites(partnerId);
+      setPartnerFavorites(data);
+      toast.success('Successfully synced with partner!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to load partner favorites');
+    }
   };
 
   // Export to Google Calendar
@@ -331,7 +352,7 @@ export default function DateIdeasCalendar() {
                                   location: "",
                                   price: "",
                                   duration: "",
-                                  slug: "",
+                                  slug: idea.slug,
                                 })
                               }
                               className={`flex items-center px-3 py-1 rounded-md text-sm ${myFavorites.some((fav) => fav.id === idea.id)
@@ -419,7 +440,7 @@ export default function DateIdeasCalendar() {
                                     location: "",
                                     price: "",
                                     duration: "",
-                                    slug: "",
+                                    slug: idea.slug,
                                   })
                                 }
                                 className={`flex items-center px-3 py-1 rounded-md text-sm ${myFavorites.some((fav) => fav.id === idea.id)
@@ -864,6 +885,6 @@ export default function DateIdeasCalendar() {
         </main>
         <Footer />
       </div>
-    </div>
-  );
-}
+      </div>
+    );
+  }

@@ -1,13 +1,13 @@
 // next-sitemap.config.js
 const config = {
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://dateideas.cc',
   generateRobotsTxt: true,
   robotsTxtOptions: {
     policies: [
       { userAgent: '*', allow: '/' }
     ],
     additionalSitemaps: [
-      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'}/sitemap.xml`,
+      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://dateideas.cc'}/sitemap.xml`,
     ],
   },
   async additionalPaths() {
@@ -16,7 +16,7 @@ const config = {
     
     // Fetch date idea slugs
     try {
-      const dateIdeasRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.sparkus.cc'}/api/getAllSlugs?type=dateIdeas`);
+      const dateIdeasRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.dateideas.cc'}/api/getAllSlugs?type=dateIdeas`);
       const dateIdeas = await dateIdeasRes.json();
       
       const dateIdeaPaths = dateIdeas.map((slug) => ({

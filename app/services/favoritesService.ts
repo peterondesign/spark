@@ -42,14 +42,33 @@ const getDeviceId = (): string => {
 };
 
 export const favoritesService = {
-  async getRecentFavorites(limit: number = 3): Promise<DateIdea[]> {
+  async getRecentFavorites(calendarId?: string, limit?: number): Promise<DateIdea[]> {
     try {
-      // Check if we can use localStorage instead
-      if (typeof window !== 'undefined') {
-        const savedIdeas = localStorage.getItem('savedDateIdeas');
-        if (savedIdeas) {
-          const parsedIdeas = JSON.parse(savedIdeas) as DateIdea[];
-          return parsedIdeas.slice(0, limit);
+      // If a calendarId is provided (e.g. partner), load directly from Supabase
+      if (calendarId) {
+        // Build query and apply optional limit
+        let query = supabase
+          .from('favorites')
+          .select('date_idea_id')
+          .eq('device_id', calendarId)
+          .order('created_at', { ascending: false })
+          .limit(limit || 10); // Default to 10 if limit is undefined
+        const { data: favorites, error: favoritesError } = await query;
+        if (favoritesError || !favorites) return [];
+        const dateIdeaIds = favorites.map(f => f.date_idea_id);
+        const { data: dateIdeas, error: dateIdeasError } = await supabase
+          .from('date_ideas')
+          .select('*')
+          .in('id', dateIdeaIds);
+        if (dateIdeasError || !dateIdeas) return [];
+        return dateIdeaIds.map(id => dateIdeas.find(idea => idea.id === id)).filter((i): i is DateIdea => Boolean(i));
+      }
+      // Fallback to localStorage if no calendarId
+      if (!calendarId && typeof window !== 'undefined') {
+        const saved = localStorage.getItem('savedDateIdeas');
+        if (saved) {
+          const parsed = JSON.parse(saved) as DateIdea[];
+          return typeof limit === 'number' ? parsed.slice(0, limit) : parsed;
         }
       }
       
@@ -84,7 +103,7 @@ export const favoritesService = {
             .from('date_ideas')
             .select('*')
             .in('id', dateIdeaIds);
-            
+          
           if (dateIdeasError) {
             console.warn('Supabase date ideas error:', dateIdeasError);
             // Return empty array instead of throwing

@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://www.sparkus.cc
+Host: https://www.dateideas.cc
 
 # Sitemaps
-Sitemap: https://www.sparkus.cc/sitemap.xml
+Sitemap: https://www.dateideas.cc/sitemap.xml

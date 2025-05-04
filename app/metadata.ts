@@ -23,11 +23,11 @@ export const dateNightBoxMetadata: Metadata = {
   openGraph: {
     title: "Couples’ Gift Box Subscription | Monthly Themed Date Night Boxes",
     description: "Subscribe to our premium date night boxes. Each month receive everything needed for a perfect date night at home.",
-    url: "https://sparkus.cc/date-night-box-subscription",
+    url: "https://dateideas.cc/date-night-box-subscription",
     siteName: "Spark - Date Ideas",
     images: [
       {
-        url: "https://sparkus.cc/dateideas.png",
+        url: "https://dateideas.cc/dateideas.png",
         width: 1200,
         height: 630,
         alt: "Couples’ Gift Box Subscription",
