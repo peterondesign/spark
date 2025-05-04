@@ -8,11 +8,12 @@ import type { DateIdea } from '@/app/services/favoritesService';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { generateMetadata } from "../../utils/metadataUtils";
-import { Toast, ToastProvider } from "@/components/ui/toast";
+import { Toast, ToastProvider, ToastViewport } from "@/components/ui/toast";
 import { supabase } from "@/utils/supabaseClient";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { processDateIdeaImages, getPlaceholderImage } from '../utils/imageService';
+import { useToast } from '@/hooks/use-toast';
 
 const metadata = generateMetadata({
   title: 'Date Night Calendar | Plan Your Perfect Dates',
@@ -40,6 +41,9 @@ export default function DateIdeasCalendar() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({});
   const [modalSelectedIdea, setModalSelectedIdea] = useState<number | ''>('');
   const [modalDateLine, setModalDateLine] = useState('');
+  const { toast } = useToast();
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverDateKey, setDragOverDateKey] = useState<string | null>(null);
 
   interface CalendarEvent {
     id: number;
@@ -170,6 +174,7 @@ export default function DateIdeasCalendar() {
     const updated = events.filter(ev => ev.id !== id);
     pushHistory(updated);
     setEvents(updated);
+    toast({ title: 'Deleted', description: 'Event removed' });
   };
 
   // Mock function to sync with partner's calendar
@@ -182,19 +187,19 @@ export default function DateIdeasCalendar() {
       { ...dateIdeas[1], rating: 0, location: '', price: '', duration: '', slug: '' },
       { ...dateIdeas[3], rating: 0, location: '', price: '', duration: '', slug: '' }
     ]);
-    alert('Successfully synced with partner!');
+    toast({ title: 'Synced', description: 'Successfully synced with partner!' });
   };
 
   // Export to Google Calendar
   const exportToGoogleCalendar = () => {
-    alert('Calendar exported to Google Calendar');
+    toast({ title: 'Exported', description: 'Calendar exported to Google Calendar' });
     // This would typically use the Google Calendar API
   };
 
   // Copy calendar ID to clipboard
   const copyCalendarId = () => {
     navigator.clipboard.writeText(calendarId);
-    alert('Calendar ID copied to clipboard!');
+    toast({ title: 'Copied', description: 'Calendar ID copied to clipboard!' });
   };
 
   const handleAddModalEvent = () => {
@@ -203,6 +208,7 @@ export default function DateIdeasCalendar() {
     if (idea) {
       const date = new Date(modalDateLine);
       scheduleDate(idea, date);
+      toast({ title: 'Added', description: `${idea.title} scheduled on ${date.toLocaleDateString()}` });
       setModalSelectedIdea('');
       setModalDateLine('');
     }
@@ -254,7 +260,7 @@ export default function DateIdeasCalendar() {
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
+                  className="block w-full pl-10 pr-3 py-2 bg-gray-100 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                   placeholder="Search Date Ideas"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -270,7 +276,7 @@ export default function DateIdeasCalendar() {
                 {loading ? (
                   <div className="flex space-x-4 overflow-x-auto scrollbar-hide scroll-smooth">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="bg-white rounded-lg shadow overflow-hidden min-w-[250px] animate-pulse">
+                      <div key={i} className="bg-white rounded-lg shadow overflow-hidden w-64 sm:min-w-[250px] animate-pulse">
                         <div className="h-40 bg-gray-200" />
                         <div className="p-4">
                           <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
@@ -305,10 +311,15 @@ export default function DateIdeasCalendar() {
                         <div
                           key={idea.id}
                           draggable
-                          onDragStart={(e) =>
-                            e.dataTransfer.setData('application/json', JSON.stringify(idea))
+                          onDragStart={(e) => {
+                            setDraggingId(idea.id);
+                            e.dataTransfer.setData('application/json', JSON.stringify(idea));
+                          }}
+                          onDragEnd={() => setDraggingId(null)}
+                          className={
+                            `bg-white rounded-lg overflow-hidden w-64 sm:min-w-[250px] transition-all
+                             cursor-grab ${draggingId === idea.id ? 'cursor-grabbing opacity-75 shadow-lg scale-105' : 'shadow-sm'}`
                           }
-                          className="bg-white rounded-lg shadow overflow-hidden min-w-[250px]"
                         >
                           {/* use imageService for images */}
                           <div className="h-40 relative">
@@ -408,14 +419,23 @@ export default function DateIdeasCalendar() {
                                 onDragStart={e => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
                               >
                                 <div className="flex items-center">
-                                  <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
+                                  <div className="h-12 w-12 relative rounded-md overflow-hidden mr-4">
+                                    <Image
+                                      src={imageMap[fav.id] || getPlaceholderImage(100, 100, fav.title)}
+                                      alt={fav.title}
+                                      layout="fill"
+                                      objectFit="cover"
+                                    />
+                                  </div>
                                   <div>
                                     <h3 className="text-sm font-medium">{fav.title}</h3>
                                     <p className="text-xs text-rose-500">{fav.category}</p>
                                     {relatedDates.length > 0 && (
-                                      <p className="text-xs text-gray-500"
-                                         title={relatedDates.map(ev => new Date(ev.start as Date).toLocaleDateString()).join(', ')}>
-                                        {relatedDates.length > 1 ? `+${relatedDates.length}` : new Date(relatedDates[0].start as Date).toLocaleDateString()}
+                                      <p
+                                        className="text-xs text-gray-500"
+                                        title={relatedDates.map(ev => new Date(ev.start as Date).toLocaleDateString()).join(', ')}
+                                      >
+                                        +{relatedDates.length}
                                       </p>
                                     )}
                                   </div>
@@ -575,7 +595,7 @@ export default function DateIdeasCalendar() {
                     <h2 className="text-lg font-medium text-gray-900">
                       {headerLabel}
                     </h2>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-wrap">
                       {/* Navigation buttons */}
                       <button
                         onClick={() => {
@@ -632,17 +652,17 @@ export default function DateIdeasCalendar() {
                   {/* Modal for managing scheduled events */}
                   {isModalOpen && (
                     <div className="fixed z-50 inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
-                      <div className="bg-white rounded-lg w-3/4 max-w-xl p-6">
+                      <div className="bg-white rounded-lg w-full sm:w-3/4 max-w-xl p-6">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-lg font-medium">Manage Scheduled Dates</h3>
                           <button onClick={() => setIsModalOpen(false)} className="text-gray-500 text-xl leading-none">×</button>
                         </div>
                         <div className="mb-4 flex space-x-2 items-center">
-                          <select value={modalSelectedIdea} onChange={e => setModalSelectedIdea(Number(e.target.value) || '')}>
+                          <select value={modalSelectedIdea} className="bg-gray-300 py-4" onChange={e => setModalSelectedIdea(Number(e.target.value) || '')}>
                             <option value="">Select Favorite</option>
                             {myFavorites.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
                           </select>
-                          <input type="datetime-local" value={modalDateLine} onChange={e => setModalDateLine(e.target.value)} />
+                          <input type="datetime-local" className="py-4 bg-gray-300" value={modalDateLine} onChange={e => setModalDateLine(e.target.value)} />
                           <button onClick={handleAddModalEvent} className="px-2 py-1 bg-rose-500 text-white rounded">Add</button>
                         </div>
                         <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -663,43 +683,63 @@ export default function DateIdeasCalendar() {
                     </div>
                   )}
                   {/* Calendar grid */}
-                  <div className="border border-gray-200 rounded">
-                    {/* Week/Month header */}
-                    <div className="grid grid-cols-7 border-b border-gray-200">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="px-2 py-3 text-center text-sm font-medium text-gray-500">
-                          {day}
-                        </div>
-                      ))}
-                    </div>
-                    {/* Dynamic grid: month has 35 cells, week has 7 */}
-                    <div className={
-                      `grid grid-cols-7 ${calendarView === 'month' ? 'grid-rows-5' : ''} gap-px`
-                    }>
-                      {(calendarView === 'month' ? monthCells : weekCells).map((date, idx) => (
-                        <div
-                          key={idx}
-                          className={
-                            `h-24 p-1 border-t border-l border-gray-200 bg-white ${isToday(date) ? 'bg-yellow-100' : ''}`
-                          }
-                          onDragOver={e => e.preventDefault()}
-                          onDrop={e => {
-                            const idea = JSON.parse(e.dataTransfer.getData('application/json'));
-                            scheduleDate(idea, date);
-                          }}
-                        >
-                          <div className="flex justify-end items-center text-right text-xs text-gray-500 mb-1">
-                            <span>{date.getDate()}</span>
-                            {isToday(date) && <span className="ml-1 text-red-500">♥</span>}
+                  <div className="border border-gray-200 rounded overflow-x-auto">
+                    <div className="w-full sm:min-w-[600px]">
+                      {/* Week/Month header */}
+                      <div className="grid grid-cols-7 border-b border-gray-200">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                          <div key={day} className="px-2 py-3 text-center text-sm font-medium text-gray-500">
+                            {day}
                           </div>
-                          {/* Render events */}
-                          {events.filter(ev => isSameDay(ev.start, date)).map(ev => (
-                            <div key={ev.id} className="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs mb-1">
-                              {ev.title}
+                        ))}
+                      </div>
+                      {/* Dynamic grid: month has 35 cells, week has 7 */}
+                      <div className={
+                        `grid grid-cols-7 ${calendarView === 'month' ? 'grid-rows-5' : ''} gap-px`
+                      }>
+                        {(calendarView === 'month' ? monthCells : weekCells).map((date, idx) => (
+                          <div
+                            key={idx}
+                            className={
+                              `h-24 p-1 border-t border-l border-gray-200 bg-white
+                               ${isToday(date) ? 'bg-yellow-100' : ''}
+                               ${dragOverDateKey === date.toISOString() ? 'bg-blue-50 border-blue-400' : ''}`
+                            }
+                            onDragOver={e => { e.preventDefault(); setDragOverDateKey(date.toISOString()); }}
+                            onDragLeave={() => setDragOverDateKey(null)}
+                            onDrop={e => {
+                              e.preventDefault();
+                              setDragOverDateKey(null);
+                              const data = JSON.parse(e.dataTransfer.getData('application/json'));
+                              if (data.idea) {
+                                updateEventDate(data.id, date.toISOString());
+                              } else {
+                                scheduleDate(data, date);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-end items-center text-right text-xs text-gray-500 mb-1">
+                              <span>{date.getDate()}</span>
+                              {isToday(date) && <span className="ml-1 text-red-500">♥</span>}
                             </div>
-                          ))}
-                        </div>
-                      ))}
+                            {/* Render events */}
+                            {events.filter(ev => isSameDay(ev.start, date)).map(ev => (
+                              <div
+                                key={ev.id}
+                                draggable
+                                onDragStart={e => { setDraggingId(ev.id); e.dataTransfer.setData('application/json', JSON.stringify(ev)); }}
+                                onDragEnd={() => setDraggingId(null)}
+                                className={
+                                  `px-2 py-1 rounded text-xs mb-1 truncate transition-all cursor-grab
+                                   ${draggingId === ev.id ? 'cursor-grabbing opacity-75 shadow-lg scale-105 bg-rose-200' : 'bg-rose-100 text-rose-600'}`
+                                }
+                              >
+                                {ev.title}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -707,6 +747,7 @@ export default function DateIdeasCalendar() {
             </div>
           </main>
           <Footer />
+          <ToastViewport />
         </div>
       </ToastProvider>
     </div>
