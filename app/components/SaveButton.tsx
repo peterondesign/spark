@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { HeartIcon, HeartOutlineIcon } from "./icons";
 import { favoritesService } from "../services/favoritesService";
-import { useToast } from "@/hooks/use-toast";
+import toast from 'react-hot-toast';
 
 type SaveButtonProps = {
   itemSlug: string;
@@ -15,7 +15,6 @@ type SaveButtonProps = {
 export default function SaveButton({ itemSlug, item, onToggle, className = "" }: SaveButtonProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const { toast } = useToast();
   
   // Check if this item is already saved
   useEffect(() => {
@@ -43,15 +42,15 @@ export default function SaveButton({ itemSlug, item, onToggle, className = "" }:
       if (isSaved) {
         await favoritesService.removeFavorite(item.id);
         setIsSaved(false);
-        toast({ title: `${item.title} removed` });
+        toast.success(`${item.title} removed`);
       } else {
         await favoritesService.saveFavorite(item);
         setIsSaved(true);
-        toast({ title: `${item.title} added` });
+        toast.success(`${item.title} added`);
       }
     } catch (error) {
       console.error(error);
-      toast({ title: 'Unable to update favorites', variant: 'destructive' });
+      toast.error('Unable to update favorites');
     }
     setTimeout(() => {
       setIsAnimating(false);
