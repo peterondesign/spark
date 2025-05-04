@@ -1,29 +1,17 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as RBCalendar, momentLocalizer, Event, Views, EventProps } from 'react-big-calendar';
-import withDragAndDrop, { withDragAndDropProps } from 'react-big-calendar/lib/addons/dragAndDrop';
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import Image from 'next/image';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
-import './calendar.css';
+import { generateMetadata } from "../../utils/metadataUtils";
+import { Toast, ToastProvider } from "@/components/ui/toast";
 import { supabase } from "@/utils/supabaseClient";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import FavoritesAccordion from '../components/FavoritesAccordion';
-import PageTitle from '../components/PageTitle';
-import { PAGE_TITLES } from '../utils/titleUtils';
-import Image from 'next/image';
-import { useClipboard } from 'use-clipboard-copy';
-import { favoritesService } from '../services/favoritesService';
-import { generateMetadata } from "../../utils/metadataUtils";
-import { Toast, ToastProvider } from "@/components/ui/toast";
-import { useToast } from "@/hooks/use-toast";
-import { Heart, Calendar as CalendarIcon, Clock, Check, Copy, MoreVertical } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react';
+
 
 const metadata = generateMetadata({
   title: 'Date Night Calendar | Plan Your Perfect Dates',
@@ -38,662 +26,599 @@ const metadata = generateMetadata({
   ],
 });
 
-import { DateIdea } from '../services/favoritesService';
 
-interface CalendarEvent extends Event {
-  dateIdea?: DateIdea;
-  id: string;
-  allDay?: boolean;
-  start: Date;
-  end: Date;
-}
+const localizer = momentLocalizer(moment);
 
-const TypedDragAndDropCalendar = withDragAndDrop<CalendarEvent, object>(RBCalendar);
-
-const CalendarPage: React.FC = () => {
-  const localizer = momentLocalizer(moment);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [myFavorites, setMyFavorites] = useState<DateIdea[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const calendarRef = useRef<HTMLDivElement>(null);
-  const clipboard = useClipboard();
-  const [partnerId, setPartnerId] = useState('');
-  const [calendarId, setCalendarId] = useState('');
+export default function DateIdeasCalendar() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<DateIdea[]>([]);
-  const [copiedId, setCopiedId] = useState(false);
-  const [schedulingDateIdea, setSchedulingDateIdea] = useState<DateIdea | null>(null);
-  const [scheduledDateTime, setScheduledDateTime] = useState<{
-    date: string;
-    time: string;
-  }>({
-    date: moment().format('YYYY-MM-DD'),
-    time: '18:00',
-  });
-  const { toast } = useToast();
-  const [history, setHistory] = useState<CalendarEvent[][]>([]);
-  const [future, setFuture] = useState<CalendarEvent[][]>([]);
+  const [myFavorites, setMyFavorites] = useState<{ id: number; title?: string; description?: string; image?: string; category?: string; }[]>([]);
+  const [partnerFavorites, setPartnerFavorites] = useState<{ id: number; title?: string; description?: string; image?: string; category?: string; }[]>([]);
+  const [jointFavorites, setJointFavorites] = useState<{ id: number; title?: string; description?: string; image?: string; category?: string; }[]>([]);
+  const [calendarView, setCalendarView] = useState('month');
+  const [isMyOpen, setIsMyOpen] = useState(true);
+  const [isPartnerOpen, setIsPartnerOpen] = useState(true);
+  const [isJointOpen, setIsJointOpen] = useState(true);
 
+  interface CalendarEvent {
+    id: number;
+    title: any;
+    start: moment.MomentInput;
+    end: Date;
+    idea: { title: any };
+  }
+
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  // Current date for navigation
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  // History for undo/redo
+  const [pastEvents, setPastEvents] = useState<CalendarEvent[][]>([]);
+  const [futureEvents, setFutureEvents] = useState<CalendarEvent[][]>([]);
+  // Modal for managing scheduled dates
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Helper to push current events into history
   const pushHistory = (newEvents: CalendarEvent[]) => {
-    setHistory((prev) => [...prev, events]);
-    setFuture([]);
-    setEvents(newEvents);
+    setPastEvents(prev => [...prev, events]);
+    setFutureEvents([]);
   };
 
-  const handleUndo = () => {
-    if (history.length === 0) return;
-    setFuture((f) => [events, ...f]);
-    setEvents(history[history.length - 1]);
-    setHistory((h) => h.slice(0, -1));
+  const [partnerId, setPartnerId] = useState('');
+  const [calendarId] = useState('0292df00-86dd-4f00-b2f9-54c31bd4');
+
+  // Sample date ideas
+  const dateIdeas = [
+    {
+      id: 1,
+      title: 'Sunset Kayaking Tour',
+      description: 'Paddle through calm waters and watch the sunset together',
+      image: '/images/sunset-kayak.jpg',
+      category: 'Adventure'
+    },
+    {
+      id: 2,
+      title: 'Cooking Class',
+      description: 'Learn to make a new cuisine together',
+      image: '/images/cooking-class.jpg',
+      category: 'Food'
+    },
+    {
+      id: 3,
+      title: 'Stargazing Picnic',
+      description: 'Bring blankets, snacks and stargaze in a quiet spot',
+      image: '/images/stargazing.jpg',
+      category: 'Outdoor'
+    },
+    {
+      id: 4,
+      title: 'Pottery Workshop',
+      description: 'Get creative and make something together to keep',
+      image: '/images/pottery.jpg',
+      category: 'Creative'
+    },
+    {
+      id: 5,
+      title: 'Beach Day',
+      description: 'Swim, sunbathe and build sandcastles together',
+      image: '/images/beach.jpg',
+      category: 'Outdoor'
+    }
+  ];
+
+  // Filter date ideas based on search query
+  const filteredDateIdeas = dateIdeas.filter(idea =>
+    idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    idea.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    idea.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Toggle favorite status
+  const toggleFavorite = (idea: { id: any; title?: string; description?: string; image?: string; category?: string; }) => {
+    if (myFavorites.some(fav => fav.id === idea.id)) {
+      setMyFavorites(myFavorites.filter(fav => fav.id !== idea.id));
+    } else {
+      setMyFavorites([...myFavorites, idea]);
+    }
   };
 
-  const handleRedo = () => {
-    if (future.length === 0) return;
-    setHistory((h) => [...h, events]);
-    setEvents(future[0]);
-    setFuture((f) => f.slice(1));
-  };
-
+  // Update joint favorites when my favorites or partner favorites change
   useEffect(() => {
-    const fetchFavorites = async () => {
-      try {
-        setIsLoading(true);
-        const savedIdeas = localStorage.getItem('savedDateIdeas');
-        if (savedIdeas) {
-          setMyFavorites(JSON.parse(savedIdeas));
-        }
-        const savedEvents = localStorage.getItem('calendarEvents');
-        if (savedEvents) {
-          setEvents(JSON.parse(savedEvents));
-        }
-      } catch (error) {
-        console.error('Error fetching favorites:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFavorites();
-  }, []);
+    const newJointFavorites = myFavorites.filter(myFav =>
+      partnerFavorites.some(partnerFav => partnerFav.id === myFav.id)
+    );
+    setJointFavorites(newJointFavorites);
+  }, [myFavorites, partnerFavorites]);
 
-  useEffect(() => {
-    localStorage.setItem('calendarEvents', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    const deviceId = localStorage.getItem('device_id');
-    if (deviceId) {
-      setCalendarId(deviceId);
-    }
-  }, []);
-
-  const handleCopyId = () => {
-    clipboard.copy(calendarId);
-    setCopiedId(true);
-    toast({
-      title: "Copied!",
-      description: "Calendar ID copied to clipboard",
-    });
-    setTimeout(() => setCopiedId(false), 2000);
-  };
-
-  const handlePartnerIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPartnerId(e.target.value);
-  };
-
-  const handleGoogleCalendarExport = async () => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const { gapi } = await import('gapi-script');
-      const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-      const SCOPES = "https://www.googleapis.com/auth/calendar.events";
-
-      gapi.load('client:auth2', async () => {
-        await gapi.client.init({
-          apiKey: API_KEY,
-          clientId: CLIENT_ID,
-          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"],
-          scope: SCOPES,
-        });
-
-        const authInstance = gapi.auth2.getAuthInstance();
-        if (!authInstance || !authInstance.isSignedIn.get()) {
-          await authInstance.signIn();
-        }
-
-        const calendarEvents = events.map(event => {
-          if (!event.start || !event.end) {
-            console.warn(`Skipping event with missing start or end time: ${event.title}`);
-            return null;
-          }
-          return {
-            summary: event.title,
-            start: { dateTime: event.start.toISOString() },
-            end: { dateTime: event.end.toISOString() },
-          };
-        }).filter(Boolean);
-
-        for (const event of calendarEvents) {
-          await gapi.client.calendar.events.insert({
-            calendarId: 'primary',
-            resource: event,
-          });
-        }
-
-        toast({
-          title: "Success!",
-          description: "Events exported to Google Calendar",
-        });
-      });
-    } catch (error) {
-      console.error('Error exporting to Google Calendar:', error);
-      toast({
-        title: "Export Failed",
-        description: "Could not export to Google Calendar",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim() === '') {
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      const results = myFavorites.filter(idea =>
-        idea.title.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching date ideas:', error);
-    }
-  };
-
-  const isInFavorites = (dateIdea: DateIdea) => {
-    return myFavorites.some(idea => idea.id === dateIdea.id);
-  };
-
-  const handleAddToFavorites = async (dateIdea: DateIdea) => {
-    try {
-      await favoritesService.saveFavorite(dateIdea);
-      setMyFavorites((prev) => {
-        if (!prev.some(idea => idea.id === dateIdea.id)) {
-          return [...prev, dateIdea];
-        }
-        return prev;
-      });
-      toast({
-        title: "Added to Favorites",
-        description: `${dateIdea.title} added to your favorites!`,
-      });
-    } catch (error) {
-      console.error('Error adding to favorites:', error);
-      toast({
-        title: "Error",
-        description: "Could not add to favorites",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRemoveFromFavorites = async (dateIdea: DateIdea) => {
-    try {
-      await favoritesService.removeFavorite(dateIdea.id);
-      setMyFavorites((prev) => prev.filter(idea => idea.id !== dateIdea.id));
-      toast({
-        title: "Removed",
-        description: `${dateIdea.title} removed from your favorites`,
-      });
-    } catch (error) {
-      console.error('Error removing from favorites:', error);
-      toast({
-        title: "Error",
-        description: "Could not remove from favorites",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleScheduleDateIdea = (dateIdea: DateIdea) => {
-    setSchedulingDateIdea(dateIdea);
-  };
-
-  const handleAddToCalendar = () => {
-    if (!schedulingDateIdea) return;
-    
-    const startDateTime = moment(`${scheduledDateTime.date} ${scheduledDateTime.time}`);
-    const endDateTime = moment(startDateTime).add(2, 'hours');
-    
+  // Function to schedule a date
+  const scheduleDate = (idea: { title: any; }, date: moment.MomentInput) => {
     const newEvent: CalendarEvent = {
-      id: `${schedulingDateIdea.id}-${Date.now()}`,
-      title: schedulingDateIdea.title,
-      start: startDateTime.toDate(),
-      end: endDateTime.toDate(),
-      dateIdea: schedulingDateIdea,
-      allDay: false,
+      id: Date.now(),
+      title: idea.title,
+      start: date,
+      end: moment(date).add(2, 'hours').toDate(),
+      idea: idea
     };
-    
-    pushHistory([...events, newEvent]);
-    setSchedulingDateIdea(null);
-    
-    toast({
-      title: "Added to Calendar",
-      description: `${schedulingDateIdea.title} scheduled for ${startDateTime.format('MMM DD, YYYY [at] h:mm A')}`,
-    });
+    const updated = [...events, newEvent];
+    pushHistory(updated);
+    setEvents(updated);
   };
 
-  const handleSelectSlot = (slotInfo: any) => {
-    if (!schedulingDateIdea) return;
-    const startDateTime = moment(slotInfo.start);
-    const endDateTime = moment(slotInfo.end);
-    const newEvent: CalendarEvent = {
-      id: `${schedulingDateIdea.id}-${Date.now()}`,
-      title: schedulingDateIdea.title,
-      start: startDateTime.toDate(),
-      end: endDateTime.toDate(),
-      dateIdea: schedulingDateIdea,
-      allDay: slotInfo.action === 'select' && slotInfo.slots.length === 1,
-    };
-    pushHistory([...events, newEvent]);
-    setSchedulingDateIdea(null);
-    toast({
-      title: "Added to Calendar",
-      description: `${schedulingDateIdea.title} scheduled for ${startDateTime.format('MMM DD, YYYY [at] h:mm A')}`,
-    });
+  // Undo/Redo operations
+  const undo = () => {
+    if (pastEvents.length === 0) return;
+    const prev = pastEvents[pastEvents.length - 1];
+    setPastEvents(prevList => prevList.slice(0, -1));
+    setFutureEvents(fut => [events, ...fut]);
+    setEvents(prev);
+  };
+  const redo = () => {
+    if (futureEvents.length === 0) return;
+    const [next, ...rest] = futureEvents;
+    setFutureEvents(rest);
+    setPastEvents(prev => [...prev, events]);
+    setEvents(next);
   };
 
-  const handleEventDrop = ({ event, start, end, allDay }: any) => {
-    const updatedEvents = events.map(ev =>
-      ev.id === event.id ? { ...ev, start, end, allDay } : ev
+  // Update or remove event from modal
+  const updateEventDate = (id: number, dateStr: string) => {
+    const date = new Date(dateStr);
+    const updated = events.map(ev =>
+      ev.id === id
+        ? { ...ev, start: date, end: moment(date).add(moment(ev.end).diff(moment(ev.start), 'hours'), 'hours').toDate() }
+        : ev
     );
-    pushHistory(updatedEvents);
-    toast({
-      title: "Event Updated",
-      description: `${event.title} moved to ${moment(start).format('MMM DD, YYYY [at] h:mm A')}`,
-    });
+    pushHistory(updated);
+    setEvents(updated);
+  };
+  const removeEvent = (id: number) => {
+    const updated = events.filter(ev => ev.id !== id);
+    pushHistory(updated);
+    setEvents(updated);
   };
 
-  const handleEditEvent = (eventId: string) => {
-    const eventToEdit = events.find(ev => ev.id === eventId);
-    if (!eventToEdit) return;
+  // Mock function to sync with partner's calendar
+  const syncWithPartner = () => {
+    if (!partnerId) return;
 
-    const updatedEvents = events.map(ev =>
-      ev.id === eventId ? {
-        ...ev,
-        start: moment().add(1, 'day').toDate(),
-        end: moment().add(1, 'day').add(2, 'hours').toDate()
-      } : ev
-    );
-    pushHistory(updatedEvents);
-    toast({ title: "Event Edited", description: `Event "${eventToEdit.title}" rescheduled.` });
+    // In a real app, this would make an API call
+    // For demo purposes, let's pretend we got some data back
+    setPartnerFavorites([dateIdeas[1], dateIdeas[3]]);
+    alert('Successfully synced with partner!');
   };
 
-  const handleRemoveEvent = (eventId: string) => {
-    pushHistory(events.filter(ev => ev.id !== eventId));
-    toast({ title: "Event Removed", description: "Event deleted from calendar." });
+  // Export to Google Calendar
+  const exportToGoogleCalendar = () => {
+    alert('Calendar exported to Google Calendar');
+    // This would typically use the Google Calendar API
   };
 
-  const EventComponent = ({ event }: EventProps<CalendarEvent>) => {
-    const dateIdea = event.dateIdea;
-
-    return (
-      <div className="relative group calendar-event transform transition-transform duration-200 hover:scale-[1.02]">
-        <div className="px-3 py-2 flex items-center gap-3 bg-white rounded-lg shadow-sm">
-          {dateIdea && (
-            <div className="relative h-10 w-10 flex-shrink-0 rounded-full overflow-hidden border-2 border-white shadow-sm">
-              <Image
-                src={dateIdea.image || "/placeholder-date.jpg"}
-                alt={dateIdea.title}
-                fill
-                className="object-cover"
-              />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <span className="truncate text-sm font-medium text-gray-800 block">{event.title}</span>
-          </div>
-          <Menu as="div" className="relative inline-block text-left ml-2">
-            <MenuButton className="p-1 rounded-full hover:bg-gray-100">
-              <MoreVertical className="h-4 w-4 text-gray-500" />
-            </MenuButton>
-            <MenuItems className="absolute right-0 z-10 mt-2 w-36 origin-top-right bg-white border border-gray-200 rounded-md shadow-lg focus:outline-none">
-              <MenuItem>
-                {({ active }) => (
-                  <button
-                    className={`w-full text-left px-4 py-2 text-sm ${active ? 'bg-gray-100' : ''}`}
-                    onClick={() => handleEditEvent(event.id)}
-                  >
-                    Edit
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ active }) => (
-                  <button
-                    className={`w-full text-left px-4 py-2 text-sm text-red-600 ${active ? 'bg-gray-100' : ''}`}
-                    onClick={() => handleRemoveEvent(event.id)}
-                  >
-                    Delete
-                  </button>
-                )}
-              </MenuItem>
-            </MenuItems>
-          </Menu>
-        </div>
-      </div>
-    );
+  // Copy calendar ID to clipboard
+  const copyCalendarId = () => {
+    navigator.clipboard.writeText(calendarId);
+    alert('Calendar ID copied to clipboard!');
   };
+
+  // Date arrays for views and helpers
+  const today = new Date();
+  const monthStart = moment(currentDate).startOf('month').startOf('week');
+  const monthCells: Date[] = Array.from({ length: 35 }).map((_, idx) => moment(monthStart).add(idx, 'days').toDate());
+  const weekStart = moment(currentDate).startOf('week');
+  const weekCells: Date[] = Array.from({ length: 7 }).map((_, idx) => moment(weekStart).add(idx, 'days').toDate());
+  const headerLabel = calendarView === 'month'
+    ? moment(currentDate).format('MMMM YYYY')
+    : `Week of ${moment(weekStart).format('MMM D, YYYY')}`;
+  const isSameDay = (a: moment.MomentInput, b: Date) => {
+    const da = moment(a).toDate();
+    return da.getFullYear() === b.getFullYear() && da.getMonth() === b.getMonth() && da.getDate() === b.getDate();
+  };
+  const isToday = (date: Date) => isSameDay(date, today);
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-[#fafafa]">
-        <Header />
+    <div className="min-h-screen bg-gray-50">
+      <ToastProvider>
+        <div className="min-h-screen bg-[#fafafa]">
+          <Header />
+          <Head>
+            <title>Date Ideas Calendar</title>
+            <meta name="description" content="Interactive date planning calendar for couples" />
+            <link rel="icon" href="/favicon.ico" />
+          </Head>
 
-        <main className="max-w-[1400px] mx-auto py-16 px-6 lg:px-16">
-          <div className="text-center mb-16 space-y-6">
-            <h1 className="text-5xl font-bold text-gray-900 tracking-tight">
-              Your Interactive Date Planning Calendar
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto font-light">
-              Welcome to your personal Date Night Calendar - the perfect way to plan, organize, and remember your most special moments together.
-            </p>
-            <div className="flex justify-center gap-4 mt-8">
-              <div className="flex items-center text-rose-700">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                </svg>
-                <span>Plan Together</span>
-              </div>
-              <div className="flex items-center text-rose-700">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
-                </svg>
-                <span>Create Memories</span>
-              </div>
-              <div className="flex items-center text-rose-700">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
-                </svg>
-                <span>Stay Connected</span>
-              </div>
+          <main className="container mx-auto px-4 py-6">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-rose-600">Date Ideas Calendar</h1>
+              <p className="text-xl text-gray-700">Your Interactive Date Planning Calendar</p>
+              <p className="text-gray-500 mt-2">
+                Welcome to your personal Date Night Calendar - the perfect way to plan, organize, and remember your
+                most special moments together.
+              </p>
             </div>
-          </div>
 
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Date Ideas</h3>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search for date ideas..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 bg-gray-100"
-            />
-            {searchResults.length > 0 && (
-              <ul className="mt-4 bg-white border border-gray-200 rounded-lg shadow-md">
-                {searchResults.map((idea) => {
-                  const isFavorite = isInFavorites(idea);
-                  
-                  return (
-                    <li
-                      key={idea.id}
-                      className="px-4 py-3 hover:bg-gray-50 flex justify-between items-center border-b border-gray-100 last:border-b-0"
-                    >
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="relative h-10 w-10 flex-shrink-0">
-                          <Image
-                            src={idea.image || "/placeholder-date.jpg"}
-                            alt={idea.title}
-                            fill
-                            className="object-cover rounded-md"
-                          />
-                        </div>
-                        <span className="font-medium text-gray-800">{idea.title}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100"
-                              title="Add to calendar"
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <div className="space-y-4">
-                              <div className="text-sm font-medium">Schedule "{idea.title}"</div>
-                              <div className="grid gap-2">
-                                <label className="text-xs text-gray-500">Date</label>
-                                <Input 
-                                  type="date"
-                                  defaultValue={scheduledDateTime.date}
-                                  onChange={(e) => setScheduledDateTime(prev => ({...prev, date: e.target.value}))}
-                                />
-                              </div>
-                              <div className="grid gap-2">
-                                <label className="text-xs text-gray-500">Time</label>
-                                <Input 
-                                  type="time"
-                                  defaultValue={scheduledDateTime.time}
-                                  onChange={(e) => setScheduledDateTime(prev => ({...prev, time: e.target.value}))}
-                                />
-                              </div>
-                              <Button 
-                                className="w-full" 
-                                onClick={() => {
-                                  handleScheduleDateIdea(idea);
-                                  handleAddToCalendar();
-                                }}
-                              >
-                                Add to Calendar
-                              </Button>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        
-                        {isFavorite ? (
-                          <button
-                            onClick={() => handleRemoveFromFavorites(idea)}
-                            className="p-2 bg-rose-50 text-rose-600 rounded-full hover:bg-rose-100"
-                            title="Remove from favorites"
-                          >
-                            <Heart className="h-4 w-4 fill-rose-500" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleAddToFavorites(idea)}
-                            className="p-2 bg-gray-50 text-gray-600 rounded-full hover:bg-rose-50 hover:text-rose-600"
-                            title="Add to favorites"
-                          >
-                            <Heart className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="space-y-8">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900">My Favorites</h3>
-                    <FavoritesAccordion
-                      title=""
-                      items={myFavorites}
-                      defaultOpen={true}
-                      isLoading={isLoading}
-                    />
-                  </div>
-
-                  <div className="space-y-4 pt-6 border-t border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-900">Partner's Favorites</h3>
-                    {partnerId ? (
-                      <div>Partner's favorites will appear here</div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Enter your partner's Calendar ID to see their favorites</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-4 pt-6 border-t border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-900">Joint Favorites</h3>
-                    {partnerId ? (
-                      <div>Joint favorites will appear here</div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Joint favorites will appear once you connect with your partner</p>
-                    )}
-                  </div>
+            {/* Search Bar */}
+            <div className="mb-8 max-w-md mx-auto">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
                 </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-6">
-                <h3 className="text-lg font-semibold text-gray-900">Calendar ID</h3>
-                <p className="text-sm text-gray-500 mb-2">Share this ID with your partner to connect calendars</p>
-                <div className="flex items-center gap-2 mt-4">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={calendarId}
-                      readOnly
-                      className="w-full px-4 py-2 border bg-gray-100 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 pr-10"
-                    />
-                    {copiedId && (
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500">
-                        <Check className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleCopyId}
-                    className={`p-2 ${copiedId ? 'bg-green-500' : 'bg-rose-500'} text-white rounded-lg hover:opacity-90 transition-colors`}
-                    title="Copy ID"
-                  >
-                    {copiedId ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-                  </button>
-                </div>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6">Partner's Calendar ID</h3>
-                <p className="text-sm text-gray-500 mb-2">Enter your partner's ID to connect calendars</p>
                 <input
                   type="text"
-                  value={partnerId}
-                  onChange={handlePartnerIdChange}
-                  placeholder="Enter partner's Calendar ID"
-                  className="w-full px-4 py-2 mt-2 border bg-gray-100 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
+                  placeholder="Search Date Ideas"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Benefits of Regular Date Nights</h3>
-                <ul className="space-y-3">
-                  {[
-                    "Strengthens emotional bonds and intimacy",
-                    "Creates new shared experiences",
-                    "Reduces relationship stress",
-                    "Improves communication",
-                    "Increases relationship satisfaction",
-                    "Provides a break from routine",
-                    "Enhances creativity in planning",
-                  ].map((benefit, index) => (
-                    <li key={index} className="flex items-start">
-                      <svg className="w-5 h-5 text-rose-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-gray-600">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
 
-            <div ref={calendarRef} className="lg:col-span-2 space-y-8">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                <div className="flex justify-end mb-2 gap-2">
-                  <Button onClick={handleUndo} disabled={history.length === 0} variant="outline">Undo</Button>
-                  <Button onClick={handleRedo} disabled={future.length === 0} variant="outline">Redo</Button>
-                </div>
-                <TypedDragAndDropCalendar
-                  localizer={localizer}
-                  events={events}
-                  defaultView="month"
-                  startAccessor={(event) => event.start}
-                  endAccessor={(event) => event.end}
-                  style={{ height: 700 }}
-                  className="font-light"
-                  views={[Views.MONTH, Views.WEEK]}
-                  components={{
-                    event: EventComponent
-                  }}
-                  popup
-                  selectable
-                  onSelectSlot={handleSelectSlot}
-                  onEventDrop={handleEventDrop as withDragAndDropProps<CalendarEvent>['onEventDrop']}
-                  draggableAccessor={() => true}
-                />
-              </div>
-
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={handleGoogleCalendarExport}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  Export to Google Calendar
-                </button>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">How to Use Your Calendar</h3>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <p className="text-gray-600">
-                      Get started by browsing your favorite date ideas in the panel to the left. Simply drag your chosen date idea to your preferred day on the calendar.
-                    </p>
-                    <div className="flex flex-col space-y-3">
-                      <h4 className="font-medium text-gray-900">Calendar Features:</h4>
-                      <ul className="space-y-2">
-                        {[
-                          "Drag-and-drop date planning interface",
-                          "Monthly and weekly calendar views",
-                          "Visual previews of each date idea",
-                          "Automatic local storage of your planned dates",
-                          "Time-specific scheduling options"
-                        ].map((feature, index) => (
-                          <li key={index} className="flex items-center text-gray-600">
-                            <svg className="w-4 h-4 text-rose-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
+            {/* Browse Date Ideas */}
+            <div className="mb-10">
+              <h2 className="text-xl font-medium text-gray-900 mb-4">Browse Date Ideas</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {filteredDateIdeas.map(idea => (
+                  <div
+                    key={idea.id}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(idea))}
+                    className="bg-white rounded-lg shadow overflow-hidden"
+                  >
+                    <div className="h-40 relative">
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                        {/* Replace with actual Image component when you have images */}
+                        <div className="text-gray-400">Image: {idea.title}</div>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-medium text-gray-900">{idea.title}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{idea.description}</p>
+                      <div className="mt-2">
+                        <span className="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs font-semibold text-gray-600 mr-2">
+                          {idea.category}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex justify-between">
+                        <button
+                          onClick={() => toggleFavorite(idea)}
+                          className={`flex items-center px-3 py-1 rounded-md text-sm ${myFavorites.some(fav => fav.id === idea.id)
+                            ? 'bg-rose-100 text-rose-600'
+                            : 'bg-gray-100 text-gray-600'
+                            }`}
+                        >
+                          <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                          </svg>
+                          My Fav
+                        </button>
+                        <button className="flex items-center px-3 py-1 bg-gray-100 rounded-md text-sm text-gray-600">
+                          <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Partner Fav
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="relative h-48 md:h-full min-h-[200px] rounded-xl overflow-hidden">
-                    <Image
-                      src="/bikeriding.webp"
-                      alt="Couple enjoying a date"
-                      fill
-                      className="object-cover"
-                    />
+                ))}
+              </div>
+            </div>
+
+            {/* Main content grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Left column - Favorites sections */}
+              <div className="md:col-span-1">
+                {/* My Favorites */}
+                <div className="bg-white rounded-lg shadow mb-6">
+                  <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                    <h2 className="text-lg font-medium text-gray-900">My Favorites ({myFavorites.length})</h2>
+                    <button onClick={() => setIsMyOpen(!isMyOpen)} className="text-gray-400 hover:text-gray-600">
+                      <svg className={`h-5 w-5 transform ${isMyOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  {isMyOpen && (
+                    <div className="p-4">
+                      {myFavorites.length === 0 ? (
+                        <p className="text-gray-500 text-sm">No favorites yet. Click the heart icon to add!</p>
+                      ) : (
+                        <ul className="divide-y divide-gray-200">
+                          {myFavorites.map(fav => (
+                            <li
+                              key={fav.id}
+                              className="py-3 flex"
+                              draggable
+                              onDragStart={e => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
+                            >
+                              <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-medium">{fav.title}</h3>
+                                <p className="text-xs text-rose-500">{fav.category}</p>
+                              </div>
+                              <div className="flex space-x-2">
+                                <button className="text-gray-400 hover:text-gray-600">
+                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                  </svg>
+                                </button>
+                                <button className="text-gray-400 hover:text-gray-600">
+                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Partner's Favorites */}
+                <div className="bg-white rounded-lg shadow mb-6">
+                  <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                    <h2 className="text-lg font-medium text-gray-900">Partner's Favorites ({partnerFavorites.length})</h2>
+                    <button className="text-gray-400 hover:text-gray-600" onClick={() => setIsPartnerOpen(!isPartnerOpen)}>
+                      <svg className={`h-5 w-5 transform ${isPartnerOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  {isPartnerOpen && (
+                    <div className="p-4">
+                      <p className="text-gray-500 text-sm mb-3">Enter your partner's Calendar ID to see their favorites</p>
+                      {partnerFavorites.length > 0 && (
+                        <ul className="divide-y divide-gray-200">
+                          {partnerFavorites.map(fav => (
+                            <li
+                              key={fav.id}
+                              className="py-3 flex"
+                              draggable
+                              onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
+                            >
+                              <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-medium">{fav.title}</h3>
+                                <p className="text-xs text-rose-500">{fav.category}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Joint Favorites */}
+                <div className="bg-white rounded-lg shadow mb-6">
+                  <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                    <h2 className="text-lg font-medium text-gray-900">Joint Favorites ({jointFavorites.length})</h2>
+                    <button className="text-gray-400 hover:text-gray-600" onClick={() => setIsJointOpen(!isJointOpen)}>
+                      <svg className={`h-5 w-5 transform ${isJointOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  {isJointOpen && (
+                    <div className="p-4">
+                      {jointFavorites.length === 0 ? (
+                        <p className="text-gray-500 text-sm">When you and your partner both favorite the same date idea, it will appear here.</p>
+                      ) : (
+                        <ul className="divide-y divide-gray-200">
+                          {jointFavorites.map(fav => (
+                            <li
+                              key={fav.id}
+                              className="py-3 flex"
+                              draggable
+                              onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
+                            >
+                              <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-medium">{fav.title}</h3>
+                                <p className="text-xs text-rose-500">{fav.category}</p>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Calendar ID */}
+                <div className="bg-white rounded-lg shadow mb-6">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <h2 className="text-lg font-medium text-gray-900">Calendar ID</h2>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-gray-500 text-sm mb-3">Share this ID with your partner to connect calendars</p>
+                    <div className="flex mb-4">
+                      <input
+                        type="text"
+                        className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm text-sm"
+                        value={calendarId}
+                        readOnly
+                      />
+                      <button
+                        onClick={copyCalendarId}
+                        className="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Partner's Calendar */}
+                <div className="bg-white rounded-lg shadow mb-6">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <h2 className="text-lg font-medium text-gray-900">Partner's Calendar</h2>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex mb-4">
+                      <input
+                        type="text"
+                        className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm text-sm"
+                        placeholder="Enter partner's calendar ID"
+                        value={partnerId}
+                        onChange={(e) => setPartnerId(e.target.value)}
+                      />
+                      <button
+                        onClick={syncWithPartner}
+                        className="inline-flex items-center px-4 py-2 border border-l-0 border-transparent rounded-r-md bg-rose-500 text-sm font-medium text-white hover:bg-rose-600"
+                      >
+                        Sync
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={exportToGoogleCalendar}
+                      className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Export to Google Calendar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right column - Calendar */}
+              <div className="md:col-span-2">
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-medium text-gray-900">
+                      {headerLabel}
+                    </h2>
+                    <div className="flex items-center space-x-2">
+                      {/* Navigation buttons */}
+                      <button
+                        onClick={() => {
+                          setCurrentDate(prev =>
+                            new Date(calendarView === 'month'
+                              ? moment(prev).subtract(1, 'months').toDate()
+                              : moment(prev).subtract(1, 'weeks').toDate()
+                            )
+                          );
+                        }}
+                        className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
+                      >Prev</button>
+                      <button
+                        onClick={() => setCurrentDate(new Date())}
+                        className="px-2 py-1 bg-gray-200 rounded"
+                      >Today</button>
+                      <button
+                        onClick={() => {
+                          setCurrentDate(prev =>
+                            new Date(calendarView === 'month'
+                              ? moment(prev).add(1, 'months').toDate()
+                              : moment(prev).add(1, 'weeks').toDate()
+                            )
+                          );
+                        }}
+                        className="px-2 py-1 bg-gray-200 rounded"
+                      >Next</button>
+                      <button
+                        onClick={undo}
+                        disabled={pastEvents.length === 0}
+                        className="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700 disabled:opacity-50"
+                      >Undo</button>
+                      <button
+                        onClick={redo}
+                        disabled={futureEvents.length === 0}
+                        className="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700 disabled:opacity-50"
+                      >Redo</button>
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700"
+                      >Manage Dates</button>
+                      <button
+                        onClick={() => setCalendarView('week')}
+                        className={`px-3 py-1 rounded text-sm ${calendarView === 'week' ? 'bg-rose-500 text-white' : 'bg-gray-200 text-gray-700'
+                          }`}
+                      >Week</button>
+                      <button
+                        onClick={() => setCalendarView('month')}
+                        className={`px-3 py-1 rounded text-sm ${calendarView === 'month' ? 'bg-rose-500 text-white' : 'bg-gray-200 text-gray-700'
+                          }`}
+                      >Month</button>
+                    </div>
+                  </div>
+                  {/* Modal for managing scheduled events */}
+                  {isModalOpen && (
+                    <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+                      <div className="bg-white rounded-lg w-3/4 max-w-xl p-6">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-medium">Manage Scheduled Dates</h3>
+                          <button onClick={() => setIsModalOpen(false)} className="text-gray-500 text-xl leading-none">×</button>
+                        </div>
+                        <div className="space-y-4 max-h-96 overflow-y-auto">
+                          {events.length === 0 ? (
+                            <p className="text-gray-500">No scheduled dates.</p>
+                          ) : events.map(ev => (
+                            <div key={ev.id} className="flex items-center space-x-2">
+                              <div className="flex-1 text-sm font-medium">{ev.title}</div>
+                              <input
+                                type="datetime-local"
+                                value={new Date(ev.start as Date).toISOString().substr(0, 16)}
+                                onChange={e => updateEventDate(ev.id, e.target.value)}
+                                className="border px-2 py-1 text-sm"
+                              />
+                              <button
+                                onClick={() => removeEvent(ev.id)}
+                                className="text-red-600 text-sm"
+                              >Delete</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {/* Calendar grid */}
+                  <div className="border border-gray-200 rounded">
+                    {/* Week/Month header */}
+                    <div className="grid grid-cols-7 border-b border-gray-200">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="px-2 py-3 text-center text-sm font-medium text-gray-500">
+                          {day}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Dynamic grid: month has 35 cells, week has 7 */}
+                    <div className={
+                      `grid grid-cols-7 ${calendarView === 'month' ? 'grid-rows-5' : ''} gap-px`
+                    }>
+                      {(calendarView === 'month' ? monthCells : weekCells).map((date, idx) => (
+                        <div
+                          key={idx}
+                          className={
+                            `h-24 p-1 border-t border-l border-gray-200 bg-white ${isToday(date) ? 'bg-yellow-100' : ''}`
+                          }
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={e => {
+                            const idea = JSON.parse(e.dataTransfer.getData('application/json'));
+                            scheduleDate(idea, date);
+                          }}
+                        >
+                          <div className="flex justify-end items-center text-right text-xs text-gray-500 mb-1">
+                            <span>{date.getDate()}</span>
+                            {isToday(date) && <span className="ml-1 text-red-500">♥</span>}
+                          </div>
+                          {/* Render events */}
+                          {events.filter(ev => isSameDay(ev.start, date)).map(ev => (
+                            <div key={ev.id} className="bg-rose-100 text-rose-600 px-2 py-1 rounded text-xs mb-1">
+                              {ev.title}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-
-        <Footer />
-      </div>
-    </ToastProvider>
+          </main>
+          <Footer />
+        </div>
+      </ToastProvider>
+    </div>
   );
-};
-
-export default CalendarPage;
+}
