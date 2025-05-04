@@ -132,6 +132,7 @@ const Home = () => {
   };
 
   const [trendingIdeas, setTrendingIdeas] = useState<DateIdea[]>([]);
+  const [trendingSlide, setTrendingSlide] = useState(0);
 
   useEffect(() => {
     // Fetch only the 20 most popular cities initially
@@ -827,46 +828,33 @@ const Home = () => {
       <section className="py-10">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Trending Date Ideas for Couples this Week</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {trendingIdeas.length === 0 && (
-              <div className="col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md flex flex-col h-full">
-                    <div className="relative h-48 w-full bg-gray-200 animate-pulse"></div>
+          <div className="relative">
+            <button onClick={() => setTrendingSlide(prev => prev > 0 ? prev - 1 : Math.floor((trendingIdeas.length - 1) / 5))} className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow">‹</button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 overflow-hidden">
+              {(trendingIdeas.slice(trendingSlide * 5, trendingSlide * 5 + 5)).map((idea) => (
+                <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
+                  <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow flex flex-col h-full relative">
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={allDateIdeaImages[idea.slug] || idea.image || '/placeholder.svg?height=300&width=400'}
+                        alt={idea.title}
+                        fill
+                        className="object-cover w-full h-full"
+                      />
+                      <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3 z-10" />
+                    </div>
                     <div className="p-4 flex-1 flex flex-col">
-                      <div className="flex items-center mb-2">
-                        <div className="bg-gray-200 animate-pulse h-5 w-16 rounded mb-2"></div>
+                      <div className="flex items-center mb-2 flex-wrap gap-1">
+                        <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded mb-2">{idea.category}</span>
                       </div>
-                      <div className="bg-gray-200 animate-pulse h-6 w-4/5 rounded mb-1"></div>
-                      <div className="bg-gray-200 animate-pulse h-4 w-full rounded mb-1"></div>
-                      <div className="bg-gray-200 animate-pulse h-4 w-2/3 rounded mb-2"></div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors line-clamp-2">{idea.title}</h3>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{idea.description}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-            {trendingIdeas.map((idea, index) => (
-              <Link href={`/date-idea/${idea.slug}`} key={idea.id} className="group">
-                <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow flex flex-col h-full">
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={allDateIdeaImages[idea.slug] || idea.image || '/placeholder.svg?height=300&width=400'}
-                      alt={idea.title}
-                      fill
-                      className="object-cover w-full h-full"
-                    />
-                    <SaveButton itemSlug={idea.slug} item={idea} className="absolute top-3 right-3" />
-                  </div>
-                  <div className="p-4 flex-1 flex flex-col">
-                    <div className="flex items-center mb-2 flex-wrap gap-1">
-                      <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded mb-2">{idea.category}</span>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800 mb-1 group-hover:text-rose-500 transition-colors line-clamp-2">{idea.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">{idea.description}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
+            <button onClick={() => setTrendingSlide(prev => prev < Math.floor((trendingIdeas.length - 1) / 5) ? prev + 1 : 0)} className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow">›</button>
           </div>
         </div>
       </section>
@@ -1397,7 +1385,8 @@ const Home = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   {recentFavorites.map((favorite) => (
                     <Link href={`/date-idea/${favorite.slug}`} key={favorite.id} className="group">
-                      <div key={favorite.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                      <div className="bg-white rounded-lg shadow-md overflow-hidden relative">
+                        <SaveButton itemSlug={favorite.slug} item={favorite} className="absolute top-3 right-3 z-10" />
                         <div className="relative h-48">
                           <Image
                             src={allDateIdeaImages[favorite.slug] || '/placeholder.jpg'}

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { HeartIcon, HeartOutlineIcon } from "./icons";
+import { favoritesService } from "../services/favoritesService";
+import { useToast } from "@/hooks/use-toast";
 
 type SaveButtonProps = {
   itemSlug: string;
@@ -13,6 +15,7 @@ type SaveButtonProps = {
 export default function SaveButton({ itemSlug, item, onToggle, className = "" }: SaveButtonProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const { toast } = useToast();
   
   // Check if this item is already saved
   useEffect(() => {
@@ -32,43 +35,24 @@ export default function SaveButton({ itemSlug, item, onToggle, className = "" }:
   }, [itemSlug]);
 
   // Toggle saved status
-  const toggleSave = (e: React.MouseEvent) => {
+  const toggleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Start animation
     setIsAnimating(true);
-    
     try {
-      const savedItems = localStorage.getItem("savedDateIdeas");
-      let updatedItems = [];
-      
-      if (savedItems) {
-        updatedItems = JSON.parse(savedItems);
-        
-        if (isSaved) {
-          // Remove the item
-          updatedItems = updatedItems.filter((savedItem: any) => savedItem.slug !== itemSlug);
-        } else {
-          // Add the item
-          updatedItems.push(item);
-        }
+      if (isSaved) {
+        await favoritesService.removeFavorite(item.id);
+        setIsSaved(false);
+        toast({ title: `${item.title} removed` });
       } else {
-        // First item to save
-        updatedItems = [item];
-      }
-      
-      localStorage.setItem("savedDateIdeas", JSON.stringify(updatedItems));
-      setIsSaved(!isSaved);
-      
-      if (onToggle) {
-        onToggle(!isSaved);
+        await favoritesService.saveFavorite(item);
+        setIsSaved(true);
+        toast({ title: `${item.title} added` });
       }
     } catch (error) {
-      console.error("Error saving item:", error);
+      console.error(error);
+      toast({ title: 'Unable to update favorites', variant: 'destructive' });
     }
-    
-    // Reset animation after a short delay
     setTimeout(() => {
       setIsAnimating(false);
     }, 500);

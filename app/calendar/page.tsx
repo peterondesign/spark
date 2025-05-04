@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
+import type { DateIdea } from '@/app/services/favoritesService';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { generateMetadata } from "../../utils/metadataUtils";
@@ -11,7 +12,7 @@ import { Toast, ToastProvider } from "@/components/ui/toast";
 import { supabase } from "@/utils/supabaseClient";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
+import { processDateIdeaImages, getPlaceholderImage } from '../utils/imageService';
 
 const metadata = generateMetadata({
   title: 'Date Night Calendar | Plan Your Perfect Dates',
@@ -26,25 +27,26 @@ const metadata = generateMetadata({
   ],
 });
 
-
 const localizer = momentLocalizer(moment);
 
 export default function DateIdeasCalendar() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [myFavorites, setMyFavorites] = useState<{ id: number; title?: string; description?: string; image?: string; category?: string; }[]>([]);
-  const [partnerFavorites, setPartnerFavorites] = useState<{ id: number; title?: string; description?: string; image?: string; category?: string; }[]>([]);
-  const [jointFavorites, setJointFavorites] = useState<{ id: number; title?: string; description?: string; image?: string; category?: string; }[]>([]);
+  const [myFavorites, setMyFavorites] = useState<DateIdea[]>([]);
+  const [partnerFavorites, setPartnerFavorites] = useState<DateIdea[]>([]);
+  const [jointFavorites, setJointFavorites] = useState<DateIdea[]>([]);
   const [calendarView, setCalendarView] = useState('month');
   const [isMyOpen, setIsMyOpen] = useState(true);
   const [isPartnerOpen, setIsPartnerOpen] = useState(true);
   const [isJointOpen, setIsJointOpen] = useState(true);
+  const [imageMap, setImageMap] = useState<Record<string, string>>({});
+  const [modalSelectedIdea, setModalSelectedIdea] = useState<number | ''>('');
+  const [modalDateLine, setModalDateLine] = useState('');
 
   interface CalendarEvent {
     id: number;
     title: any;
     start: moment.MomentInput;
     end: Date;
-    idea: { title: any };
+    idea: DateIdea;
   }
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -63,46 +65,42 @@ export default function DateIdeasCalendar() {
   };
 
   const [partnerId, setPartnerId] = useState('');
+  // Search query for filtering date ideas
+  const [searchQuery, setSearchQuery] = useState('');
   const [calendarId] = useState('0292df00-86dd-4f00-b2f9-54c31bd4');
+  // Ref for carousel scrolling
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample date ideas
-  const dateIdeas = [
-    {
-      id: 1,
-      title: 'Sunset Kayaking Tour',
-      description: 'Paddle through calm waters and watch the sunset together',
-      image: '/images/sunset-kayak.jpg',
-      category: 'Adventure'
-    },
-    {
-      id: 2,
-      title: 'Cooking Class',
-      description: 'Learn to make a new cuisine together',
-      image: '/images/cooking-class.jpg',
-      category: 'Food'
-    },
-    {
-      id: 3,
-      title: 'Stargazing Picnic',
-      description: 'Bring blankets, snacks and stargaze in a quiet spot',
-      image: '/images/stargazing.jpg',
-      category: 'Outdoor'
-    },
-    {
-      id: 4,
-      title: 'Pottery Workshop',
-      description: 'Get creative and make something together to keep',
-      image: '/images/pottery.jpg',
-      category: 'Creative'
-    },
-    {
-      id: 5,
-      title: 'Beach Day',
-      description: 'Swim, sunbathe and build sandcastles together',
-      image: '/images/beach.jpg',
-      category: 'Outdoor'
-    }
-  ];
+  useEffect(() => {
+    const fetchDateIdeas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('date_ideas')
+          .select('*');
+
+        if (error) {
+          console.error("Supabase Error:", error);
+          throw error;
+        }
+
+        if (data) {
+          setDateIdeas(data);
+          // load images via Pexels
+          const map = await processDateIdeaImages(data);
+          setImageMap(map);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching date ideas:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchDateIdeas();
+  }, []);
 
   // Filter date ideas based on search query
   const filteredDateIdeas = dateIdeas.filter(idea =>
@@ -111,8 +109,7 @@ export default function DateIdeasCalendar() {
     idea.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Toggle favorite status
-  const toggleFavorite = (idea: { id: any; title?: string; description?: string; image?: string; category?: string; }) => {
+  const toggleFavorite = (idea: DateIdea) => {
     if (myFavorites.some(fav => fav.id === idea.id)) {
       setMyFavorites(myFavorites.filter(fav => fav.id !== idea.id));
     } else {
@@ -129,7 +126,7 @@ export default function DateIdeasCalendar() {
   }, [myFavorites, partnerFavorites]);
 
   // Function to schedule a date
-  const scheduleDate = (idea: { title: any; }, date: moment.MomentInput) => {
+  const scheduleDate = (idea: DateIdea, date: moment.MomentInput) => {
     const newEvent: CalendarEvent = {
       id: Date.now(),
       title: idea.title,
@@ -181,7 +178,10 @@ export default function DateIdeasCalendar() {
 
     // In a real app, this would make an API call
     // For demo purposes, let's pretend we got some data back
-    setPartnerFavorites([dateIdeas[1], dateIdeas[3]]);
+    setPartnerFavorites([
+      { ...dateIdeas[1], rating: 0, location: '', price: '', duration: '', slug: '' },
+      { ...dateIdeas[3], rating: 0, location: '', price: '', duration: '', slug: '' }
+    ]);
     alert('Successfully synced with partner!');
   };
 
@@ -195,6 +195,17 @@ export default function DateIdeasCalendar() {
   const copyCalendarId = () => {
     navigator.clipboard.writeText(calendarId);
     alert('Calendar ID copied to clipboard!');
+  };
+
+  const handleAddModalEvent = () => {
+    if (!modalSelectedIdea || !modalDateLine) return;
+    const idea = myFavorites.find(f => f.id === modalSelectedIdea);
+    if (idea) {
+      const date = new Date(modalDateLine);
+      scheduleDate(idea, date);
+      setModalSelectedIdea('');
+      setModalDateLine('');
+    }
   };
 
   // Date arrays for views and helpers
@@ -254,51 +265,116 @@ export default function DateIdeasCalendar() {
             {/* Browse Date Ideas */}
             <div className="mb-10">
               <h2 className="text-xl font-medium text-gray-900 mb-4">Browse Date Ideas</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {filteredDateIdeas.map(idea => (
-                  <div
-                    key={idea.id}
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(idea))}
-                    className="bg-white rounded-lg shadow overflow-hidden"
-                  >
-                    <div className="h-40 relative">
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        {/* Replace with actual Image component when you have images */}
-                        <div className="text-gray-400">Image: {idea.title}</div>
+              <div className="relative">
+                {/* Skeleton state while loading */}
+                {loading ? (
+                  <div className="flex space-x-4 overflow-x-auto scrollbar-hide scroll-smooth">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="bg-white rounded-lg shadow overflow-hidden min-w-[250px] animate-pulse">
+                        <div className="h-40 bg-gray-200" />
+                        <div className="p-4">
+                          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                          <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                          <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                          <div className="h-6 bg-gray-200 rounded w-1/4 mt-4" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-medium text-gray-900">{idea.title}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{idea.description}</p>
-                      <div className="mt-2">
-                        <span className="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs font-semibold text-gray-600 mr-2">
-                          {idea.category}
-                        </span>
-                      </div>
-                      <div className="mt-4 flex justify-between">
-                        <button
-                          onClick={() => toggleFavorite(idea)}
-                          className={`flex items-center px-3 py-1 rounded-md text-sm ${myFavorites.some(fav => fav.id === idea.id)
-                            ? 'bg-rose-100 text-rose-600'
-                            : 'bg-gray-100 text-gray-600'
-                            }`}
-                        >
-                          <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                          </svg>
-                          My Fav
-                        </button>
-                        <button className="flex items-center px-3 py-1 bg-gray-100 rounded-md text-sm text-gray-600">
-                          <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          Partner Fav
-                        </button>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <>
+                    <button
+                      onClick={() =>
+                        carouselRef.current?.scrollBy({ left: -300, behavior: "smooth" })
+                      }
+                      className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full p-2 shadow-md"
+                    >
+                      <svg className="h-6 w-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M7.707 4.293a1 1 0 010 1.414L4.414 9H16a1 1 0 110 2H4.414l3.293 3.293a1 1 0 01-1.414 1.414l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    <div
+                      ref={carouselRef}
+                      className="flex space-x-4 overflow-x-auto scrollbar-hide scroll-smooth"
+                    >
+                      {filteredDateIdeas.map((idea) => (
+                        <div
+                          key={idea.id}
+                          draggable
+                          onDragStart={(e) =>
+                            e.dataTransfer.setData('application/json', JSON.stringify(idea))
+                          }
+                          className="bg-white rounded-lg shadow overflow-hidden min-w-[250px]"
+                        >
+                          {/* use imageService for images */}
+                          <div className="h-40 relative">
+                            <Image
+                              src={imageMap[idea.id] || getPlaceholderImage(400, 300, idea.title)}
+                              alt={idea.title}
+                              layout="fill"
+                              objectFit="cover"
+                            />
+                          </div>
+                          <div className="p-4">
+                            <h3 className="font-medium text-gray-900">{idea.title}</h3>
+                            <p className="text-sm text-gray-500 mt-1">{idea.description}</p>
+                            <div className="mt-2">
+                              <span className="inline-block bg-gray-100 rounded-full px-3 py-1 text-xs font-semibold text-gray-600 mr-2">
+                                {idea.category}
+                              </span>
+                            </div>
+                            <div className="mt-4 flex justify-between">
+                              <button
+                                onClick={() =>
+                                  toggleFavorite({
+                                    ...idea,
+                                    rating: 0,
+                                    location: "",
+                                    price: "",
+                                    duration: "",
+                                    slug: "",
+                                  })
+                                }
+                                className={`flex items-center px-3 py-1 rounded-md text-sm ${
+                                  myFavorites.some((fav) => fav.id === idea.id)
+                                    ? "bg-rose-100 text-rose-600"
+                                    : "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                My Fav
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() =>
+                        carouselRef.current?.scrollBy({ left: 300, behavior: "smooth" })
+                      }
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white rounded-full p-2 shadow-md"
+                    >
+                      <svg className="h-6 w-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M12.293 15.707a1 1 0 010-1.414L15.586 11H4a1 1 0 110-2h11.586l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -322,32 +398,43 @@ export default function DateIdeasCalendar() {
                         <p className="text-gray-500 text-sm">No favorites yet. Click the heart icon to add!</p>
                       ) : (
                         <ul className="divide-y divide-gray-200">
-                          {myFavorites.map(fav => (
-                            <li
-                              key={fav.id}
-                              className="py-3 flex"
-                              draggable
-                              onDragStart={e => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
-                            >
-                              <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
-                              <div className="flex-1">
-                                <h3 className="text-sm font-medium">{fav.title}</h3>
-                                <p className="text-xs text-rose-500">{fav.category}</p>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button className="text-gray-400 hover:text-gray-600">
-                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                  </svg>
-                                </button>
-                                <button className="text-gray-400 hover:text-gray-600">
-                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </li>
-                          ))}
+                          {myFavorites.map(fav => {
+                            const relatedDates = events.filter(ev => ev.idea.id === fav.id);
+                            return (
+                              <li
+                                key={fav.id}
+                                className="py-3 flex items-center justify-between"
+                                draggable
+                                onDragStart={e => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
+                              >
+                                <div className="flex items-center">
+                                  <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
+                                  <div>
+                                    <h3 className="text-sm font-medium">{fav.title}</h3>
+                                    <p className="text-xs text-rose-500">{fav.category}</p>
+                                    {relatedDates.length > 0 && (
+                                      <p className="text-xs text-gray-500"
+                                         title={relatedDates.map(ev => new Date(ev.start as Date).toLocaleDateString()).join(', ')}>
+                                        {relatedDates.length > 1 ? `+${relatedDates.length}` : new Date(relatedDates[0].start as Date).toLocaleDateString()}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button onClick={() => toggleFavorite(fav)} className="text-rose-500">
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                  <button onClick={() => setIsModalOpen(true)} className="text-gray-400 hover:text-gray-600">
+                                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM4 8h12v8H4V8z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </div>
@@ -435,7 +522,7 @@ export default function DateIdeasCalendar() {
                     <div className="flex mb-4">
                       <input
                         type="text"
-                        className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm text-sm"
+                        className="flex-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm text-sm"
                         value={calendarId}
                         readOnly
                       />
@@ -458,7 +545,7 @@ export default function DateIdeasCalendar() {
                     <div className="flex mb-4">
                       <input
                         type="text"
-                        className="flex-1 block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm text-sm"
+                        className="flex-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md shadow-sm text-sm"
                         placeholder="Enter partner's calendar ID"
                         value={partnerId}
                         onChange={(e) => setPartnerId(e.target.value)}
@@ -544,24 +631,27 @@ export default function DateIdeasCalendar() {
                   </div>
                   {/* Modal for managing scheduled events */}
                   {isModalOpen && (
-                    <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
+                    <div className="fixed z-50 inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center">
                       <div className="bg-white rounded-lg w-3/4 max-w-xl p-6">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-lg font-medium">Manage Scheduled Dates</h3>
                           <button onClick={() => setIsModalOpen(false)} className="text-gray-500 text-xl leading-none">×</button>
+                        </div>
+                        <div className="mb-4 flex space-x-2 items-center">
+                          <select value={modalSelectedIdea} onChange={e => setModalSelectedIdea(Number(e.target.value) || '')}>
+                            <option value="">Select Favorite</option>
+                            {myFavorites.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                          </select>
+                          <input type="datetime-local" value={modalDateLine} onChange={e => setModalDateLine(e.target.value)} />
+                          <button onClick={handleAddModalEvent} className="px-2 py-1 bg-rose-500 text-white rounded">Add</button>
                         </div>
                         <div className="space-y-4 max-h-96 overflow-y-auto">
                           {events.length === 0 ? (
                             <p className="text-gray-500">No scheduled dates.</p>
                           ) : events.map(ev => (
                             <div key={ev.id} className="flex items-center space-x-2">
-                              <div className="flex-1 text-sm font-medium">{ev.title}</div>
-                              <input
-                                type="datetime-local"
-                                value={new Date(ev.start as Date).toISOString().substr(0, 16)}
-                                onChange={e => updateEventDate(ev.id, e.target.value)}
-                                className="border px-2 py-1 text-sm"
-                              />
+                              <span className="flex-1 text-sm font-medium">{ev.title}</span>
+                              <span className="text-xs text-gray-600">{new Date(ev.start as Date).toLocaleString()}</span>
                               <button
                                 onClick={() => removeEvent(ev.id)}
                                 className="text-red-600 text-sm"
