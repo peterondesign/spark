@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { HeartIcon, HeartOutlineIcon } from "./icons";
 import { favoritesService } from "../services/favoritesService";
 import toast from 'react-hot-toast';
+import { supabase } from '@/utils/supabaseClient';
 
 type SaveButtonProps = {
   itemSlug: string;
@@ -44,7 +45,15 @@ export default function SaveButton({ itemSlug, item, onToggle, className = "" }:
         setIsSaved(false);
         toast.success(`${item.title} removed`);
       } else {
+        // Save locally and via service
         await favoritesService.saveFavorite(item);
+        // Also insert into Supabase favorites table
+        const deviceId = localStorage.getItem('device_id');
+        if (deviceId) {
+          await supabase
+            .from('favorites')
+            .insert({ date_idea_id: item.id, device_id: deviceId, created_at: new Date().toISOString() });
+        }
         setIsSaved(true);
         toast.success(`${item.title} added`);
       }

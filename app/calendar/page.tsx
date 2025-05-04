@@ -310,8 +310,8 @@ export default function DateIdeasCalendar() {
                           <Image
                             src={imageMap[idea.id] || getPlaceholderImage(400, 300, idea.title)}
                             alt={idea.title}
-                            layout="fill"
-                            objectFit="cover"
+                            fill
+                            className="object-cover"
                           />
                         </div>
                         <div className="p-4">
@@ -398,8 +398,8 @@ export default function DateIdeasCalendar() {
                             <Image
                               src={imageMap[idea.id] || getPlaceholderImage(400, 300, idea.title)}
                               alt={idea.title}
-                              layout="fill"
-                              objectFit="cover"
+                              fill
+                              className="object-cover"
                             />
                           </div>
                           <div className="p-4">
@@ -493,8 +493,8 @@ export default function DateIdeasCalendar() {
                                   <Image
                                     src={imageMap[fav.id] || getPlaceholderImage(100, 100, fav.title)}
                                     alt={fav.title}
-                                    layout="fill"
-                                    objectFit="cover"
+                                    fill
+                                    className="object-cover"
                                   />
                                 </div>
                                 <div>
@@ -549,15 +549,29 @@ export default function DateIdeasCalendar() {
                         {partnerFavorites.map(fav => (
                           <li
                             key={fav.id}
-                            className="py-3 flex"
+                            className="py-3 flex items-center justify-between"
                             draggable
                             onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
                           >
-                            <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
-                            <div className="flex-1">
-                              <h3 className="text-sm font-medium">{fav.title}</h3>
-                              <p className="text-xs text-rose-500">{fav.category}</p>
+                            <div className="flex items-center">
+                              <div className="h-12 w-12 relative rounded-md overflow-hidden mr-4">
+                                <Image
+                                  src={imageMap[fav.id] || getPlaceholderImage(100, 100, fav.title)}
+                                  alt={fav.title}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-medium">{fav.title}</h3>
+                                <p className="text-xs text-rose-500">{fav.category}</p>
+                              </div>
                             </div>
+                            <button onClick={() => toggleFavorite(fav)} className="text-rose-500">
+                              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                              </svg>
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -589,7 +603,14 @@ export default function DateIdeasCalendar() {
                             draggable
                             onDragStart={(e) => e.dataTransfer.setData('application/json', JSON.stringify(fav))}
                           >
-                            <div className="h-12 w-12 bg-gray-200 rounded-md mr-4"></div>
+                            <div className="h-12 w-12 relative rounded-md overflow-hidden mr-4">
+                              <Image
+                                src={imageMap[fav.id] || getPlaceholderImage(100, 100, fav.title)}
+                                alt={fav.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
                             <div className="flex-1">
                               <h3 className="text-sm font-medium">{fav.title}</h3>
                               <p className="text-xs text-rose-500">{fav.category}</p>
@@ -654,6 +675,14 @@ export default function DateIdeasCalendar() {
                   >
                     Export to Google Calendar
                   </button>
+                  <p className="mt-2 text-sm text-gray-500">
+                    To subscribe via Google Calendar:
+                    <ol className="list-decimal list-inside">
+                      <li>In Google Calendar, click the “+” next to “Other calendars” and choose “From URL”.</li>
+                      <li>Paste this URL: <code>https://dateideas.cc/api/calendar.ics?calendarId={calendarId}</code></li>
+                      <li>Click “Add calendar”—your favorites will sync automatically.</li>
+                    </ol>
+                  </p>
                 </div>
               </div>
             </div>
