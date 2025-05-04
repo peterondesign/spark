@@ -80,13 +80,17 @@ export const favoritesService = {
         try {
           const deviceId = getDeviceId();
           
-          const { data: favorites, error: favoritesError } = await supabase
+          // Build query for favorites and apply optional limit
+          let favQuery = supabase
             .from('favorites')
             .select('date_idea_id, device_id, created_at')
             .eq('device_id', deviceId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-            
+            .order('created_at', { ascending: false });
+          if (typeof limit === 'number') {
+            favQuery = favQuery.limit(limit);
+          }
+          const { data: favorites, error: favoritesError } = await favQuery;
+          
           if (favoritesError) {
             console.warn('Supabase favorites error:', favoritesError);
             // Return empty array instead of throwing
