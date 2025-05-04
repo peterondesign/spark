@@ -23,7 +23,7 @@ export default function CalendarPage() {
     const loadFavorites = async () => {
       setIsLoading(true)
       try {
-        const userFavorites = await favoritesService.getRecentFavorites(5)
+        const userFavorites = await favoritesService.getRecentFavorites(undefined, 5)
         setFavorites(userFavorites)
       } catch (error) {
         console.error("Failed to load favorites:", error)
