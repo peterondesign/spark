@@ -24,7 +24,6 @@ import { useAsyncList } from "@react-stately/data";
 import CountryCitySelector, { CityItem } from "./components/CountryCitySelector";
 import { POPULAR_CITIES } from "../utils/cityService";
 import Script from 'next/script';
-import { TikTokEmbed } from 'react-social-media-embed';
 import { shuffleArray } from "../utils/arrayUtils"; // Utility function to shuffle arrays
 
 // DO NOT export metadata from this client component - it's now moved to metadata.ts
@@ -133,6 +132,22 @@ const Home = () => {
 
   const [trendingIdeas, setTrendingIdeas] = useState<DateIdea[]>([]);
   const [trendingSlide, setTrendingSlide] = useState(0);
+
+  useEffect(() => {
+    // Load the TikTok embed script
+    const script = document.createElement("script");
+    script.src = "https://www.tiktok.com/embed.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    // Clean up function to remove the script when component unmounts
+    return () => {
+      const existingScript = document.querySelector('script[src="https://www.tiktok.com/embed.js"]');
+      if (existingScript && document.body.contains(existingScript)) {
+        document.body.removeChild(existingScript);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Fetch only the 20 most popular cities initially
@@ -1453,8 +1468,8 @@ const Home = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Follow Us on TikTok</h2>
           <div className="max-w-4xl mx-auto">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-                          {/* TikTok Embed 1 */}
-                          <blockquote
+              {/* TikTok Embed 1 */}
+              <blockquote
                 className="tiktok-embed"
                 cite="https://www.tiktok.com/@sparkuscc/video/7495149980907277590"
                 data-video-id="7495149980907277590"
@@ -1466,10 +1481,28 @@ const Home = () => {
               </blockquote>
 
               {/* TikTok Embed 2 */}
-              <blockquote className="tiktok-embed" cite="https://www.tiktok.com/@sparkuscc/video/7494597212324777238" data-video-id="7494597212324777238" style={{ maxWidth: "325px", minWidth: "325px" }} > <section> <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed">@sparkuscc</a> Which I date idea interests you the most? <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed">#dates</a> <a target="_blank" title="♬ original sound - lyriclovers" href="https://www.tiktok.com/music/original-sound-7255719614587357978?refer=embed">♬ original sound - lyriclovers</a> </section> </blockquote>
+              <blockquote
+                className="tiktok-embed"
+                cite="https://www.tiktok.com/@sparkuscc/video/7494597212324777238"
+                data-video-id="7494597212324777238"
+                style={{ maxWidth: "325px", minWidth: "325px" }}
+              >
+                <section>
+                  <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed" rel="noreferrer">@sparkuscc</a> Which I date idea interests you the most? <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed" rel="noreferrer">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed" rel="noreferrer">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed" rel="noreferrer">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed" rel="noreferrer">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed" rel="noreferrer">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed" rel="noreferrer">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed" rel="noreferrer">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed" rel="noreferrer">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed" rel="noreferrer">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed" rel="noreferrer">#dates</a> <a target="_blank" title="♬ original sound - lyriclovers" href="https://www.tiktok.com/music/original-sound-7255719614587357978?refer=embed" rel="noreferrer">♬ original sound - lyriclovers</a>
+                </section>
+              </blockquote>
 
               {/* TikTok Embed 3 */}
-              <blockquote className="tiktok-embed" cite="https://www.tiktok.com/@sparkuscc/video/7494415261307522326" data-video-id="7494415261307522326" style={{ maxWidth: "325px", minWidth: "325px" }} > <section> <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed">@sparkuscc</a> Which H date looks the most fun? <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed">#dates</a> <a target="_blank" title="♬ original sound - avery77777" href="https://www.tiktok.com/music/original-sound-7235890317449284398?refer=embed">♬ original sound - avery77777</a> </section> </blockquote>
+              <blockquote
+                className="tiktok-embed"
+                cite="https://www.tiktok.com/@sparkuscc/video/7494415261307522326"
+                data-video-id="7494415261307522326"
+                style={{ maxWidth: "325px", minWidth: "325px" }}
+              >
+                <section>
+                  <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed" rel="noreferrer">@sparkuscc</a> Which H date looks the most fun? <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed" rel="noreferrer">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed" rel="noreferrer">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed" rel="noreferrer">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed" rel="noreferrer">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed" rel="noreferrer">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed" rel="noreferrer">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed" rel="noreferrer">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed" rel="noreferrer">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed" rel="noreferrer">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed" rel="noreferrer">#dates</a> <a target="_blank" title="♬ original sound - avery77777" href="https://www.tiktok.com/music/original-sound-7235890317449284398?refer=embed" rel="noreferrer">♬ original sound - avery77777</a>
+                </section>
+              </blockquote>
             </div>
             <div className="mt-8 text-center">
               <p className="text-gray-700 mb-6">
