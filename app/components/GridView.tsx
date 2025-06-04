@@ -60,21 +60,6 @@ export default function GridView({
   // Shuffle dateIdeas synchronously using useMemo to avoid visible reorders
 
 
-  // Helper function to display price level
-  const renderPriceLevel = (level: number | string | undefined) => {
-    if (level === undefined) return null;
-
-    const priceText = typeof level === 'string'
-      ? level
-      : level === 1 ? 'Low' : level === 2 ? 'Moderate' : level === 3 ? 'High' : 'Luxury';
-
-    return (
-      <span className="bg-blue-100 text-blue-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded">
-        {priceText}
-      </span>
-    );
-  };
-
   // Check if we have any data to display
   if (dateIdeas.length === 0) {
     return (

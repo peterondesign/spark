@@ -276,7 +276,12 @@ const Home = () => {
         } else {
           try {
             const serviceFavorites = await favoritesService.getRecentFavorites();
-            setRecentFavorites(serviceFavorites);
+            // Convert service favorites to match the main DateIdea interface
+            const convertedFavorites: DateIdea[] = serviceFavorites.map(fav => ({
+              ...fav,
+              location: fav.location as string | { [key: string]: any } | null
+            }));
+            setRecentFavorites(convertedFavorites);
           } catch (serviceError) {
             console.warn('Error from favorites service:', serviceError);
             setRecentFavorites([]);
@@ -379,14 +384,6 @@ const Home = () => {
         return ((catA.charCodeAt(0) || 0) + dayOfYear) % 65536 - ((catB.charCodeAt(0) || 0) + dayOfYear) % 65536
           || a.title.localeCompare(b.title);
       },
-      // Method 5: By price level with daily rotation
-      (a: DateIdea, b: DateIdea) => {
-        const priceA = a.priceLevel || 3;
-        const priceB = b.priceLevel || 3;
-        // Rotate whether to show cheaper or more expensive first
-        const dayOfWeek = today.getDay();
-        return dayOfWeek % 2 === 0 ? priceA - priceB : priceB - priceA;
-      }
     ];
 
     // Select sort method based on day of week (0-6) modulo number of methods
@@ -521,8 +518,11 @@ const Home = () => {
 
       // Simple filters based on database structure
       if (simpleFilters.freeCheap) {
-        // Filter for affordable items only
-        matchesFilter = matchesFilter && (idea.priceLevel === "affordable");
+        // Filter for affordable items (handle both string and numeric price levels)
+        const isAffordable = idea.priceLevel === 1 || 
+                           (typeof idea.priceLevel === 'string' && (idea.priceLevel === "Affordable" || idea.priceLevel === "affordable")) ||
+                           !idea.priceLevel; // Include items with no price level (likely free)
+        matchesFilter = matchesFilter && isAffordable;
       }
 
       if (simpleFilters.daytimeOnly) {
@@ -1081,31 +1081,12 @@ const Home = () => {
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Follow Us on TikTok</h2>
           <div className="max-w-4xl mx-auto">
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-              {/* TikTok Embed 1 */}
-              <blockquote
-                className="tiktok-embed"
-                cite="https://www.tiktok.com/@sparkuscc/video/7495149980907277590"
-                data-video-id="7495149980907277590"
-                style={{ maxWidth: "325px", minWidth: "325px" }}
-              >
-                <section>
-                  <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed" rel="noreferrer">@sparkuscc</a> Which K date excites you most <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed" rel="noreferrer">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed" rel="noreferrer">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed" rel="noreferrer">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed" rel="noreferrer">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed" rel="noreferrer">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed" rel="noreferrer">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed" rel="noreferrer">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed" rel="noreferrer">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed" rel="noreferrer">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed" rel="noreferrer">#dates</a> <a target="_blank" title="♬ The Spins X The Other Side x Kids - darcy stokes" href="https://www.tiktok.com/music/The-Spins-X-The-Other-Side-x-Kids-7085294202547899137?refer=embed" rel="noreferrer">♬ The Spins X The Other Side x Kids - darcy stokes</a>
-                </section>
-              </blockquote>
-
-              {/* TikTok Embed 2 */}
-              <blockquote className="tiktok-embed" cite="https://www.tiktok.com/@sparkuscc/video/7494597212324777238" data-video-id="7494597212324777238" style={{ maxWidth: "325px", minWidth: "325px" }} > <section> <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed">@sparkuscc</a> Which I date idea interests you the most? <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed">#dates</a> <a target="_blank" title="♬ original sound - lyriclovers" href="https://www.tiktok.com/music/original-sound-7255719614587357978?refer=embed">♬ original sound - lyriclovers</a> </section> </blockquote>
-
-              {/* TikTok Embed 3 */}
-              <blockquote className="tiktok-embed" cite="https://www.tiktok.com/@sparkuscc/video/7494415261307522326" data-video-id="7494415261307522326" style={{ maxWidth: "325px", minWidth: "325px" }} > <section> <a target="_blank" title="@sparkuscc" href="https://www.tiktok.com/@sparkuscc?refer=embed">@sparkuscc</a> Which H date looks the most fun? <a title="dateideas" target="_blank" href="https://www.tiktok.com/tag/dateideas?refer=embed">#dateideas</a> <a title="datenight" target="_blank" href="https://www.tiktok.com/tag/datenight?refer=embed">#datenight</a> <a title="datenightideas" target="_blank" href="https://www.tiktok.com/tag/datenightideas?refer=embed">#datenightideas</a> <a title="datechallenge" target="_blank" href="https://www.tiktok.com/tag/datechallenge?refer=embed">#datechallenge</a> <a title="dating" target="_blank" href="https://www.tiktok.com/tag/dating?refer=embed">#dating</a> <a title="abcdates" target="_blank" href="https://www.tiktok.com/tag/abcdates?refer=embed">#abcdates</a> <a title="abcdate" target="_blank" href="https://www.tiktok.com/tag/abcdate?refer=embed">#abcdate</a> <a title="alphabetdating" target="_blank" href="https://www.tiktok.com/tag/alphabetdating?refer=embed">#alphabetdating</a> <a title="picnicdate" target="_blank" href="https://www.tiktok.com/tag/picnicdate?refer=embed">#picnicdate</a> <a title="dates" target="_blank" href="https://www.tiktok.com/tag/dates?refer=embed">#dates</a> <a target="_blank" title="♬ original sound - avery77777" href="https://www.tiktok.com/music/original-sound-7235890317449284398?refer=embed">♬ original sound - avery77777</a> </section> </blockquote>
-            </div>
             <div className="mt-8 text-center">
               <p className="text-gray-700 mb-6">
                 Watch real couples share their favorite date ideas and dating experiences on our TikTok!
               </p>
               <Link
-                href="https://www.tiktok.com/@sparkuscc"
+                href="https://www.tiktok.com/@dateideascc"
                 target="_blank"
                 className="bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors font-semibold shadow-md inline-flex items-center"
               >
