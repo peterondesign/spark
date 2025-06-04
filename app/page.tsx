@@ -798,9 +798,22 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-8">
               {/* Left column: Title and search */}
               <div className="flex flex-col items-start justify-center">
-                <h1 className="text-4xl md:text-4xl lg:text-4xl font-bold mb-6">Surprise them with something unforgettable
+                <h1 className="text-4xl md:text-4xl lg:text-4xl font-bold mb-6">Find something different and exciting to do
                 </h1>
-                <p className="text-2xl mb-8">Get exciting date ideas — and a link to do them near you</p>
+                <p className="text-2xl mb-8">We email/text you reminders for your favorite events for $8/mo</p>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button 
+                    onClick={() => document.getElementById('all-date-ideas')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="bg-rose-600 text-white px-8 py-4 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-lg">
+                    See Date Ideas
+                  </button>
+                  <button 
+                  className="bg-white text-gray-900 px-8 py-4 rounded-full hover:bg-gray-100 transition-colors font-semibold shadow-lg"
+                  >
+                    Sign Up with Email/Text
+                  </button>
+                </div>
               </div>
 
               {/* Right column: Video */}
@@ -827,7 +840,7 @@ const Home = () => {
 
       <section className="py-10">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Trending Date Ideas for Couples this Week</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">What to Do in This Week</h2>
           <div className="relative">
             <button onClick={() => setTrendingSlide(prev => prev > 0 ? prev - 1 : Math.floor((trendingIdeas.length - 1) / 5))} className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow">‹</button>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 overflow-hidden">
