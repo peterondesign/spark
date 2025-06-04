@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Select, { StylesConfig } from 'react-select';
-import { MapPinIcon, SearchIcon } from "lucide-react";
+import { MapPinIcon, SearchIcon, ChevronDownIcon } from "lucide-react";
 import { City, CountryService, POPULAR_CITIES } from "../../utils/cityService";
 
 // Maximum time to wait for IP detection before falling back to popular cities
@@ -594,26 +594,63 @@ export default function CountryCitySelector({
     detectIpLocation();
   };
 
-  // Custom styles for react-select
-  const customStyles: StylesConfig = {
-    control: (base) => ({
+  // Custom styles for the select component to match heading style
+  const customStyles: StylesConfig<OptionType> = {
+    control: (base, state) => ({
       ...base,
-      borderRadius: '0.375rem',
-      borderColor: '#e2e8f0',
+      border: 'none',
       boxShadow: 'none',
+      backgroundColor: 'transparent',
       '&:hover': {
         borderColor: '#cbd5e1',
+        backgroundColor: '#f8fafc',
       },
-      padding: '0.25rem',
-      minHeight: '42px',
-      minWidth: '200px',
+      padding: '0',
+      minHeight: 'auto',
+      minWidth: '250px',
+      fontSize: '1.5rem', // text-2xl
+      fontWeight: '700', // font-bold
+      color: '#111827', // text-gray-900
+      cursor: 'pointer',
+      '@media (min-width: 768px)': {
+        fontSize: '1.875rem', // md:text-3xl
+      },
+    }),
+    singleValue: (base) => ({
+      ...base,
+      fontSize: '1.5rem', // text-2xl
+      fontWeight: '700', // font-bold
+      color: '#111827', // text-gray-900
+      '@media (min-width: 768px)': {
+        fontSize: '1.875rem', // md:text-3xl
+      },
+    }),
+    placeholder: (base) => ({
+      ...base,
+      fontSize: '1.5rem', // text-2xl
+      fontWeight: '700', // font-bold
+      color: '#6b7280', // text-gray-500
+      '@media (min-width: 768px)': {
+        fontSize: '1.875rem', // md:text-3xl
+      },
+    }),
+    input: (base) => ({
+      ...base,
+      fontSize: '1.5rem', // text-2xl
+      fontWeight: '700', // font-bold
+      color: '#111827', // text-gray-900
+      '@media (min-width: 768px)': {
+        fontSize: '1.875rem', // md:text-3xl
+      },
     }),
     option: (base, state) => ({
       ...base,
       backgroundColor: state.isFocused ? '#fff1f2' : 'white',
       color: '#1f2937',
-      minWidth: '200px',
-      padding: '8px 12px',
+      minWidth: '250px',
+      padding: '12px 16px',
+      fontSize: '1rem',
+      fontWeight: '500',
       ':hover': {
         backgroundColor: '#fff1f2',
       },
@@ -622,14 +659,26 @@ export default function CountryCitySelector({
       ...base,
       borderRadius: '0.75rem',
       overflow: 'hidden',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       border: '1px solid #e2e8f0',
-      minWidth: '200px',
+      minWidth: '250px',
+      zIndex: 9999,
     }),
     valueContainer: (base) => ({
       ...base,
-      padding: '2px 8px',
-      minWidth: '200px',
+      padding: '0',
+      minWidth: '250px',
+    }),
+    dropdownIndicator: (base) => ({
+      ...base,
+      color: '#6b7280',
+      padding: '8px',
+      '&:hover': {
+        color: '#374151',
+      },
+    }),
+    indicatorSeparator: () => ({
+      display: 'none',
     }),
   };
 
@@ -657,13 +706,24 @@ export default function CountryCitySelector({
           isSearchable={true}
           placeholder={placeholderText}
           noOptionsMessage={() => "No cities found"}
+          formatOptionLabel={(option: OptionType, { context }) => {
+            if (context === 'value') {
+              // For the selected value, show the chevron + city name
+              return (
+                <div className="flex items-center">
+                  <ChevronDownIcon className="h-6 w-6 text-gray-600 mr-2" />
+                  {option.data.name}
+                </div>
+              );
+            }
+            // For the dropdown menu, show the full label
+            return option.label;
+          }}
           styles={customStyles}
           className="react-select"
           classNamePrefix="react-select"
           components={{
-            DropdownIndicator: () => (
-              <SearchIcon className="h-1 w-1 text-gray-500 mr-2" />
-            ),
+            DropdownIndicator: () => null, // Remove the default dropdown indicator
           }}
         />
         

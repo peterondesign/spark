@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 // import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, CurrencyDollarIcon, MoonIcon } from "./components/icons";
-import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, DollarSign, MoonIcon, SlidersHorizontal, X } from "lucide-react";
+import { HeartIcon, MapPinIcon, SearchIcon, StarIcon, ClockIcon, DollarSign, MoonIcon, SlidersHorizontal, X, Sun, Moon, TreePine, Building } from "lucide-react";
 import SaveButton from "./components/SaveButton";
 import { getImageUrl } from "./utils/imageService";
 import { supabase } from "../utils/supabaseClient";
@@ -69,47 +69,24 @@ const Home = () => {
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
   const [searchResults, setSearchResults] = useState<DateIdea[]>([]);
 
-  // Add new state for advanced filters
-  const [filterOptions, setFilterOptions] = useState<{
-    categories: string[];
-    locationTypes: string[];
-    locationSettings: string[];
-    moodPaces: string[];
-    moodVibes: string[];
+  // Simple toggle filters based on database structure
+  const [simpleFilters, setSimpleFilters] = useState<{
+    freeCheap: boolean;
+    daytimeOnly: boolean;
+    nighttimeOnly: boolean;
+    outdoor: boolean;
+    indoor: boolean;
   }>({
-    categories: [],
-    locationTypes: [],
-    locationSettings: [],
-    moodPaces: [],
-    moodVibes: []
-  });
-
-  const [selectedFilters, setSelectedFilters] = useState<{
-    categories: string[];
-    locationTypes: string[];
-    locationSettings: string[];
-    moodPaces: string[];
-    moodVibes: string[];
-  }>({
-    categories: [],
-    locationTypes: [],
-    locationSettings: [],
-    moodPaces: [],
-    moodVibes: []
+    freeCheap: false,
+    daytimeOnly: false,
+    nighttimeOnly: false,
+    outdoor: false,
+    indoor: false
   });
 
   const [activeFilters, setActiveFilters] = useState<{
     city: string | null;
-    price: 'all' | 'free' | 'affordable' | 'moderate' | 'high' | 'luxury';
-    timeOfDay?: string;
-    mood?: string;
-    experienceType?: string;
-    duration?: string;
-    setting?: string;
-    locationType?: string;
-    pace?: string;
-    vibe?: string;
-  }>({ city: null, price: 'all', timeOfDay: 'all' });
+  }>({ city: null });
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
@@ -200,60 +177,29 @@ const Home = () => {
   };
 
   const clearAllFilters = () => {
-    setActiveFilters({ city: null, price: 'all', timeOfDay: 'all' });
-    setSelectedFilters({
-      categories: [],
-      locationTypes: [],
-      locationSettings: [],
-      moodPaces: [],
-      moodVibes: []
+    setActiveFilters({ city: null });
+    setSimpleFilters({
+      freeCheap: false,
+      daytimeOnly: false,
+      nighttimeOnly: false,
+      outdoor: false,
+      indoor: false
     });
   };
 
   const appliedFiltersCount = useMemo(() => {
     let count = 0;
     if (activeFilters.city) count++;
-    if (activeFilters.price !== 'all') count++;
-    if (activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all') count++;
-    count += selectedFilters.categories.length;
-    count += selectedFilters.locationTypes.length;
-    count += selectedFilters.locationSettings.length;
+    // Count active simple filters
+    Object.values(simpleFilters).forEach(isActive => {
+      if (isActive) count++;
+    });
     return count;
-  }, [activeFilters, selectedFilters]);
+  }, [activeFilters, simpleFilters]);
 
-  const priceLevelMap = {
-    'all': 'All Prices',
-    'free': 'Free',
-    'affordable': 'Under $25',
-    'moderate': 'Under $50',
-    'high': 'Under $75',
-    'luxury': 'Above $100'
-  };
 
-  const timeOfDayMap = {
-    'all': 'Any Time',
-    'day': 'Day',
-    'afternoon': 'Afternoon',
-    'evening': 'Evening',
-    'night': 'Night',
-    'varies': 'Varies'
-  };
 
-  const getSelectedFiltersText = () => {
-    const count = Object.values(selectedFilters).reduce((acc, filters) => acc + filters.length, 0);
-    if (count === 0) return "Mood";
 
-    const allSelected = [
-      ...selectedFilters.categories,
-      ...selectedFilters.locationTypes,
-      ...selectedFilters.locationSettings,
-      ...selectedFilters.moodPaces,
-      ...selectedFilters.moodVibes
-    ];
-
-    if (allSelected.length === 1) return allSelected[0];
-    return `${allSelected.length} selected`;
-  };
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -531,33 +477,34 @@ const Home = () => {
     setUserCity(null);
   };
 
-  const handleFilterChange = (filterType: string, value: string, isChecked: boolean) => {
-    setSelectedFilters((prev) => {
+  // Toggle filter function
+  const toggleFilter = (filterName: keyof typeof simpleFilters) => {
+    setSimpleFilters(prev => {
       const newFilters = { ...prev };
-      const filterArray = newFilters[filterType as keyof typeof newFilters];
-
-      if (isChecked) {
-        if (!filterArray.includes(value)) {
-          newFilters[filterType as keyof typeof newFilters] = [...filterArray, value];
-        }
-      } else {
-        newFilters[filterType as keyof typeof newFilters] = filterArray.filter((v) => v !== value);
+      
+      // Handle mutually exclusive filters
+      if (filterName === 'outdoor' && !prev.outdoor) {
+        // If turning on outdoor, turn off indoor
+        newFilters.indoor = false;
+      } else if (filterName === 'indoor' && !prev.indoor) {
+        // If turning on indoor, turn off outdoor
+        newFilters.outdoor = false;
+      } else if (filterName === 'daytimeOnly' && !prev.daytimeOnly) {
+        // If turning on daytime, turn off nighttime
+        newFilters.nighttimeOnly = false;
+      } else if (filterName === 'nighttimeOnly' && !prev.nighttimeOnly) {
+        // If turning on nighttime, turn off daytime
+        newFilters.daytimeOnly = false;
       }
-
+      
+      // Toggle the selected filter
+      newFilters[filterName] = !prev[filterName];
+      
       return newFilters;
     });
   };
 
-  const handleMultiSelectChange = (filterType: string, event: React.ChangeEvent<HTMLSelectElement>) => {
-    const options = Array.from(event.target.options);
-    const selectedValues = options.filter((option) => option.selected).map((option) => option.value);
 
-    setSelectedFilters((prev) => {
-      const newFilters = { ...prev };
-      newFilters[filterType as keyof typeof newFilters] = selectedValues;
-      return newFilters;
-    });
-  };
 
   useEffect(() => {
     if (!allDateIdeas.length) return;
@@ -565,159 +512,67 @@ const Home = () => {
     const newFilteredIdeas = allDateIdeas.filter((idea) => {
       let matchesFilter = true;
 
-      // City filter is disabled but we still show the user's location
-      // No longer filtering by city as requested
-
-      // Simple price filter - direct text matching with alternatives
-      if (activeFilters.price !== 'all') {
-        const priceText = typeof idea.price === 'string' ? idea.price.toLowerCase() : '';
-        const priceLevelText = idea.priceLevel ? String(idea.priceLevel).toLowerCase() : '';
-
-        switch (activeFilters.price) {
-          case 'free':
-            matchesFilter = matchesFilter && (
-              priceText.includes('free') ||
-              priceLevelText.includes('free') ||
-              priceText === '0' ||
-              priceText === '$' ||
-              priceLevelText === '1'
-            );
-            break;
-          case 'affordable':
-            matchesFilter = matchesFilter && (
-              priceText.includes('affordable') ||
-              priceLevelText.includes('affordable') ||
-              priceText.includes('budget') ||
-              priceText === '$$' ||
-              priceLevelText === '2'
-            );
-            break;
-          case 'moderate':
-            matchesFilter = matchesFilter && (
-              priceText.includes('moderate') ||
-              priceLevelText.includes('moderate') ||
-              priceText === '$$$' ||
-              priceLevelText === '3'
-            );
-            break;
-          case 'high':
-            matchesFilter = matchesFilter && (
-              priceText.includes('high') ||
-              priceLevelText.includes('high') ||
-              priceText.includes('expensive') ||
-              priceText === '$$$$' ||
-              priceLevelText === '4'
-            );
-            break;
-          case 'luxury':
-            matchesFilter = matchesFilter && (
-              priceText.includes('luxury') ||
-              priceLevelText.includes('luxury') ||
-              priceText.includes('premium') ||
-              priceText.includes('$$$$$') ||
-              priceLevelText === '5'
-            );
-            break;
-        }
+      // City filter - only filter if a city is selected
+      if (activeFilters.city) {
+        const ideaLocation = typeof idea.location === 'string' ? idea.location.toLowerCase() : '';
+        const cityName = activeFilters.city.toLowerCase();
+        matchesFilter = matchesFilter && ideaLocation.includes(cityName);
       }
 
-      // Time of day filter - simple text matching
-      if (activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all') {
-        // Convert to lowercase for case-insensitive matching
+      // Simple filters based on database structure
+      if (simpleFilters.freeCheap) {
+        // Filter for free or cheap items (priceLevel 1-2)
+        matchesFilter = matchesFilter && (idea.priceLevel === 1 || idea.priceLevel === 2);
+      }
+
+      if (simpleFilters.daytimeOnly) {
+        // Filter for daytime activities
         const timeText = idea.timeOfDay ? idea.timeOfDay.toLowerCase() : '';
-        const searchTime = activeFilters.timeOfDay.toLowerCase();
-
-        // Check if the idea has a timeOfDay property before filtering
-        if (timeText) {
-          if (searchTime === 'day') {
-            matchesFilter = matchesFilter && (
-              timeText.includes('day') ||
-              timeText.includes('morning') ||
-              timeText.includes('afternoon')
-            );
-          } else if (searchTime === 'night') {
-            matchesFilter = matchesFilter && (
-              timeText.includes('night') ||
-              timeText.includes('evening')
-            );
-          } else {
-            // For exact matches or anything containing the search term
-            matchesFilter = matchesFilter && timeText.includes(searchTime);
-          }
-        } else {
-          // If timeOfDay is not specified and we're filtering for 'varies', include it
-          matchesFilter = matchesFilter && (searchTime === 'varies');
-        }
+        matchesFilter = matchesFilter && (
+          timeText.includes('day') ||
+          timeText.includes('morning') ||
+          timeText.includes('afternoon')
+        );
       }
 
-      // Advanced filters (categories, locationTypes, etc.)
-      if (selectedFilters.categories.length > 0) {
-        matchesFilter = matchesFilter && selectedFilters.categories.includes(idea.category);
+      if (simpleFilters.nighttimeOnly) {
+        // Filter for nighttime activities
+        const timeText = idea.timeOfDay ? idea.timeOfDay.toLowerCase() : '';
+        matchesFilter = matchesFilter && (
+          timeText.includes('night') ||
+          timeText.includes('evening')
+        );
       }
 
-      if (selectedFilters.locationTypes.length > 0) {
+      if (simpleFilters.outdoor) {
+        // Filter for outdoor activities
         const locationType = typeof idea.location === 'object' && idea.location?.type;
-        if (!locationType || !selectedFilters.locationTypes.includes(locationType)) {
-          matchesFilter = false;
-        }
+        matchesFilter = matchesFilter && (
+          locationType === 'outdoor' || 
+          locationType === 'park' ||
+          locationType === 'nature' ||
+          locationType === 'beach'
+        );
       }
 
-      if (selectedFilters.locationSettings.length > 0) {
-        const locationSetting = typeof idea.location === 'object' && idea.location?.setting;
-        if (!locationSetting || !selectedFilters.locationSettings.includes(locationSetting)) {
-          matchesFilter = false;
-        }
-      }
-
-      if (selectedFilters.moodPaces.length > 0) {
-        const moodPace = typeof idea.mood === 'object' && idea.mood?.pace;
-        if (!moodPace || !selectedFilters.moodPaces.includes(moodPace)) {
-          matchesFilter = false;
-        }
-      }
-
-      if (selectedFilters.moodVibes.length > 0) {
-        const moodVibe = typeof idea.mood === 'object' && idea.mood?.vibe;
-        if (!moodVibe || !selectedFilters.moodVibes.includes(moodVibe)) {
-          matchesFilter = false;
-        }
-      }
-
-      if (activeFilters.experienceType && activeFilters.experienceType !== 'all') {
-        matchesFilter = matchesFilter && idea.category === activeFilters.experienceType;
-      }
-
-      if (activeFilters.duration && activeFilters.duration !== 'all') {
-        matchesFilter = matchesFilter && idea.duration === activeFilters.duration;
-      }
-
-      if (activeFilters.setting && activeFilters.setting !== 'all') {
-        const locationSetting = typeof idea.location === 'object' && idea.location?.setting;
-        matchesFilter = matchesFilter && locationSetting === activeFilters.setting;
-      }
-
-      if (activeFilters.locationType && activeFilters.locationType !== 'all') {
+      if (simpleFilters.indoor) {
+        // Filter for indoor activities
         const locationType = typeof idea.location === 'object' && idea.location?.type;
-        matchesFilter = matchesFilter && locationType === activeFilters.locationType;
-      }
-
-      if (activeFilters.pace && activeFilters.pace !== 'all') {
-        const moodPace = typeof idea.mood === 'object' && idea.mood?.pace;
-        matchesFilter = matchesFilter && moodPace === activeFilters.pace;
-      }
-
-      if (activeFilters.vibe && activeFilters.vibe !== 'all') {
-        const moodVibe = typeof idea.mood === 'object' && idea.mood?.vibe;
-        matchesFilter = matchesFilter && moodVibe === activeFilters.vibe;
+        matchesFilter = matchesFilter && (
+          locationType === 'indoor' ||
+          locationType === 'restaurant' ||
+          locationType === 'museum' ||
+          locationType === 'theater' ||
+          locationType === 'shopping'
+        );
       }
 
       return matchesFilter;
     });
 
-
     setFilteredDateIdeas(newFilteredIdeas);
     setVisibleIdeas(20);
-  }, [allDateIdeas, activeFilters, selectedFilters]);
+  }, [allDateIdeas, activeFilters, simpleFilters]);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -801,15 +656,15 @@ const Home = () => {
                 <h1 className="text-4xl md:text-4xl lg:text-4xl font-bold mb-6">Find something different and exciting to do
                 </h1>
                 <p className="text-2xl mb-8">We email/text you reminders for your favorite events for $8/mo</p>
-                
+
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button 
+                  <button
                     onClick={() => document.getElementById('all-date-ideas')?.scrollIntoView({ behavior: 'smooth' })}
                     className="bg-rose-600 text-white px-8 py-4 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-lg">
                     See Date Ideas
                   </button>
-                  <button 
-                  className="bg-white text-gray-900 px-8 py-4 rounded-full hover:bg-gray-100 transition-colors font-semibold shadow-lg"
+                  <button
+                    className="bg-white text-gray-900 px-8 py-4 rounded-full hover:bg-gray-100 transition-colors font-semibold shadow-lg"
                   >
                     Sign Up with Email/Text
                   </button>
@@ -838,9 +693,31 @@ const Home = () => {
         </div>
       </section>
 
+      {/* New UI Section with City Dropdown Headers */}
       <section className="py-10">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">What to Do in This Week</h2>
+          {/* Header Section with City Dropdowns */}
+          <div className="mb-8 space-y-6">
+            {/* First Heading: What to do in {citydropdown} this week */}
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 whitespace-nowrap">
+                What to do this week in
+              </h2>
+              <div className="min-w-[250px]">
+                <CountryCitySelector
+                  onCitySelect={(city) => handleCitySelect(city)}
+                  selectedCity={selectedCity}
+                  defaultCity={userCity || undefined}
+                  label=""
+                  className="w-full"
+                />
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Trending Ideas Grid */}
           <div className="relative">
             <button onClick={() => setTrendingSlide(prev => prev > 0 ? prev - 1 : Math.floor((trendingIdeas.length - 1) / 5))} className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow">‹</button>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 overflow-hidden">
@@ -874,14 +751,27 @@ const Home = () => {
 
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-gray-900">All Date Ideas</h2>
-          {/* Filters */}
+          {/* Second Heading: Date Ideas in {citydropdown} */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 whitespace-nowrap">
+              Date Ideas in
+            </h2>
+            <div className="min-w-[250px]">
+              <CountryCitySelector
+                onCitySelect={(city) => handleCitySelect(city)}
+                selectedCity={selectedCity}
+                defaultCity={userCity || undefined}
+                label=""
+                className="w-full"
+              />
+            </div>
+          </div>          {/* Filters */}
           <div className="sticky top-12 z-20 bg-white/95 backdrop-blur-sm border-2 border-slate-100 py-3 px-4 mb-6 rounded-2xl shadow-sm">
             {/* Active filters chips - visible on mobile */}
             <div className="flex justify-between items-center">
               <div className="flex flex-wrap gap-2 mb-3">
-                {appliedFiltersCount > 0 && (
-                  <>
+              {appliedFiltersCount > 0 && (
+                <>
                     {/* {activeFilters.city && (
                       <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-800 text-xs rounded-full">
                         {activeFilters.city}
@@ -896,54 +786,10 @@ const Home = () => {
                         </button>
                       </span>
                     )} */}
-                    {activeFilters.price !== 'all' && (
-                      <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        {priceLevelMap[activeFilters.price]}
-                        <button
-                          onClick={() => setActiveFilters(prev => ({ ...prev, price: 'all' }))}
-                          className="ml-1 text-green-800"
-                          aria-label="Remove price filter"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </span>
-                    )}
-                    {activeFilters.timeOfDay && activeFilters.timeOfDay !== 'all' && (
-                      <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        {timeOfDayMap[activeFilters.timeOfDay as keyof typeof timeOfDayMap]}
-                        <button
-                          onClick={() => setActiveFilters(prev => ({ ...prev, timeOfDay: 'all' }))}
-                          className="ml-1 text-blue-800"
-                          aria-label="Remove time filter"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </span>
-                    )}
-                    {selectedFilters.categories.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                        {selectedFilters.categories.length} categories
-                      </span>
-                    )}
-                    {/* Show "more filters" badge if there are other advanced filters applied */}
-                    {(selectedFilters.locationTypes.length > 0 ||
-                      selectedFilters.locationSettings.length > 0 ||
-                      selectedFilters.moodPaces.length > 0 ||
-                      selectedFilters.moodVibes.length > 0) && (
-                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                          +{selectedFilters.locationTypes.length +
-                            selectedFilters.locationSettings.length +
-                            selectedFilters.moodPaces.length +
-                            selectedFilters.moodVibes.length} more
-                        </span>
-                      )}
-                  </>
-                )}
+                </>
+              )}
               </div>
+              
 
               {/* Filter button for mobile */}
               <button
@@ -966,188 +812,84 @@ const Home = () => {
             </div>
 
             {/* Main filter controls - desktop only */}
-            <div className="hidden md:grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-2 items-end">
-              {/* City filter - compact on mobile */}
-              <div className="col-span-2 md:col-span-1">
-                <CountryCitySelector
-                  onCitySelect={(city) => handleCitySelect(city)}
-                  defaultCity={userCity || undefined}
-                  label="City"
-                />
-              </div>
+            <div className="hidden md:flex md:flex-wrap gap-2 items-center">
+              {/* City filter */}
 
+              {/* Simple filter toggle buttons */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => toggleFilter('freeCheap')}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    simpleFilters.freeCheap
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <DollarSign className="h-4 w-4 mr-1" />
+                  Free/Cheap
+                </button>
 
-              <div>
-                <label className="text-xs text-gray-500 block mb-1">Price</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-2">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <select
-                    value={activeFilters.price}
-                    className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
-                  >
-                    <option value="all">All Prices</option>
-                    <option value="free">Free</option>
-                    <option value="affordable">Under $25</option>
-                    <option value="moderate">Under $50</option>
-                    <option value="high">Under $75</option>
-                    <option value="luxury">Above $100</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+                <button
+                  onClick={() => toggleFilter('daytimeOnly')}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    simpleFilters.daytimeOnly
+                      ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Sun className="h-4 w-4 mr-1" />
+                  Daytime only
+                </button>
 
-              {/* Time of Day Filter - compact design */}
-              <div className="hidden lg:block">
-                <label className="text-xs text-gray-500 block mb-1">Time</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-2">
-                    <ClockIcon className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <select
-                    value={activeFilters.timeOfDay || 'all'}
-                    className="w-full pl-7 pr-8 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm appearance-none"
-                    onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
-                  >
-                    <option value="all">Any Time</option>
-                    <option value="day">Day</option>
-                    <option value="afternoon">Afternoon</option>
-                    <option value="evening">Evening</option>
-                    <option value="night">Night</option>
-                    <option value="varies">Varies</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+                <button
+                  onClick={() => toggleFilter('nighttimeOnly')}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    simpleFilters.nighttimeOnly
+                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Moon className="h-4 w-4 mr-1" />
+                  Nighttime only
+                </button>
 
-              {/* Mood Filter - compact popover */}
-              <div className="hidden lg:block">
-                <label className="text-xs text-gray-500 block mb-1">Mood</label>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className="w-full flex justify-between items-center pl-7 pr-2 py-2 border border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
-                  >
-                    <div className="flex items-center">
-                      <MoonIcon className="absolute left-2 h-4 w-4 text-gray-400" />
-                      <span className="truncate">{getSelectedFiltersText()}</span>
-                    </div>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className={`h-4 w-4 flex-shrink-0 transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}
-                      viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
+                <button
+                  onClick={() => toggleFilter('outdoor')}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    simpleFilters.outdoor
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <TreePine className="h-4 w-4 mr-1" />
+                  Outdoor
+                </button>
 
-                  {showAdvancedFilters && (
-                    <div className="absolute z-40 mt-1 right-0 w-64 md:w-72 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                      <div className="p-2 border-b border-gray-100">
-                        <h3 className="text-xs font-medium text-gray-700">Categories</h3>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {filterOptions.categories.map((category) => (
-                            <button
-                              key={category}
-                              onClick={() => handleFilterChange('categories', category, !selectedFilters.categories.includes(category))}
-                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.categories.includes(category)
-                                ? 'bg-rose-100 text-rose-700 font-medium'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                              {category}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="p-2 border-b border-gray-100">
-                        <h3 className="text-xs font-medium text-gray-700">Location Types</h3>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {filterOptions.locationTypes.map((type) => (
-                            <button
-                              key={type}
-                              onClick={() => handleFilterChange('locationTypes', type, !selectedFilters.locationTypes.includes(type))}
-                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.locationTypes.includes(type)
-                                ? 'bg-rose-100 text-rose-700 font-medium'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                              {type}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-
-                      <div className="p-2 border-b border-gray-100">
-                        <h3 className="text-xs font-medium text-gray-700">Mood Paces</h3>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {filterOptions.moodPaces.map((pace) => (
-                            <button
-                              key={pace}
-                              onClick={() => handleFilterChange('moodPaces', pace, !selectedFilters.moodPaces.includes(pace))}
-                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.moodPaces.includes(pace)
-                                ? 'bg-rose-100 text-rose-700 font-medium'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                              {pace}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* <div className="p-2">
-                        <h3 className="text-xs font-medium text-gray-700">Mood Vibes</h3>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {filterOptions.moodVibes.map((vibe) => (
-                            <button
-                              key={vibe}
-                              onClick={() => handleFilterChange('moodVibes', vibe, !selectedFilters.moodVibes.includes(vibe))}
-                              className={`px-2 py-1 text-xs rounded transition-colors ${selectedFilters.moodVibes.includes(vibe)
-                                ? 'bg-rose-100 text-rose-700 font-medium'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                            >
-                              {vibe}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                       */}
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => toggleFilter('indoor')}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    simpleFilters.indoor
+                      ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Building className="h-4 w-4 mr-1" />
+                  Indoor
+                </button>
               </div>
 
               {/* Clear button with counter */}
-              <div className="flex items-end">
+              {appliedFiltersCount > 0 && (
                 <button
                   onClick={clearAllFilters}
-                  disabled={appliedFiltersCount === 0}
-                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${appliedFiltersCount > 0
-                    ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-rose-100 text-rose-800 hover:bg-rose-200 transition-colors"
                 >
                   <span>Clear</span>
-                  {appliedFiltersCount > 0 && (
-                    <span className="ml-1.5 flex items-center justify-center bg-rose-200 text-rose-800 rounded-full h-5 w-5 text-xs">
-                      {appliedFiltersCount}
-                    </span>
-                  )}
+                  <span className="ml-1.5 flex items-center justify-center bg-rose-200 text-rose-800 rounded-full h-5 w-5 text-xs">
+                    {appliedFiltersCount}
+                  </span>
                 </button>
-              </div>
+              )}
             </div>
           </div>
 
@@ -1177,138 +919,85 @@ const Home = () => {
                     />
                   </div>
 
-                  {/* Price filter */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Price</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        {/* <DollarSign className="h-4 w-4 text-gray-400" /> */}
-                      </div>
-                      <select
-                        value={activeFilters.price}
-                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
-                        onChange={(e) => setActiveFilters({ ...activeFilters, price: e.target.value as typeof activeFilters.price })}
-                      >
-                        <option value="all">All Prices</option>
-                        <option value="free">Free</option>
-                        <option value="affordable">Affordable</option>
-                        <option value="moderate">Moderate</option>
-                        <option value="high">High</option>
-                        <option value="luxury">Luxury</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
+                  {/* Simple filter toggle buttons */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700">Quick Filters</label>
+                    
+                    <button
+                      onClick={() => toggleFilter('freeCheap')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        simpleFilters.freeCheap
+                          ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                          : 'bg-gray-100 text-gray-700 border-2 border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <DollarSign className="h-5 w-5 mr-2" />
+                        Free/Cheap
+                      </span>
+                      {simpleFilters.freeCheap && <span className="text-green-600">✓</span>}
+                    </button>
+
+                    <button
+                      onClick={() => toggleFilter('daytimeOnly')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        simpleFilters.daytimeOnly
+                          ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200'
+                          : 'bg-gray-100 text-gray-700 border-2 border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <Sun className="h-5 w-5 mr-2" />
+                        Daytime only
+                      </span>
+                      {simpleFilters.daytimeOnly && <span className="text-yellow-600">✓</span>}
+                    </button>
+
+                    <button
+                      onClick={() => toggleFilter('nighttimeOnly')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        simpleFilters.nighttimeOnly
+                          ? 'bg-blue-100 text-blue-800 border-2 border-blue-200'
+                          : 'bg-gray-100 text-gray-700 border-2 border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <Moon className="h-5 w-5 mr-2" />
+                        Nighttime only
+                      </span>
+                      {simpleFilters.nighttimeOnly && <span className="text-blue-600">✓</span>}
+                    </button>
+
+                    <button
+                      onClick={() => toggleFilter('outdoor')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        simpleFilters.outdoor
+                          ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                          : 'bg-gray-100 text-gray-700 border-2 border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <TreePine className="h-5 w-5 mr-2" />
+                        Outdoor
+                      </span>
+                      {simpleFilters.outdoor && <span className="text-green-600">✓</span>}
+                    </button>
+
+                    <button
+                      onClick={() => toggleFilter('indoor')}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        simpleFilters.indoor
+                          ? 'bg-purple-100 text-purple-800 border-2 border-purple-200'
+                          : 'bg-gray-100 text-gray-700 border-2 border-transparent'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <Building className="h-5 w-5 mr-2" />
+                        Indoor
+                      </span>
+                      {simpleFilters.indoor && <span className="text-purple-600">✓</span>}
+                    </button>
                   </div>
-
-                  {/* Time filter */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Time of Day</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        {/* <ClockIcon className="h-4 w-4 text-gray-400" /> */}
-                      </div>
-                      <select
-                        value={activeFilters.timeOfDay || 'all'}
-                        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm"
-                        onChange={(e) => setActiveFilters({ ...activeFilters, timeOfDay: e.target.value })}
-                      >
-                        <option value="all">Any Time</option>
-                        <option value="day">Day</option>
-                        <option value="afternoon">Afternoon</option>
-                        <option value="evening">Evening</option>
-                        <option value="night">Night</option>
-                        <option value="varies">Varies</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Categories */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Categories</label>
-                    <div className="flex flex-wrap gap-2">
-                      {filterOptions.categories.map((category) => (
-                        <button
-                          key={category}
-                          onClick={() => handleFilterChange('categories', category, !selectedFilters.categories.includes(category))}
-                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.categories.includes(category)
-                            ? 'bg-rose-100 text-rose-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          {category}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Location Types */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Location Types</label>
-                    <div className="flex flex-wrap gap-2">
-                      {filterOptions.locationTypes.map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => handleFilterChange('locationTypes', type, !selectedFilters.locationTypes.includes(type))}
-                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.locationTypes.includes(type)
-                            ? 'bg-rose-100 text-rose-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-
-                  {/* Mood Paces */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Mood Pace</label>
-                    <div className="flex flex-wrap gap-2">
-                      {filterOptions.moodPaces.map((pace) => (
-                        <button
-                          key={pace}
-                          onClick={() => handleFilterChange('moodPaces', pace, !selectedFilters.moodPaces.includes(pace))}
-                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.moodPaces.includes(pace)
-                            ? 'bg-rose-100 text-rose-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          {pace}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Mood Vibes */}
-
-                  {/* <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Mood Vibe</label>
-                    <div className="flex flex-wrap gap-2">
-                      {filterOptions.moodVibes.map((vibe) => (
-                        <button
-                          key={vibe}
-                          onClick={() => handleFilterChange('moodVibes', vibe, !selectedFilters.moodVibes.includes(vibe))}
-                          className={`px-3 py-1.5 text-sm rounded-full transition-colors ${selectedFilters.moodVibes.includes(vibe)
-                            ? 'bg-rose-100 text-rose-700 font-medium'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          {vibe}
-                        </button>
-                      ))}
-                    </div>
-                  </div> */}
-
                 </div>
 
                 <div className="p-4 border-t flex justify-between">
@@ -1358,9 +1047,6 @@ const Home = () => {
                 dateIdeaImages={allDateIdeaImages}
                 visibleIdeas={visibleIdeas}
                 onLoadMore={loadMoreIdeas}
-                filterOptions={filterOptions}
-                selectedFilters={selectedFilters}
-                onFilterChange={handleFilterChange}
               />
             </>
           )}
@@ -1380,94 +1066,13 @@ const Home = () => {
       </section>
 
 
-      <section className="py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center">Your Favorite Date Ideas</h2>
-          <div className="max-w-6xl mx-auto">
-            {favoritesLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
-              </div>
-            ) : favoritesError ? (
-              <div className="text-center py-12 rounded-2xl backdrop-blur-sm">
-                <p className="text-red-600 mb-4">Unable to load favorites</p>
-                <p className="text-gray-600">Please try again later</p>
-              </div>
-            ) : recentFavorites.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  {recentFavorites.map((favorite) => (
-                    <Link href={`/date-idea/${favorite.slug}`} key={favorite.id} className="group">
-                      <div className="bg-white rounded-lg shadow-md overflow-hidden relative">
-                        <SaveButton itemSlug={favorite.slug} item={favorite} className="absolute top-3 right-3 z-10" />
-                        <div className="relative h-48">
-                          <Image
-                            src={allDateIdeaImages[favorite.slug] || '/placeholder.jpg'}
-                            alt={favorite.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-lg mb-2">{favorite.title}</h3>
-                          <p className="text-gray-600 text-sm line-clamp-2">{favorite.description}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <div className="text-center">
-                  <Link href="/favorites" className="bg-rose-600 text-white px-8 py-4 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-md">
-                    View All Favorites
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-12 rounded-2xl backdrop-blur-sm">
-                <p className="text-lg text-gray-700 mb-6 px-8">
-                  Start saving your favorite date ideas to create your perfect date night collection.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="rounded-2xl shadow-lg overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white p-8 text-center">
-                <h2 className="text-2xl font-extrabold mb-4">Date Night Calendar</h2>
-                <p className="text-lg mb-6 px-4">Plan and schedule your upcoming dates. Share your calendar with your partner.</p>
-                <Link href="/calendar" className="bg-white text-purple-700 px-6 py-3 rounded-full hover:bg-purple-100 transition-colors font-semibold shadow-md">
-                  Open Calendar
-                </Link>
-              </div>
-            </div>
-
-            <div className="rounded-3xl shadow-xl overflow-hidden">
-              <div className="h-full bg-gradient-to-br from-gray-100 to-gray-200 p-8 text-center">
-                <div className="backdrop-blur-sm rounded-2xl py-6">
-                  <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Need Date Night Inspiration?</h2>
-                  <p className="text-lg text-gray-700 mb-6 px-4">Let our Date Idea Generator surprise you with the perfect date based on your preferences.</p>
-                  <Link href="/date-idea-generator" className="bg-rose-600 text-white px-6 py-3 rounded-full hover:bg-rose-700 transition-colors font-semibold shadow-md">
-                    Generate Date Idea
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Follow Us on TikTok</h2>
           <div className="max-w-4xl mx-auto">
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-                          {/* TikTok Embed 1 */}
-                          <blockquote
+              {/* TikTok Embed 1 */}
+              <blockquote
                 className="tiktok-embed"
                 cite="https://www.tiktok.com/@sparkuscc/video/7495149980907277590"
                 data-video-id="7495149980907277590"
