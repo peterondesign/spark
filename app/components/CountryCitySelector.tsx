@@ -24,6 +24,7 @@ export interface CountryCitySelectorProps {
   label?: string;
   className?: string;
   prioritizeIpLocation?: boolean;
+  debugId?: string; // Add debug identifier
 }
 
 // Option type for react-select
@@ -156,6 +157,56 @@ export default function CountryCitySelector({
       handleCitySearch(defaultCity);
     }
   }, [defaultCity, selectedOption, ipLocationFailed, detectionTimeout]);
+
+  // Sync internal selectedOption when selectedCity prop changes from parent
+  useEffect(() => {
+    // Only sync if selectedCity prop exists and differs from current selection
+    if (!selectedCity || selectedCity === selectedOption?.data.name) {
+      return;
+    }
+
+    console.log('CountryCitySelector: Syncing to selectedCity prop:', selectedCity);
+
+    // First, try to find the option in current options
+    const existingOption = options.find(option => option.data.name === selectedCity);
+    if (existingOption) {
+      console.log('CountryCitySelector: Found existing option, updating selectedOption');
+      setSelectedOption(existingOption);
+      return;
+    }
+
+    // If not found, create a new option from all available cities
+    const allCities = City.getAllCities();
+    const matchingCity = allCities.find(city => city.name === selectedCity);
+    
+    if (matchingCity) {
+      console.log('CountryCitySelector: Creating new option for city:', selectedCity);
+      const cityItem: CityItem = {
+        name: matchingCity.name,
+        countryCode: matchingCity.countryCode,
+        countryName: CountryService.getCountryNameByCode(matchingCity.countryCode),
+        isPopular: POPULAR_CITIES.some(pc => pc.name === matchingCity.name && pc.countryCode === matchingCity.countryCode),
+        id: `${matchingCity.name}-${matchingCity.countryCode}`
+      };
+      
+      const cityOption = {
+        value: cityItem.id,
+        label: renderOptionLabel(cityItem),
+        data: cityItem
+      };
+      
+      setSelectedOption(cityOption);
+      
+      // Add to options if not already there
+      setOptions(prev => {
+        const cityExists = prev.some(opt => opt.data.name === matchingCity.name);
+        if (!cityExists) {
+          return [cityOption, ...prev];
+        }
+        return prev;
+      });
+    }
+  }, [selectedCity]); // Simplified dependencies to avoid infinite loops
 
   // Check if localStorage data is stale and clear if needed
   const checkAndClearLocalStorage = () => {

@@ -84,10 +84,6 @@ const Home = () => {
     indoor: false
   });
 
-  const [activeFilters, setActiveFilters] = useState<{
-    city: string | null;
-  }>({ city: null });
-
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
 
   const [cityOptions, setCityOptions] = useState<{ name: string; countryCode: string }[]>([]);
@@ -104,7 +100,6 @@ const Home = () => {
       id: "Los Angeles-US"
     };
     setSelectedCity(laCity.name);
-    setActiveFilters(prev => ({ ...prev, city: laCity.name }));
     setUserCity(laCity.name);
   };
 
@@ -133,7 +128,6 @@ const Home = () => {
         const data = await response.json();
         if (data.city) {
           setSelectedCity(data.city);
-          setActiveFilters(prev => ({ ...prev, city: data.city }));
           setUserCity(data.city);
         } else {
           setDefaultCity();
@@ -169,15 +163,15 @@ const Home = () => {
     setSelectedCity(event.target.value);
   };
 
-  // Update handleCitySelect function to properly update filters
+  // Update handleCitySelect function to only update selectedCity (for display purposes)
   const handleCitySelect = (city: CityItem) => {
+    console.log('Main page: handleCitySelect called with city:', city.name);
     setSelectedCity(city.name);
-    // Also update the active filters to apply the city filter
-    setActiveFilters(prev => ({ ...prev, city: city.name }));
+    console.log('Main page: Updated selectedCity to:', city.name);
+    // Note: No longer updating activeFilters since we removed city filtering
   };
 
   const clearAllFilters = () => {
-    setActiveFilters({ city: null });
     setSimpleFilters({
       freeCheap: false,
       daytimeOnly: false,
@@ -189,13 +183,12 @@ const Home = () => {
 
   const appliedFiltersCount = useMemo(() => {
     let count = 0;
-    if (activeFilters.city) count++;
-    // Count active simple filters
+    // Count active simple filters only
     Object.values(simpleFilters).forEach(isActive => {
       if (isActive) count++;
     });
     return count;
-  }, [activeFilters, simpleFilters]);
+  }, [simpleFilters]);
 
 
 
@@ -320,7 +313,6 @@ const Home = () => {
         const savedCity = localStorage.getItem("userCity");
         if (savedCity) {
           setUserCity(savedCity);
-          setActiveFilters(prev => ({ ...prev, city: savedCity }));
           return;
         }
 
@@ -328,7 +320,6 @@ const Home = () => {
         const data = await response.json();
         if (data.city) {
           setUserCity(data.city);
-          setActiveFilters(prev => ({ ...prev, city: data.city }));
           localStorage.setItem("userCity", data.city);
         } else {
           setDefaultCity();
@@ -509,13 +500,6 @@ const Home = () => {
     const newFilteredIdeas = allDateIdeas.filter((idea) => {
       let matchesFilter = true;
 
-      // City filter - only filter if a city is selected
-      if (activeFilters.city) {
-        const ideaLocation = typeof idea.location === 'string' ? idea.location.toLowerCase() : '';
-        const cityName = activeFilters.city.toLowerCase();
-        matchesFilter = matchesFilter && ideaLocation.includes(cityName);
-      }
-
       // Simple filters based on database structure
       if (simpleFilters.freeCheap) {
         // Filter for affordable items (handle both string and numeric price levels)
@@ -583,7 +567,7 @@ const Home = () => {
 
     setFilteredDateIdeas(newFilteredIdeas);
     setVisibleIdeas(20);
-  }, [allDateIdeas, activeFilters, simpleFilters]);
+  }, [allDateIdeas, simpleFilters]);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -762,10 +746,10 @@ const Home = () => {
 
       <section className="py-12" id="all-date-ideas">
         <div className="container mx-auto px-4">
-          {/* Second Heading: Date Ideas in {citydropdown} */}
+          {/* Second Heading: What to do this week in {citydropdown} */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 whitespace-nowrap">
-              Date Ideas in
+              What to do this week in
             </h2>
             <div className="min-w-[250px]">
               <CountryCitySelector
