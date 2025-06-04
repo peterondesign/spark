@@ -521,27 +521,38 @@ const Home = () => {
 
       // Simple filters based on database structure
       if (simpleFilters.freeCheap) {
-        // Filter for free or cheap items (priceLevel 1-2)
-        matchesFilter = matchesFilter && (idea.priceLevel === 1 || idea.priceLevel === 2);
+        // Filter for affordable items only
+        matchesFilter = matchesFilter && (idea.priceLevel === "affordable");
       }
 
       if (simpleFilters.daytimeOnly) {
-        // Filter for daytime activities
+        // Filter for daytime activities exclusively (exclude nighttime activities)
         const timeText = idea.timeOfDay ? idea.timeOfDay.toLowerCase() : '';
-        matchesFilter = matchesFilter && (
-          timeText.includes('day') ||
-          timeText.includes('morning') ||
-          timeText.includes('afternoon')
-        );
+        
+        // Include items with no specific time (empty/null), 'varies', or explicitly daytime
+        if (!timeText || timeText === 'varies') {
+          matchesFilter = matchesFilter && true; // Include varies and empty/null
+        } else {
+          // Only include if it contains daytime keywords AND doesn't contain nighttime keywords
+          const hasDaytime = timeText.includes('day') || timeText.includes('morning') || timeText.includes('afternoon');
+          const hasNighttime = timeText.includes('night') || timeText.includes('evening');
+          matchesFilter = matchesFilter && (hasDaytime && !hasNighttime);
+        }
       }
 
       if (simpleFilters.nighttimeOnly) {
-        // Filter for nighttime activities
+        // Filter for nighttime activities exclusively (exclude daytime activities)
         const timeText = idea.timeOfDay ? idea.timeOfDay.toLowerCase() : '';
-        matchesFilter = matchesFilter && (
-          timeText.includes('night') ||
-          timeText.includes('evening')
-        );
+        
+        // Include items with no specific time (empty/null), 'varies', or explicitly nighttime
+        if (!timeText || timeText === 'varies') {
+          matchesFilter = matchesFilter && true; // Include varies and empty/null
+        } else {
+          // Only include if it contains nighttime keywords AND doesn't contain daytime keywords
+          const hasNighttime = timeText.includes('night') || timeText.includes('evening');
+          const hasDaytime = timeText.includes('day') || timeText.includes('morning') || timeText.includes('afternoon');
+          matchesFilter = matchesFilter && (hasNighttime && !hasDaytime);
+        }
       }
 
       if (simpleFilters.outdoor) {

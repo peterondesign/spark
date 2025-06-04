@@ -99,8 +99,8 @@ export default function Header() {
                             <Link href="/" className={getLinkStyle('/')}>Home</Link>
                         )}
                         <Link href="/favorites" className={getLinkStyle('/favorites')}>Favorites</Link>
-                        <Link href="/calendar" className={getLinkStyle('/calendar')}>Date Calendar</Link>
-                        {/* <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link> */}
+                        {/* <Link href="/calendar" className={getLinkStyle('/calendar')}>Date Calendar</Link> */}
+                        <Link href="/date-idea-generator" className={getLinkStyle('/date-idea-generator')}>Date Idea Generator</Link>
                         
                         {/* Tools Dropdown - Simplified to only toggle on click */}
                         {/* <div className="relative" ref={toolsMenuRef}>
@@ -153,8 +153,7 @@ export default function Header() {
                             )}
                         </div> */}
 
-
-                        <Link href="/shop" className={getLinkStyle('/shop')}>Shop</Link>
+                        {/* <Link href="/shop" className={getLinkStyle('/shop')}>Shop</Link> */}
                         {/* <Link href="/date-night-box-subscription" className={getLinkStyle('/date-night-box-subscription')}>Couples’ Gift Box Subscription</Link> */}
                         <Link href="/blog" className={getLinkStyle('/blog')}>Blog</Link>
                         <Link href="https://tally.so/r/3XzK4g" target="_blank" className="text-gray-600 hover:text-gray-900">Contact Us</Link>
