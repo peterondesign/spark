@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
-import { ChevronRight } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const FeaturedIdeasSection = () => {
   const { theme } = useTheme();
+  const [selectedCity, setSelectedCity] = useState<string>("LISBON");
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+
+  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(event.target.value);
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -98,15 +103,29 @@ const FeaturedIdeasSection = () => {
       <div className="container mx-auto px-6">
         <h2 
           ref={titleRef}
-          className={`text-4xl md:text-5xl font-bold font-heading text-center mb-16 ${
+          className={`text-4xl md:text-5xl font-bold font-heading text-left mb-16 ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}
         >
-          What to do this week in{" "}
-          <span className="text-rose-400 inline-flex items-center gap-2">
-            your city
-            <ChevronRight className="w-8 h-8 md:w-10 md:h-10" />
-          </span>
+          WHAT'S HAPPENING THIS WEEK IN{" "}
+          <div className={`inline-flex items-center gap-2 ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
+            <select 
+              value={selectedCity}
+              onChange={handleCityChange}
+              className={`bg-transparent border-b-2 border-gray-400 focus:border-gray-600 outline-none text-4xl md:text-5xl font-bold cursor-pointer ${
+                theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              <option value="LISBON">LISBON</option>
+              <option value="NEW YORK">NEW YORK</option>
+              <option value="LONDON">LONDON</option>
+              <option value="PARIS">PARIS</option>
+              <option value="TOKYO">TOKYO</option>
+            </select>
+            <ChevronDown className="w-8 h-8 md:w-10 md:h-10" />
+          </div>
         </h2>
 
         <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

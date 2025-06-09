@@ -9,7 +9,6 @@ import Header from './components/sections/Header';
 import HeroSection from './components/sections/HeroSection';
 import FeaturedIdeasSection from './components/sections/FeaturedIdeasSection';
 import AllDateIdeasSection from './components/sections/AllDateIdeasSection';
-import FeaturesSection from './components/sections/FeaturesSection';
 import TikTokSection from './components/sections/TikTokSection';
 import Footer from './components/sections/Footer';
 
@@ -43,7 +42,6 @@ const HomeContent = () => {
       <HeroSection />
       <FeaturedIdeasSection />
       <AllDateIdeasSection />
-      <FeaturesSection />
       <TikTokSection />
       <Footer />
     </main>

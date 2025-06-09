@@ -1,52 +1,38 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronRight } from 'lucide-react';
-import CountryCitySelector from '../CountryCitySelector';
-import { CityItem } from '../../../utils/cityService';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../../utils/supabaseClient';
+import Link from 'next/link';
 
 interface DateIdea {
   id: string;
   title: string;
   category: string;
-  rating?: number;
-  image_url?: string;
+  image?: string;
   slug: string;
 }
 
 const AllDateIdeasSection = () => {
   const { theme } = useTheme();
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [userCity, setUserCity] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string>("LISBON");
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Get user's location
-  useEffect(() => {
-    if (navigator.geolocation && !userCity) {
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        try {
-          const response = await fetch(`/api/location?lat=${position.coords.latitude}&lng=${position.coords.longitude}`);
-          if (response.ok) {
-            const data = await response.json();
-            setUserCity(data.city);
-          }
-        } catch (error) {
-          console.error("Error getting location:", error);
-        }
-      });
-    }
-  }, [userCity]);
-
-  // Fetch date ideas
+  // Fetch date ideas from Supabase
   useEffect(() => {
     const fetchDateIdeas = async () => {
       try {
-        const response = await fetch('/api/getAllSlugs');
-        if (response.ok) {
-          const data = await response.json();
-          setDateIdeas(data.slice(0, 12)); // Show first 12 ideas
+        const { data, error } = await supabase
+          .from('date_ideas')
+          .select('*')
+          .limit(12);
+
+        if (error) {
+          console.error("Error fetching date ideas:", error);
+        } else {
+          setDateIdeas(data || []);
         }
       } catch (error) {
         console.error("Error fetching date ideas:", error);
@@ -58,11 +44,9 @@ const AllDateIdeasSection = () => {
     fetchDateIdeas();
   }, []);
 
-  const handleCitySelect = (city: CityItem) => {
-    setSelectedCity(city.name);
+  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCity(event.target.value);
   };
-
-  const displayCity = selectedCity || userCity || "your city";
 
   return (
     <section 
@@ -76,21 +60,25 @@ const AllDateIdeasSection = () => {
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
             ALL DATE IDEAS IN{" "}
-            <span className="text-rose-400 inline-flex items-center gap-2">
-              {displayCity.toUpperCase()}
-              <ChevronRight className="w-8 h-8 md:w-10 md:h-10" />
-            </span>
+            <div className={`inline-flex items-center gap-2 ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              <select 
+                value={selectedCity}
+                onChange={handleCityChange}
+                className={`bg-transparent border-b-2 border-gray-400 focus:border-gray-600 outline-none text-3xl md:text-4xl font-bold cursor-pointer ${
+                  theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}
+              >
+                <option value="LISBON">LISBON</option>
+                <option value="NEW YORK">NEW YORK</option>
+                <option value="LONDON">LONDON</option>
+                <option value="PARIS">PARIS</option>
+                <option value="TOKYO">TOKYO</option>
+              </select>
+              <ChevronDown className="w-8 h-8 md:w-10 md:h-10" />
+            </div>
           </h2>
-          
-          <div className="min-w-[280px]">
-            <CountryCitySelector
-              onCitySelect={handleCitySelect}
-              selectedCity={selectedCity}
-              defaultCity={userCity || undefined}
-              label=""
-              className="w-full"
-            />
-          </div>
         </div>
 
         {/* Date Ideas Grid */}
@@ -109,7 +97,7 @@ const AllDateIdeasSection = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
               {dateIdeas.map((idea) => (
-                <a
+                <Link
                   key={idea.id}
                   href={`/date-idea/${idea.slug}`}
                   className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2 ${
@@ -120,37 +108,29 @@ const AllDateIdeasSection = () => {
                 >
                   <div className="relative h-48 overflow-hidden">
                     <img
-                      src={idea.image_url || '/placeholder.jpg'}
+                      src={idea.image || '/placeholder.jpg'}
                       alt={idea.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-white font-semibold text-lg leading-tight">
-                        {idea.title}
-                      </h3>
-                    </div>
                   </div>
                   <div className="p-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                      theme === 'dark' 
-                        ? 'bg-rose-900 text-rose-200' 
-                        : 'bg-rose-100 text-rose-800'
+                    <h3 className={`text-lg font-semibold mb-2 group-hover:text-rose-400 transition-colors ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
                     }`}>
-                      {idea.category}
-                    </span>
-                    {idea.rating && (
-                      <div className="flex items-center mt-2">
-                        <span className="text-yellow-400">★</span>
-                        <span className={`ml-1 text-sm ${
-                          theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                        }`}>
-                          {idea.rating}
-                        </span>
-                      </div>
-                    )}
+                      {idea.title}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                        theme === 'dark' 
+                          ? 'bg-rose-900 text-rose-200' 
+                          : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {idea.category}
+                      </span>
+                    </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
 
