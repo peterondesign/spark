@@ -5,6 +5,7 @@ import Footer from '../../../components/Footer';
 import PageTitle from '../../../components/PageTitle';
 import { PAGE_TITLES } from '../../../utils/titleUtils';
 import { getCityBySlug } from '@/utils/cityService';
+import { ChevronRight } from 'lucide-react';
 
 
 
@@ -61,7 +62,10 @@ export async function generateMetadata(props: {
         
         <div className="relative container mx-auto px-4 z-10">
           <div className="max-w-2xl mx-auto text-center text-white">
-            <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Date Ideas in {cityInfo.name}</h1>
+            <h1 className="text-4xl md:text-5xl font-extrabold mb-4 flex items-center justify-center gap-3">
+              Date Ideas in {cityInfo.name}
+              <ChevronRight className="w-10 h-10 md:w-12 md:h-12 text-rose-400" />
+            </h1>
             <p className="text-xl mb-8">Discover amazing experiences for your next date night in {cityInfo.name}, {cityInfo.region || cityInfo.countryCode}</p>
           </div>
         </div>
@@ -71,8 +75,9 @@ export async function generateMetadata(props: {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6">
+            <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
               Best Date Ideas in {cityInfo.name}
+              <ChevronRight className="w-8 h-8 text-rose-400" />
             </h2>
             
             <p className="text-gray-600 mb-8">

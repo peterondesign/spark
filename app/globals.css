@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font family definitions */
+:root {
+  --font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-anton: 'Anton', sans-serif;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 255, 255, 255;

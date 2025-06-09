@@ -1,7 +1,7 @@
 import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
-import { Plus_Jakarta_Sans } from "next/font/google"
+import { Plus_Jakarta_Sans, Anton } from "next/font/google"
 import { ThemeProvider } from '@/components/theme-provider';
 import Script from 'next/script';
 import ClientPrivacyNotice from './components/ClientPrivacyNotice';
@@ -17,7 +17,16 @@ declare global {
   }
 }
 
-const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] })
+const plusJakartaSans = Plus_Jakarta_Sans({ 
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
+})
+
+const anton = Anton({ 
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-anton",
+})
 
 // Base metadata that can be extended by individual pages
 // Each page should define its own unique title and description
@@ -84,7 +93,7 @@ export default function RootLayout({
       <head>
         {/* Next.js will automatically handle canonical links through metadata */}
       </head>
-      <body className={plusJakartaSans.className} suppressHydrationWarning={true}>
+      <body className={`${plusJakartaSans.variable} ${anton.variable} ${plusJakartaSans.className}`} suppressHydrationWarning={true}>
         {/* SanityLive component to enable live content updates */}
         <SanityLive />
 

@@ -85,6 +85,7 @@
     "fs": "^0.0.1-security",
     "fuse.js": "^7.1.0",
     "gapi-script": "^1.2.0",
+    "gsap": "^3.13.0",
     "html2canvas": "^1.4.1",
     "ics": "^3.8.1",
     "input-otp": "1.4.1",

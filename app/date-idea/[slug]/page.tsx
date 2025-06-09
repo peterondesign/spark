@@ -12,6 +12,7 @@ import Footer from "@/app/components/Footer";
 import { supabase } from "@/utils/supabaseClient";
 import CountryCitySelector from "@/app/components/CountryCitySelector";
 import RelatedDateIdea from "../../components/RelatedDateIdea";
+import { ChevronRight } from "lucide-react";
 
 // Define DateIdea interface
 interface DateIdea {
@@ -597,8 +598,9 @@ export default function DateIdeaDetails() {
 
         {/* Simplified Perplexity Results Section */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
             Find "{dateIdea.title}" Activities in {userCity || 'your city'}
+            <ChevronRight className="w-6 h-6 text-rose-400" />
           </h2>
           {/* Show search action steps */}
           <p className="text-sm text-gray-500 mb-4">

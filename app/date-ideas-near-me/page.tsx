@@ -7,7 +7,7 @@ import PageTitle from "../components/PageTitle";
 import { PAGE_TITLES } from "../utils/titleUtils";
 import CountryCitySelector from '../components/CountryCitySelector';
 import { CityItem } from '../../utils/cityService';
-import { StarIcon } from "lucide-react";
+import { StarIcon, ChevronRight } from "lucide-react";
 
 export default function DateIdeasNearMePage() {
   const [selectedCity, setSelectedCity] = useState<string>("");
@@ -137,8 +137,9 @@ export default function DateIdeasNearMePage() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold mb-6">
+            <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
               {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} in {selectedCity || "Your City"}
+              <ChevronRight className="w-8 h-8 text-rose-400" />
             </h2>
             
             <p className="text-gray-600 mb-8">
