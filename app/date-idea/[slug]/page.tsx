@@ -4,22 +4,18 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { MapPinIcon } from "../../components/icons";
+import { ChevronDown } from "lucide-react";
 import SaveButton from "../../components/SaveButton";
+import { supabase } from "@/utils/supabaseClient";
 import { getImageUrl, getPlaceholderImage, processDateIdeaImages } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
-import { supabase } from "@/utils/supabaseClient";
-import CountryCitySelector from "@/app/components/CountryCitySelector";
-import RelatedDateIdea from "../../components/RelatedDateIdea";
-import { ChevronRight } from "lucide-react";
 
 // Define DateIdea interface
 interface DateIdea {
   id: string;
   title: string;
   category: string;
-  rating?: number;
   location?: string;
   description?: string;
   price?: string;
@@ -37,155 +33,17 @@ interface DateIdea {
   images?: string[];
 }
 
-// City type for user location
-interface CityItem {
-  name: string;
-  countryCode: string;
-  countryName: string;
-  isPopular: boolean;
-  id: string;
-}
-
-// Define the simplified Event interface based on the new API response
-interface EventItem {
-  image_url: string;
-  title: string;
-  description: string;
-  event_url: string;
-  source: string;
-}
-
 export default function DateIdeaDetails() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug || '';
   const [dateIdea, setDateIdea] = useState<DateIdea | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState(0);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [userCity, setUserCity] = useState<string | null>(null);
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-
-  // Add state for other date ideas
   const [otherDateIdeas, setOtherDateIdeas] = useState<DateIdea[]>([]);
-  const [loadingOtherIdeas, setLoadingOtherIdeas] = useState(false);
   const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
 
-  // Add state for the simplified events array
-  const [perplexityEvents, setPerplexityEvents] = useState<EventItem[]>([]);
-  const [perplexityLoading, setPerplexityLoading] = useState(false);
-  const [perplexityError, setPerplexityError] = useState<string | null>(null);
-
-  // Helper to ensure valid image URL
-  const getValidImage = (url: string | undefined, title: string) => {
-    return url && url.startsWith('http') ? url : getPlaceholderImage(400, 200, title);
-  };
-
-  // Simple function for handling city selection
-  const handleCitySelect = (city: CityItem) => {
-    setUserCity(city.name);
-    // Store city name in localStorage
-    localStorage.setItem("userCity", city.name);
-    localStorage.setItem("userCityData", JSON.stringify({
-      name: city.name,
-      countryCode: city.countryCode,
-      countryName: city.countryName,
-      id: city.id
-    }));
-    setShowLocationPrompt(false);
-  };
-
-  // Function for clearing user city
-  const clearUserCity = () => {
-    localStorage.removeItem("userCity");
-    localStorage.removeItem("userCityData");
-    setUserCity(null);
-    setShowLocationPrompt(true);
-  };
-
-  // Create a simplified location component
-  const LocationSelector = () => {
-    return (
-      <>
-        {showLocationPrompt ? (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-              <div className="mb-3 md:mb-0 md:mr-4">
-                <h3 className="text-sm font-semibold text-blue-800">Set Your Location</h3>
-                <p className="text-sm text-blue-600">Add your city to personalize your date ideas</p>
-              </div>
-              <div className="flex w-full md:w-auto">
-                <CountryCitySelector 
-                  onCitySelect={handleCitySelect}
-                  defaultCountry="US"
-                  className="w-full md:w-auto"
-                  prioritizeIpLocation={false} 
-                />
-              </div>
-            </div>
-          </div>
-        ) : userCity ? (
-          <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-200 p-3 bg-white">
-            <div className="flex items-center">
-              <MapPinIcon className="h-4 w-4 text-gray-500 mr-2" />
-              <span className="text-gray-700 text-sm">Location: {userCity}</span>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={clearUserCity}
-                className="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1 rounded-full flex items-center transition-colors"
-              >
-                Change
-              </button>
-              <button
-                onClick={clearUserCity}
-                className="text-xs bg-gray-50 text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-full flex items-center transition-colors"
-                aria-label="Clear location"
-                title="Clear location"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </>
-    );
-  };
-
-  // Load user location from localStorage
-  useEffect(() => {
-    const loadUserLocation = async () => {
-      try {
-        const savedCityData = localStorage.getItem("userCityData");
-        if (savedCityData) {
-          try {
-            const cityData = JSON.parse(savedCityData);
-            setUserCity(cityData.name);
-            return;
-          } catch (e) {
-            console.error('Error parsing saved city data:', e);
-          }
-        }
-        
-        const savedCity = localStorage.getItem("userCity");
-        if (savedCity) {
-          setUserCity(savedCity);
-          return;
-        }
-        
-        // Show prompt if no location is found
-        setShowLocationPrompt(true);
-      } catch (error) {
-        console.error('Error loading user location:', error);
-        setShowLocationPrompt(true);
-      }
-    };
-
-    loadUserLocation();
-  }, []);
-
-  // Fetch the date idea details
+  // Fetch date idea data
   useEffect(() => {
     const fetchDateIdea = async () => {
       setLoading(true);
@@ -196,52 +54,50 @@ export default function DateIdeaDetails() {
           .eq('slug', slug)
           .single();
 
-        if (error) {
+        if (error || !data) {
           console.error("Error fetching date idea:", error);
           setLoading(false);
           return;
         }
 
-        if (data) {
-          const dateIdeaData: DateIdea = {
-            id: data.id,
-            title: data.title,
-            category: data.category,
-            rating: data.rating,
-            location: data.location,
-            description: data.description,
-            price: data.price,
-            duration: data.duration,
-            slug: data.slug,
-            image: data.image,
-            priceLevel: data.price_level || undefined,
-            bestForStage: data.best_for_stage || undefined,
-            tips: data.tips || undefined,
-            mood: data.mood || undefined,
-            timeOfDay: data.time_of_day || undefined,
-            idealFor: data.ideal_for || undefined,
-            relatedDateIdeas: data.related_date_ideas || undefined,
-            longDescription: data.long_description || undefined,
-            images: data.images || [],
-          };
+        const dateIdeaData: DateIdea = {
+          id: data.id,
+          title: data.title,
+          category: data.category,
+          location: data.location,
+          description: data.description,
+          price: data.price,
+          duration: data.duration,
+          slug: data.slug,
+          image: data.image,
+          priceLevel: data.price_level || undefined,
+          bestForStage: data.best_for_stage || undefined,
+          tips: data.tips || undefined,
+          timeOfDay: data.time_of_day || undefined,
+          idealFor: data.ideal_for || undefined,
+          relatedDateIdeas: data.related_date_ideas || undefined,
+          longDescription: data.long_description || undefined,
+          images: data.images || [],
+        };
 
-          setDateIdea(dateIdeaData);
+        setDateIdea(dateIdeaData);
 
-          const allImages = [data.image];
-          if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-            allImages.push(...data.images.filter((img: any) => img !== data.image));
-          }
-
-          const imageUrlPromises = allImages.map(img =>
-            getImageUrl(img, `${data.title} ${data.category}`, 1200, 800)
-          );
-
-          const resolvedImageUrls = await Promise.all(imageUrlPromises);
-          setImageUrls(resolvedImageUrls);
+        // Process images
+        const allImages = [data.image];
+        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+          allImages.push(...data.images);
         }
+
+        const processedImages = await Promise.all(
+          allImages.map(async (img) => {
+            return await getImageUrl(img, `${data.title} ${data.category}`, 800, 600);
+          })
+        );
+
+        setImageUrls(processedImages.filter(Boolean));
+        setLoading(false);
       } catch (error) {
-        console.error("Unexpected error:", error);
-      } finally {
+        console.error('Error fetching date idea:', error);
         setLoading(false);
       }
     };
@@ -251,207 +107,65 @@ export default function DateIdeaDetails() {
     }
   }, [slug]);
 
-  // Fetch other related date ideas when the main date idea loads
+  // Fetch other date ideas
   useEffect(() => {
-    if (dateIdea && dateIdea.id && dateIdea.category) {
-      fetchOtherDateIdeas(dateIdea.id);
-    }
-  }, [dateIdea]);
-
-  // Function to fetch other random date ideas
-  const fetchOtherDateIdeas = async (currentId: string) => {
-    setLoadingOtherIdeas(true);
-    try {
-      // Using proper Supabase syntax for random ordering
-      const { data: randomIdeas, error } = await supabase
-        .from('date_ideas')
-        .select('id, title, category, description, slug, image')
-        .neq('id', currentId)
-        .order('id', { ascending: false })
-        .limit(10);
-        
-      if (error) {
-        console.error('Error fetching random ideas:', error);
-        throw error;
-      }
-      
-      if (randomIdeas && randomIdeas.length > 0) {
-        // Shuffle array client-side to get random results
-        const shuffledIdeas = randomIdeas
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3);
-        
-        setOtherDateIdeas(shuffledIdeas as DateIdea[]);
-        
-        // Process images for the other date ideas
-        const imageMap = await processDateIdeaImages(shuffledIdeas, 400, 200);
-        setDateIdeaImages(imageMap);
-      } else {
-        throw new Error('No random date ideas found');
-      }
-    } catch (error) {
-      console.error("Error fetching other date ideas:", error);
-      
-      // Fallback date ideas if the database query fails
-      const fallbackIdeas = [
-        {
-          id: 'fallback-1',
-          title: 'Romantic Dinner',
-          category: 'Food & Drink',
-          description: 'Enjoy a candle-lit dinner at a cozy restaurant.',
-          slug: 'romantic-dinner',
-          image: '/placeholder.jpg'
-        },
-        {
-          id: 'fallback-2',
-          title: 'Hiking Adventure',
-          category: 'Outdoor',
-          description: 'Explore nature trails and enjoy scenic views together.',
-          slug: 'hiking-adventure',
-          image: '/placeholder.jpg'
-        },
-        {
-          id: 'fallback-3',
-          title: 'Movie Night',
-          category: 'Entertainment',
-          description: 'Cuddle up with popcorn and watch a film together.',
-          slug: 'movie-night',
-          image: '/placeholder.jpg'
-        }
-      ];
-      
-      setOtherDateIdeas(fallbackIdeas);
-      
-      // Process fallback images
-      const fallbackImageMap = await processDateIdeaImages(fallbackIdeas, 400, 200);
-      setDateIdeaImages(fallbackImageMap);
-    } finally {
-      setLoadingOtherIdeas(false);
-    }
-  };
-
-  // Fetch Perplexity results (updated)
-  useEffect(() => {
-    const fetchPerplexityResults = async () => {
-      if (!dateIdea || !userCity) return;
-      setPerplexityLoading(true);
-      setPerplexityError(null);
-      setPerplexityEvents([]); // Clear previous events
+    const fetchOtherDateIdeas = async () => {
       try {
-        const response = await fetch('/api/perplexity-date-ideas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ city: userCity, dateIdeaTitle: dateIdea.title }), 
-        });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch results'); // Use error field from response
+        const { data, error } = await supabase
+          .from('date_ideas')
+          .select('*')
+          .neq('slug', slug)
+          .limit(8);
+
+        if (error) {
+          console.error("Error fetching other date ideas:", error);
+          return;
         }
-        const data = await response.json();
-        // Expecting { events: [...] }
-        if (data && Array.isArray(data.events)) {
-          setPerplexityEvents(data.events);
-        } else {
-          console.warn("Received unexpected data structure from Perplexity API:", data);
-          setPerplexityEvents([]); // Set to empty array if structure is wrong
+
+        if (data) {
+          const otherIdeas: DateIdea[] = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            description: item.description,
+            slug: item.slug,
+            image: item.image
+          }));
+
+          setOtherDateIdeas(otherIdeas);
+
+          // Process images for other date ideas
+          const imageMap = await processDateIdeaImages(otherIdeas, 400, 300);
+          setDateIdeaImages(imageMap);
         }
-      } catch (err) {
-        setPerplexityError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setPerplexityLoading(false);
+      } catch (error) {
+        console.error('Error fetching other date ideas:', error);
       }
     };
-    fetchPerplexityResults();
-  }, [dateIdea, userCity]);
 
-  // Render function for other date ideas
-  const renderOtherDateIdeas = () => {
-    if (loadingOtherIdeas) {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden animate-pulse">
-              <div className="h-40 bg-gray-200"></div>
-              <div className="p-4">
-                <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      );
+    if (dateIdea) {
+      fetchOtherDateIdeas();
     }
-    
-    if (otherDateIdeas.length === 0) {
-      return (
-        <div className="text-center py-6">
-          <p className="text-gray-500">Searching for more date ideas...</p>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {otherDateIdeas.map((idea) => (
-          <Link
-            key={idea.id}
-            href={`/date-idea/${idea.slug}`}
-            className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md"
-          >
-            <div className="relative h-40">
-              <Image
-                src={dateIdeaImages[idea.id] || getPlaceholderImage(400, 200, idea.title)}
-                alt={idea.title}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute bottom-0 left-0 bg-rose-500/80 text-white text-xs font-medium px-2 py-1">
-                {idea.category}
-              </div>
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-800 mb-2 group-hover:text-rose-600 transition-colors">
-                {idea.title}
-              </h3>
-              <p className="text-gray-600 text-sm line-clamp-2">
-                {idea.description}
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    );
-  };
+  }, [dateIdea, slug]);
+
+  // Get user city from localStorage
+  useEffect(() => {
+    const savedCity = localStorage.getItem("userCity");
+    setUserCity(savedCity);
+  }, []);
 
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <div className="mb-4 flex gap-2">
-            <div className="h-4 w-12 bg-gray-200 animate-pulse rounded"></div>
-            <div className="h-4 w-4 bg-gray-200 animate-pulse rounded"></div>
-            <div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div>
-          </div>
-
-          <div className="mb-8 rounded-2xl overflow-hidden">
-            <div className="h-80 md:h-96 lg:h-[500px] bg-gray-200 animate-pulse"></div>
-          </div>
-
-          <div className="mb-6">
-            <div className="flex items-center mb-2">
-              <div className="h-6 w-24 bg-gray-200 animate-pulse rounded-full"></div>
-            </div>
-            <div className="h-10 w-3/4 bg-gray-200 animate-pulse rounded mb-2"></div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-            <div className="h-7 w-40 bg-gray-200 animate-pulse rounded mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-4 w-full bg-gray-200 animate-pulse rounded"></div>
-              <div className="h-4 w-5/6 bg-gray-200 animate-pulse rounded"></div>
-              <div className="h-4 w-4/6 bg-gray-200 animate-pulse rounded"></div>
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-1/2 mx-auto mb-12"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="aspect-square bg-muted rounded-lg"></div>
+              ))}
             </div>
           </div>
         </div>
@@ -460,14 +174,14 @@ export default function DateIdeaDetails() {
     );
   }
 
-  // No date idea found state
+  // Not found state
   if (!dateIdea) {
     return (
-      <div className="min-h-screen bg-white py-20">
+      <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Date Idea Not Found</h1>
-          <p className="text-gray-600 mb-8">Sorry, we couldn't find the date idea you're looking for.</p>
+        <div className="container mx-auto px-4 py-20 text-center">
+          <h1 className="text-3xl font-bold text-foreground mb-4">Date Idea Not Found</h1>
+          <p className="text-muted-foreground mb-8">Sorry, we couldn't find the date idea you're looking for.</p>
           <Link
             href="/"
             className="px-6 py-3 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
@@ -480,311 +194,166 @@ export default function DateIdeaDetails() {
     );
   }
 
-  // Price level renderer
-  const renderPriceLevel = (level: number | undefined) => {
-    if (!level) return null;
-
-    const levels = ["$", "$$", "$$$", "$$$$"];
-    const priceIndex = level - 1;
-
-    return (
-      <div className="flex items-center">
-        {levels.map((_, index) => (
-          <span
-            key={index}
-            className={`text-lg ${index <= priceIndex ? 'text-green-600 font-bold' : 'text-gray-300'}`}
-          >
-            $
-          </span>
-        ))}
-      </div>
-    );
-  };
-
-  // Waiting for images
-  if (imageUrls.length === 0) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Header />
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-rose-500"></div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // Main content
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <nav className="mb-4 text-sm">
-          <ol className="flex items-center space-x-1">
-            <li>
-              <Link href="/" className="text-gray-500 hover:text-rose-500">Home</Link>
-            </li>
-            <li>
-              <span className="text-gray-500 mx-1">/</span>
-            </li>
-            <li className="text-rose-500">{dateIdea.title}</li>
-          </ol>
-        </nav>
+      <main className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Title Section with City Dropdown */}
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+              {dateIdea.title} in
+            </h1>
+            <div className="relative">
+              <button className="flex items-center gap-1 text-3xl md:text-4xl font-bold text-foreground hover:text-rose-500 transition-colors">
+                {userCity || 'Your City'}
+                <ChevronDown className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+        </div>
 
-        {/* Main image gallery */}
-        <div className="mb-8 relative rounded-2xl overflow-hidden">
-          <div className="relative h-80 md:h-96 lg:h-[500px]">
-            {imageUrls[activeImage] ? (
+        {/* Image Grid - 4x2 layout matching the design */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+          {imageUrls.slice(0, 8).map((imageUrl, index) => (
+            <div key={index} className="aspect-square relative rounded-lg overflow-hidden group">
               <Image
-                src={imageUrls[activeImage]}
-                alt={dateIdea.title}
+                src={imageUrl || getPlaceholderImage(400, 400, dateIdea.title)}
+                alt={`${dateIdea.title} image ${index + 1}`}
                 fill
-                className="object-cover"
-                priority
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500">Image unavailable</span>
-              </div>
-            )}
-            <SaveButton
-              itemSlug={dateIdea.slug}
-              item={dateIdea}
-              className="absolute top-4 right-4 z-10"
-            />
-          </div>
-
-          {/* Thumbnail gallery */}
-          {imageUrls.length > 1 && (
-            <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-              {imageUrls.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImage(idx)}
-                  className={`h-16 w-24 relative border-2 rounded overflow-hidden transition-all flex-shrink-0 ${
-                    activeImage === idx ? "border-rose-500" : "border-transparent opacity-70"
-                  }`}
-                >
-                  <Image
-                    src={img}
-                    alt={`${dateIdea.title} thumbnail ${idx + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-              ))}
+              {index === 0 && (
+                <SaveButton
+                  itemSlug={dateIdea.slug}
+                  item={dateIdea}
+                  className="absolute top-2 right-2 z-10"
+                />
+              )}
             </div>
-          )}
+          ))}
+          {/* Fill remaining slots with placeholders if needed */}
+          {Array.from({ length: Math.max(0, 8 - imageUrls.length) }).map((_, index) => (
+            <div key={`placeholder-${index}`} className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+              <span className="text-sm text-muted-foreground">
+                Image {imageUrls.length + index + 1}
+              </span>
+            </div>
+          ))}
         </div>
 
-        {/* Date idea title and category */}
-        <div className="mb-6">
-          <div className="flex items-center mb-2">
-            <span className="bg-rose-100 text-rose-800 text-xs font-medium px-2.5 py-0.5 rounded">
-              {dateIdea.category}
-            </span>
-          </div>
-          <div className="flex items-start justify-between">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{dateIdea.title}</h1>
-            {dateIdea.priceLevel && (
-              <div className="text-right">
-                {renderPriceLevel(dateIdea.priceLevel)}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Location selector */}
-        <LocationSelector />
-
-        {/* Simplified Perplexity Results Section */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2">
-            Find "{dateIdea.title}" Activities in {userCity || 'your city'}
-            <ChevronRight className="w-6 h-6 text-rose-400" />
+        {/* About This Date Idea Section */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-foreground text-center mb-8 uppercase tracking-wider">
+            About This Date Idea
           </h2>
-          {/* Show search action steps */}
-          <p className="text-sm text-gray-500 mb-4">
-            Searching GetYourGuide, Google Maps, Viator, Expedia, Airbnb Experiences, Luma and 30+ websites for the best options...
-          </p>
-          {perplexityLoading ? (
-            <div className="flex flex-col items-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-500"></div>
-              <p className="mt-4 text-gray-600 text-sm text-center">
-                Searching the web for "{dateIdea.title}" in {userCity || 'your city'}… Found {perplexityEvents.length} so far
+          
+          <div className="bg-card rounded-lg p-8 shadow-sm border border-border">
+            <div className="max-w-4xl mx-auto">
+              <p className="text-lg text-muted-foreground leading-relaxed mb-6">
+                {dateIdea.description}
               </p>
-            </div>
-          ) : perplexityError ? (
-            <div className="text-red-600 bg-red-50 border border-red-200 rounded p-3">
-              Error finding activities: {perplexityError}
-            </div>
-          ) : (
-            <>
-              {/* --- Recommended GetYourGuide Section for this date idea --- */}
-              {(() => {
-                const gygEvents = perplexityEvents.filter(e => e.event_url && e.event_url.toLowerCase().includes('getyourguide'));
-                const otherEvents = perplexityEvents.filter(e => !e.event_url || !e.event_url.toLowerCase().includes('getyourguide'));
-                if (gygEvents.length > 0) {
-                  return (
-                    <section className="mt-10">
-                      <h3 className="text-xl font-bold mb-4 text-gray-900">Recommended Experiences</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10">
-                        {gygEvents.map((item, idx) => (
-                          <a
-                            key={idx}
-                            href={item.event_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-2xl border-4 border-rose-400/80 shadow-xl bg-white p-4 animate-pulse-glow flex flex-col"
-                          >
-                            <div className="relative h-40 mb-3">
-                              <Image src={getValidImage(item.image_url, item.title)} alt={item.title} fill className="object-cover rounded-xl" />
-                            </div>
-                            <h4 className="font-semibold text-lg text-rose-700 mb-2">{item.title}</h4>
-                            <p className="text-gray-600 mb-2">{item.description}</p>
-                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded mb-2 self-start">Recommended</span>
-                            <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded self-start">GetYourGuide</span>
-                          </a>
-                        ))}
-                      </div>
-                      <div className="flex items-center my-8">
-                        <div className="flex-grow border-t border-gray-300"></div>
-                        <span className="mx-4 text-gray-400 font-semibold uppercase text-xs tracking-widest">Other Options</span>
-                        <div className="flex-grow border-t border-gray-300"></div>
-                      </div>
-                    </section>
-                  );
-                } else if (perplexityEvents.length > 0) {
-                  return (
-                    <section className="mt-10">
-                      <div className="mb-10 text-center text-gray-700 text-lg">
-                        <span className="block mb-4">We couldn't find our recommended places, but try these others:</span>
-                        <div className="flex items-center my-8">
-                          <div className="flex-grow border-t border-gray-300"></div>
-                          <span className="mx-4 text-gray-400 font-semibold uppercase text-xs tracking-widest">Other Options</span>
-                          <div className="flex-grow border-t border-gray-300"></div>
-                        </div>
-                      </div>
-                    </section>
-                  );
-                }
-                return null;
-              })()}
-              {/* --- Other Options Section --- */}
-              {perplexityEvents.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {perplexityEvents.filter(e => !e.event_url || !e.event_url.toLowerCase().includes('getyourguide')).map((item, idx) => (
-                    <a
-                      key={idx}
-                      href={item.event_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transition-shadow hover:shadow-md flex flex-col"
-                    >
-                      <div className="relative h-40 flex-shrink-0 mb-3">
-                        <Image src={getValidImage(item.image_url, item.title)} alt={item.title} fill className="object-cover rounded-xl" />
-                      </div>
-                      <div className="p-4 flex flex-col flex-grow">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-semibold text-gray-800 group-hover:text-rose-600 transition-colors text-sm leading-snug">{item.title}</h4>
-                          <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded">{item.source}</span>
-                        </div>
-                        <p className="text-gray-600 text-xs line-clamp-2 flex-grow">{item.description}</p>
-                      </div>
-                    </a>
-                  ))}
+
+              {dateIdea.longDescription && (
+                <div 
+                  className="prose max-w-none prose-neutral dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: dateIdea.longDescription }} 
+                />
+              )}
+
+              {/* Date Idea Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                {dateIdea.duration && (
+                  <div className="bg-muted rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-2">Duration</h3>
+                    <p className="text-muted-foreground">{dateIdea.duration}</p>
+                  </div>
+                )}
+                
+                {dateIdea.timeOfDay && (
+                  <div className="bg-muted rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-2">Best Time</h3>
+                    <p className="text-muted-foreground">{dateIdea.timeOfDay}</p>
+                  </div>
+                )}
+                
+                {dateIdea.idealFor && (
+                  <div className="bg-muted rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-2">Ideal For</h3>
+                    <p className="text-muted-foreground">{dateIdea.idealFor}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Tips Section */}
+              {dateIdea.tips && (
+                <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+                  <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Insider Tips
+                  </h3>
+                  <p className="text-blue-700 dark:text-blue-200">{dateIdea.tips}</p>
                 </div>
               )}
-            </>
-          )}
+            </div>
+          </div>
         </section>
 
-        {/* Description section */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">About This Date Idea</h2>
-          <p className="text-gray-700 mb-6">{dateIdea.description}</p>
-
-          {dateIdea.longDescription && (
-            <div className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: dateIdea.longDescription || '' }} />
-          )}
-        </div>
-
-        {/* Tips section */}
-        {dateIdea.tips && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        {/* Explore Other Date Ideas Section */}
+        <section>
+          <h2 className="text-2xl font-bold text-foreground text-center mb-8 uppercase tracking-wider">
+            Explore Other Date Ideas
+          </h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {otherDateIdeas.map((idea) => (
+              <Link
+                key={idea.id}
+                href={`/date-idea/${idea.slug}`}
+                className="group bg-card rounded-lg shadow-sm overflow-hidden border border-border hover:shadow-md transition-shadow"
+              >
+                <div className="relative h-48">
+                  <Image
+                    src={dateIdeaImages[idea.slug] || getPlaceholderImage(400, 300, idea.title)}
+                    alt={idea.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-foreground group-hover:text-rose-500 transition-colors mb-2">
+                    {idea.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {idea.description}
+                  </p>
+                  {idea.category && (
+                    <span className="inline-block mt-3 px-2 py-1 text-xs font-medium rounded bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
+                      {idea.category}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+          
+          <div className="text-center mt-12">
+            <Link
+              href="/"
+              className="inline-flex items-center px-8 py-3 border-2 border-rose-500 text-rose-500 hover:bg-rose-50 dark:border-rose-400 dark:text-rose-400 dark:hover:bg-rose-900/20 rounded-full transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Insider Tips
-            </h2>
-            <p className="text-gray-800">{dateIdea.tips}</p>
+              Browse More Date Ideas
+            </Link>
           </div>
-        )}
-
-        {/* Other details section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {dateIdea.bestForStage && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Best For</h3>
-              <p className="text-gray-600">{dateIdea.bestForStage}</p>
-            </div>
-          )}
-          
-
-          
-          {dateIdea.timeOfDay && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Best Time</h3>
-              <p className="text-gray-600">{dateIdea.timeOfDay}</p>
-            </div>
-          )}
-          
-          {dateIdea.idealFor && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Ideal For</h3>
-              <p className="text-gray-600">{dateIdea.idealFor}</p>
-            </div>
-          )}
-          
-          {dateIdea.duration && (
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Duration</h3>
-              <p className="text-gray-600">{dateIdea.duration}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Related Date Ideas Section */}
-        {dateIdea.relatedDateIdeas && dateIdea.relatedDateIdeas.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">You Might Also Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dateIdea.relatedDateIdeas.map((relatedSlug, index) => (
-                <RelatedDateIdea key={index} slug={relatedSlug} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic section to display other date ideas */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Explore Other Date Ideas</h2>
-          {renderOtherDateIdeas()}
-        </div>
-
-        <div className="text-center mt-8 mb-4">
-          <Link
-            href="/"
-            className="inline-flex items-center px-6 py-3 border border-rose-500 text-rose-500 bg-white rounded-full hover:bg-rose-50 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Browse More Date Ideas
-          </Link>
-        </div>
+        </section>
       </main>
+
       <Footer />
     </div>
   );

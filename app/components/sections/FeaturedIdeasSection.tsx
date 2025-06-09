@@ -6,18 +6,83 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../../utils/supabaseClient';
+import { getImageUrl } from '../../utils/imageService';
+import SaveButton from '../SaveButton';
 
 gsap.registerPlugin(ScrollTrigger);
+
+interface DateIdea {
+  id: string;
+  title: string;
+  category: string;
+  image?: string;
+  slug: string;
+  description: string;
+  featured?: boolean;
+}
 
 const FeaturedIdeasSection = () => {
   const { theme } = useTheme();
   const [selectedCity, setSelectedCity] = useState<string>("LISBON");
+  const [featuredIdeas, setFeaturedIdeas] = useState<DateIdea[]>([]);
+  const [featuredImages, setFeaturedImages] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [visibleIdeas, setVisibleIdeas] = useState(4);
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
 
   const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCity(event.target.value);
+  };
+
+  // Fetch featured date ideas from Supabase
+  useEffect(() => {
+    const fetchFeaturedIdeas = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('date_ideas')
+          .select('*')
+          .eq('trending', true)
+          .limit(20);
+
+        if (error) {
+          console.error("Error fetching featured date ideas:", error);
+        } else {
+          // Randomize the ideas
+          const randomizedData = data ? [...data].sort(() => Math.random() - 0.5) : [];
+          setFeaturedIdeas(randomizedData);
+          
+          // Fetch images for the featured ideas
+          if (randomizedData && randomizedData.length > 0) {
+            const imagePromises = randomizedData.map(async (idea) => {
+              const imageUrl = await getImageUrl(
+                idea.image,
+                `${idea.title} ${idea.category}`,
+                400,
+                300
+              );
+              return { [idea.slug]: imageUrl };
+            });
+
+            const imageResults = await Promise.all(imagePromises);
+            const imageMap = Object.assign({}, ...imageResults);
+            setFeaturedImages(imageMap);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching featured date ideas:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedIdeas();
+  }, []);
+
+  const handleLoadMore = () => {
+    setVisibleIdeas(prev => Math.min(prev + 4, featuredIdeas.length));
   };
 
   useEffect(() => {
@@ -63,36 +128,26 @@ const FeaturedIdeasSection = () => {
     return () => ctx.revert();
   }, []);
 
-  const featuredIdeas = [
-    {
-      id: 1,
-      title: "Romantic Dinner",
-      category: "Food & Dining",
-      image: "/ideas.webp",
-      description: "Discover intimate restaurants perfect for date nights"
-    },
-    {
-      id: 2,
-      title: "Adventure Sports",
-      category: "Outdoor",
-      image: "/ideas2.webp", 
-      description: "Exciting activities to get your adrenaline pumping"
-    },
-    {
-      id: 3,
-      title: "Art Gallery",
-      category: "Culture",
-      image: "/ideas3.webp",
-      description: "Explore beautiful art and culture together"
-    },
-    {
-      id: 4,
-      title: "Beach Day",
-      category: "Outdoor",
-      image: "/ideas4.webp",
-      description: "Relax and enjoy the sun by the water"
-    }
-  ];
+  if (loading) {
+    return (
+      <section className={`py-20 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}>
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[...Array(4)].map((_, i) => (
+              <div 
+                key={i} 
+                className={`animate-pulse rounded-2xl h-80 ${
+                  theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+
 
   return (
     <section 
@@ -129,7 +184,7 @@ const FeaturedIdeasSection = () => {
         </h2>
 
         <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {featuredIdeas.map((idea) => (
+          {featuredIdeas.slice(0, visibleIdeas).map((idea) => (
             <div
               key={idea.id}
               className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2 ${
@@ -140,15 +195,13 @@ const FeaturedIdeasSection = () => {
             >
               <div className="relative h-48 overflow-hidden">
                 <Image
-                  src={idea.image}
+                  src={featuredImages[idea.slug] || idea.image || '/placeholder.jpg'}
                   alt={idea.title}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-300"
                 />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {idea.category}
-                  </span>
+                <div className="absolute top-4 right-4">
+                  <SaveButton itemSlug={idea.slug} item={idea} className="" />
                 </div>
               </div>
               
@@ -168,11 +221,16 @@ const FeaturedIdeasSection = () => {
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <button className="bg-rose-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-rose-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-            View All Ideas
-          </button>
-        </div>
+        {featuredIdeas.length > visibleIdeas && (
+          <div className="text-center mt-12">
+            <button 
+              onClick={handleLoadMore}
+              className="bg-rose-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-rose-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
+              Load More
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

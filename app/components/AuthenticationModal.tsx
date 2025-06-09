@@ -196,7 +196,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
                     id="email"
                     value={userData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-colors ${
+                    className={`bg-gray-100 w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-colors ${
                       errors.email ? "border-red-500 bg-red-50" : "border-gray-300"
                     }`}
                     placeholder="your@email.com"
@@ -219,7 +219,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
                     id="phone"
                     value={userData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-colors ${
+                    className={`bg-gray-100 w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-colors ${
                       errors.phone ? "border-red-500 bg-red-50" : "border-gray-300"
                     }`}
                     placeholder="+1 (555) 123-4567"

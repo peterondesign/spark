@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useTheme } from '../../contexts/ThemeContext';
+import AuthenticationModal from '../AuthenticationModal';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const HeroSection = () => {
   const { theme } = useTheme();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -67,6 +69,10 @@ const HeroSection = () => {
     document.getElementById('date-ideas')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const openAuthModal = () => {
+    setShowAuthModal(true);
+  };
+
   return (
     <section ref={heroRef} className={`relative min-h-screen overflow-hidden ${theme === 'light' ? 'bg-white' : 'bg-[#212121]'}`}>
       {/* Background pattern */}
@@ -95,7 +101,9 @@ const HeroSection = () => {
               >
                 See Date Ideas
               </button>
-              <button className={`border-2 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 uppercase ${
+              <button
+                onClick={openAuthModal}
+                className={`border-2 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 uppercase ${
                 theme === 'light' 
                   ? 'border-gray-400 text-gray-700 hover:bg-gray-100' 
                   : 'border-gray-500 text-white hover:bg-gray-800'
@@ -138,6 +146,11 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+      
+      <AuthenticationModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </section>
   );
 };
