@@ -39,7 +39,7 @@ const Footer = () => {
   return (
     <footer 
       ref={footerRef} 
-      className={`py-16 ${theme === 'dark' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-900 text-gray-100'}`}
+      className={`py-16 ${theme === 'dark' ? 'bg-[#1a1a1a] text-white' : 'bg-[#1a1a1a] text-gray-100'}`}
     >
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
