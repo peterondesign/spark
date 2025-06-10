@@ -10,6 +10,10 @@ import { supabase } from "@/utils/supabaseClient";
 import { getImageUrl, getPlaceholderImage, processDateIdeaImages } from "@/app/utils/imageService";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
+import WebBrowsingIntegration from "../../components/WebBrowsingIntegration";
+import FastAIActivityGrid from "../../components/FastAIActivityGrid";
+import UltraFastAIGrid from "../../components/UltraFastAIGrid";
+import LightspeedAIGrid from "../../components/LightspeedAIGrid";
 
 // Define DateIdea interface
 interface DateIdea {
@@ -214,34 +218,12 @@ export default function DateIdeaDetails() {
           </div>
         </div>
 
-        {/* Image Grid - 4x2 layout matching the design */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-          {imageUrls.slice(0, 8).map((imageUrl, index) => (
-            <div key={index} className="aspect-square relative rounded-lg overflow-hidden group">
-              <Image
-                src={imageUrl || getPlaceholderImage(400, 400, dateIdea.title)}
-                alt={`${dateIdea.title} image ${index + 1}`}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              {index === 0 && (
-                <SaveButton
-                  itemSlug={dateIdea.slug}
-                  item={dateIdea}
-                  className="absolute top-2 right-2 z-10"
-                />
-              )}
-            </div>
-          ))}
-          {/* Fill remaining slots with placeholders if needed */}
-          {Array.from({ length: Math.max(0, 8 - imageUrls.length) }).map((_, index) => (
-            <div key={`placeholder-${index}`} className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-              <span className="text-sm text-muted-foreground">
-                Image {imageUrls.length + index + 1}
-              </span>
-            </div>
-          ))}
-        </div>
+        {/* Lightspeed AI-Powered Live Activity Grid - Instant + Sub-100ms Real Data */}
+        <LightspeedAIGrid
+          activity={dateIdea.category || dateIdea.title}
+          city={userCity || 'your city'}
+          dateIdeaTitle={dateIdea.title}
+        />
 
         {/* About This Date Idea Section */}
         <section className="mb-16">
@@ -300,6 +282,18 @@ export default function DateIdeaDetails() {
               )}
             </div>
           </div>
+        </section>
+
+        {/* Live Events Section */}
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold text-foreground text-center mb-8 uppercase tracking-wider">
+            Live Events Related to This Date Idea
+          </h2>
+          
+          <WebBrowsingIntegration 
+            activity={dateIdea.category || dateIdea.title}
+            city={userCity || 'your city'}
+          />
         </section>
 
         {/* Explore Other Date Ideas Section */}
