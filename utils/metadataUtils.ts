@@ -49,7 +49,7 @@ export function generateMetadata({
       title: title,
       description: description,
       url: canonicalUrl,
-      siteName: 'Spark - Date Ideas',
+      siteName: 'Date Ideas',
       images: [
         {
           url: image.startsWith('http') ? image : `${url}${image.startsWith('/') ? '' : '/'}${image}`,

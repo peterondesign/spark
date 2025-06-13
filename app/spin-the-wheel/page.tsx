@@ -6,7 +6,9 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import PageTitle from "../components/PageTitle";
 import SpinWheel from "../components/SpinWheel";
+import CityPicker from "../components/CityPicker";
 import Link from "next/link";
+import { MapPin } from "lucide-react";
 
 // Define DateIdea type
 interface DateIdea {
@@ -57,6 +59,21 @@ export default function SpinTheWheelPage() {
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedCity, setSelectedCity] = useState<string>("LONDON");
+  
+  // Initialize with saved city
+  useEffect(() => {
+    const savedCity = localStorage.getItem("selectedCity");
+    if (savedCity) {
+      setSelectedCity(savedCity);
+    }
+  }, []);
+  
+  // Handle city changes
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+    localStorage.setItem("selectedCity", city);
+  };
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -102,11 +119,24 @@ export default function SpinTheWheelPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-cover bg-center h-[350px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
+      <section className="relative bg-cover bg-center h-[420px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/80 to-purple-600/80"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Spin the Wheel - Date Idea Randomizer</h1>
-          <p className="text-xl max-w-2xl">Can't decide what to do? Let fate choose your next date adventure!</p>
+          <p className="text-xl max-w-2xl mb-8">Can't decide what to do? Let fate choose your next date adventure!</p>
+          
+          {/* City Picker */}
+          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <MapPin className="w-5 h-5 text-white" />
+              <span className="text-white font-medium">Select Your City</span>
+            </div>
+            <CityPicker
+              selectedCity={selectedCity}
+              onCityChange={handleCityChange}
+              loading={false}
+            />
+          </div>
         </div>
       </section>
       

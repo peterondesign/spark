@@ -5,72 +5,50 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import PageTitle from "../components/PageTitle";
 import { PAGE_TITLES } from "../utils/titleUtils";
-import CountryCitySelector from '../components/CountryCitySelector';
-import { CityItem } from '../../utils/cityService';
+import CityPicker from '../components/CityPicker';
 import { StarIcon, ChevronRight } from "lucide-react";
 
 export default function DateIdeasNearMePage() {
-  const [selectedCity, setSelectedCity] = useState<string>("");
-  const [selectedCityInfo, setSelectedCityInfo] = useState<CityItem | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string>("LONDON");
   const [selectedCategory, setSelectedCategory] = useState<string>("romantic activities");
-  const [userCity, setUserCity] = useState<string | null>(null);
-  const [userCountry, setUserCountry] = useState<string | null>("US"); // Default to US
-  const [locationDetected, setLocationDetected] = useState<boolean>(false);
+  const [cityEvents, setCityEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   
-  // Set default city to LA if IP detection fails
-  const setDefaultCity = () => {
-    setUserCity("Los Angeles");
-    setUserCountry("US");
-    setSelectedCity("Los Angeles");
-  };
-  
-  // Initialize and detect user location
+  // Initialize with default city
   useEffect(() => {
-    // Detect user location
-    const detectLocation = async () => {
-      try {
-        const savedCity = localStorage.getItem("userCity");
-        const savedCountry = localStorage.getItem("userCountry") || "US";
-        
-        if (savedCity) {
-          setUserCity(savedCity);
-          setUserCountry(savedCountry);
-          setSelectedCity(savedCity);
-          setLocationDetected(true);
-          return;
-        }
-        
-        const response = await fetch('/api/location');
-        const data = await response.json();
-        
-        if (data.city) {
-          setUserCity(data.city);
-          setUserCountry(data.countryCode || "US");
-          setSelectedCity(data.city);
-          setLocationDetected(true);
-          localStorage.setItem("userCity", data.city);
-          if (data.countryCode) {
-            localStorage.setItem("userCountry", data.countryCode);
-          }
-        } else {
-          setDefaultCity();
-        }
-      } catch (error) {
-        console.error('Error detecting location:', error);
-        setDefaultCity();
-      }
-    };
-    
-    detectLocation();
+    const savedCity = localStorage.getItem("selectedCity");
+    if (savedCity) {
+      setSelectedCity(savedCity);
+    }
+    // Load initial events
+    fetchCityEvents(savedCity || "LONDON");
   }, []);
   
+  // Fetch city events from Perplexity API
+  const fetchCityEvents = async (city: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/perplexity-city-events?city=${encodeURIComponent(city)}`);
+      const data = await response.json();
+      
+      if (data.success && data.events) {
+        setCityEvents(data.events);
+      } else {
+        setCityEvents([]);
+      }
+    } catch (error) {
+      console.error('Error fetching city events:', error);
+      setCityEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // Handle city selection
-  const handleCitySelect = (city: CityItem) => {
-    setSelectedCity(city.name);
-    setSelectedCityInfo(city);
-    // Store the user's selection
-    localStorage.setItem("userCity", city.name);
-    localStorage.setItem("userCountry", city.countryCode);
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+    localStorage.setItem("selectedCity", city);
+    fetchCityEvents(city);
   };
   
   // Handle category changes
@@ -93,41 +71,28 @@ export default function DateIdeasNearMePage() {
             <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Date Ideas Near You</h1>
             <p className="text-xl mb-8">Discover amazing experiences for your next date night</p>
             
-            {/* Country-City Selection */}
+            {/* City Selection */}
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl shadow-xl">
-              <CountryCitySelector
-                onCitySelect={handleCitySelect}
-                selectedCity={selectedCity}
-                defaultCity={userCity || undefined}
-                label="City"
-                className="mb-4"
-              />
-              
-              {/* Category Selection */}
-              <div className="mb-6 mt-5">
-                <label className="block text-white text-left text-sm font-semibold mb-2">Category</label>
-                <select 
-                  value={selectedCategory} 
+              <div className="flex flex-col lg:flex-row gap-4 items-center justify-center">
+                <CityPicker
+                  selectedCity={selectedCity}
+                  onCityChange={handleCityChange}
+                  loading={loading}
+                />
+                
+                <select
+                  value={selectedCategory}
                   onChange={handleCategoryChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-700"
+                  className="px-6 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-900 focus:border-rose-400 focus:ring-2 focus:ring-rose-500 min-w-[200px]"
                 >
                   <option value="romantic activities">Romantic Activities</option>
-                  <option value="couples experiences">Couples Experiences</option>
-                  <option value="fun date ideas">Fun Date Ideas</option>
-                  <option value="unique experiences">Unique Experiences</option>
                   <option value="outdoor adventures">Outdoor Adventures</option>
-                  <option value="indoor activities">Indoor Activities</option>
-                  <option value="food tours">Food & Drink</option>
                   <option value="cultural experiences">Cultural Experiences</option>
-                  <option value="nightlife">Nightlife</option>
+                  <option value="food and dining">Food & Dining</option>
+                  <option value="entertainment">Entertainment</option>
+                  <option value="wellness and relaxation">Wellness & Relaxation</option>
                 </select>
               </div>
-              
-              {locationDetected && userCity && (
-                <div className="text-sm text-green-200 mb-4">
-                  📍 We detected you're in {userCity}. Showing date ideas near you!
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -136,42 +101,127 @@ export default function DateIdeasNearMePage() {
       {/* Results Section */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
-              {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} in {selectedCity || "Your City"}
+              {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} in {selectedCity}
               <ChevronRight className="w-8 h-8 text-rose-400" />
             </h2>
             
             <p className="text-gray-600 mb-8">
-              We've gathered the best experiences from multiple sources so you can find the perfect date idea.
-              Each activity opens in a new tab on the provider's website where you can learn more and book directly.
+              Discover amazing experiences and activities happening in {selectedCity}. 
+              Each activity opens in a new tab where you can learn more details.
             </p>
             
-            {selectedCity && (
-              <div className="space-y-8">
-                <div className="bg-white rounded-xl shadow-md p-6">
-                  <h3 className="text-xl font-semibold mb-4">Date Ideas from Multiple Sources</h3>
-                </div>
-                
-                <div className="bg-rose-50 rounded-xl shadow-md p-6">
-                  <h3 className="text-xl font-semibold text-rose-800 mb-4">Why We Show Multiple Sources</h3>
-                  <p className="text-gray-700">
-                    We believe in giving you options! By bringing together experiences from multiple websites,
-                    you can compare prices, read different reviews, and find unique date ideas that might not be 
-                    available on just one platform. Try filtering by source to see what each site offers!
-                  </p>
-                </div>
+            {/* Loading State */}
+            {loading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
+                    <div className="h-48 bg-gray-200"></div>
+                    <div className="p-6">
+                      <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                      <div className="flex justify-between items-center">
+                        <div className="h-6 bg-gray-200 rounded w-16"></div>
+                        <div className="h-8 bg-gray-200 rounded w-20"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             
-            {!selectedCity && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
-                <h3 className="font-semibold text-amber-800 mb-2">Please Select a City</h3>
+            {/* City Events Grid */}
+            {!loading && cityEvents.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {cityEvents.map((event, index) => (
+                  <div key={`${event.id}-${index}`} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow group">
+                    {event.image && (
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={event.image}
+                          alt={event.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            e.currentTarget.src = '/placeholder.jpg';
+                          }}
+                        />
+                        {event.featured && (
+                          <div className="absolute top-3 left-3 bg-rose-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                            Featured
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="p-6">
+                      <h3 className="font-bold text-lg mb-2 text-gray-900 group-hover:text-rose-600 transition-colors">
+                        {event.title}
+                      </h3>
+                      
+                      {event.date && (
+                        <div className="text-sm text-gray-600 mb-2">
+                          📅 {event.date}
+                        </div>
+                      )}
+                      
+                      {event.location && (
+                        <div className="text-sm text-gray-600 mb-3">
+                          📍 {event.location}
+                        </div>
+                      )}
+                      
+                      <p className="text-gray-700 text-sm mb-4 line-clamp-3">
+                        {event.description}
+                      </p>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          {event.category && (
+                            <span className="inline-block bg-rose-100 text-rose-800 text-xs px-2 py-1 rounded-full">
+                              {event.category}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {event.website && (
+                          <a
+                            href={event.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1"
+                          >
+                            View Details
+                            <ChevronRight className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* No Results */}
+            {!loading && cityEvents.length === 0 && selectedCity && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                <h3 className="font-semibold text-amber-800 mb-2">No Events Found</h3>
                 <p className="text-amber-700">
-                  Enter your city in the search box above to see date ideas near you.
+                  We couldn't find any {selectedCategory} in {selectedCity} right now. 
+                  Try selecting a different category or city.
                 </p>
               </div>
             )}
+            
+            <div className="bg-rose-50 rounded-xl shadow-md p-6 mt-8">
+              <h3 className="text-xl font-semibold text-rose-800 mb-4">Why Choose Our Date Ideas?</h3>
+              <p className="text-gray-700">
+                We curate real-time activities and events happening in your city, giving you fresh and 
+                current date ideas that are actually available. Each suggestion is researched and verified 
+                to ensure you have amazing experiences together!
+              </p>
+            </div>
           </div>
         </div>
       </section>

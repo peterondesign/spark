@@ -24,7 +24,7 @@ export const dateNightBoxMetadata: Metadata = {
     title: "Couples’ Gift Box Subscription | Monthly Themed Date Night Boxes",
     description: "Subscribe to our premium date night boxes. Each month receive everything needed for a perfect date night at home.",
     url: "https://dateideas.cc/date-night-box-subscription",
-    siteName: "Spark - Date Ideas",
+    siteName: "Date Ideas",
     images: [
       {
         url: "https://dateideas.cc/dateideas.png",

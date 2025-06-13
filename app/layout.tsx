@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   // Default title and description will be overridden by page-specific values
   // These act only as a fallback and should rarely be used directly
   title: {
-    template: '%s | Spark - Date Ideas',
-    default: 'Spark - Personalized Date Ideas For Couples',
+    template: '%s | Date Ideas',
+    default: 'Date Ideas - Discover fun things to do',
   },
   description: 'Discover personalized date ideas and experiences for couples.',
   keywords: [

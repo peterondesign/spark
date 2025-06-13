@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../utils/supabaseClient";
 import { getImageUrl } from "../utils/imageService";
 import TinderSwipeView from "../components/TinderSwipeView";
+import CityPicker from "../components/CityPicker";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import PageTitle from "../components/PageTitle";
@@ -12,7 +13,7 @@ import Link from "next/link";
 import Image from 'next/image';
 import Head from "next/head";
 import { generateMetadata } from "../../utils/metadataUtils";
-import { Heart, Brain, Shuffle, Tag } from "lucide-react";
+import { Heart, Brain, Shuffle, Tag, MapPin } from "lucide-react";
 
 // Define DateIdea type
 interface DateIdea {
@@ -55,6 +56,21 @@ export default function DateIdeaGenerator() {
   const [allDateIdeas, setAllDateIdeas] = useState<DateIdea[]>([]);
   const [allDateIdeaImages, setAllDateIdeaImages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedCity, setSelectedCity] = useState<string>("LONDON");
+  
+  // Initialize with saved city
+  useEffect(() => {
+    const savedCity = localStorage.getItem("selectedCity");
+    if (savedCity) {
+      setSelectedCity(savedCity);
+    }
+  }, []);
+  
+  // Handle city changes
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+    localStorage.setItem("selectedCity", city);
+  };
 
   useEffect(() => {
     const fetchDateIdeas = async () => {
@@ -99,11 +115,24 @@ export default function DateIdeaGenerator() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative bg-cover bg-center h-[270px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
+      <section className="relative bg-cover bg-center h-[340px]" style={{ backgroundImage: 'url(/placeholder.jpg)' }}>
         <div className="absolute inset-0 bg-gradient-to-r from-rose-500/80 to-purple-600/80"></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full text-white text-center px-4">
           <h1 className="text-5xl font-extrabold mb-4">Discover Your Perfect Date</h1>
-          <p className="text-xl max-w-2xl">Swipe through curated date ideas and find the perfect experience for you and your partner.</p>
+          <p className="text-xl max-w-2xl mb-8">Swipe through curated date ideas and find the perfect experience for you and your partner.</p>
+          
+          {/* City Picker */}
+          <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl shadow-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <MapPin className="w-5 h-5 text-white" />
+              <span className="text-white font-medium">Select Your City</span>
+            </div>
+            <CityPicker
+              selectedCity={selectedCity}
+              onCityChange={handleCityChange}
+              loading={false}
+            />
+          </div>
         </div>
       </section>
 
