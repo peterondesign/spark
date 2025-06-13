@@ -66,9 +66,56 @@ interface PerplexityCityEventResponse {
   };
 }
 
-// Build optimized query for city events (shorter for faster response)
+// Get city-specific domains for better local results
+function getCitySpecificDomains(city: string): string[] {
+  const baseDomains = [
+    "timeout.com", 
+    "ticketmaster.com", 
+    "meetup.com", 
+    "facebook.com/events",
+    "allevents.in",
+    "bandsintown.com",
+    "songkick.com",
+    "resident-advisor.net",
+    "dice.fm",
+    "designmynight.com",
+    "goldstar.com",
+    "universe.com",
+    "peatix.com",
+    "foursquare.com",
+    "citysocializer.com"
+  ];
+
+  // Add city-specific domains
+  const cityLower = city.toLowerCase().replace(/\s+/g, '');
+  
+  switch (cityLower) {
+    case 'newyork':
+      return [...baseDomains, "timeout.com/newyork", "nycgo.com", "nyc.gov/events", "newyorker.com"];
+    case 'london':
+      return [...baseDomains, "timeout.com/london", "londonist.com", "visitlondon.com", "designmynight.com"];
+    case 'paris':
+      return [...baseDomains, "timeout.fr", "parisinfo.com", "sortiraparis.com", "paris.fr"];
+    case 'tokyo':
+      return [...baseDomains, "timeout.com/tokyo", "tokyocheapo.com", "gotokyo.org", "japantimes.co.jp"];
+    case 'barcelona':
+      return [...baseDomains, "timeout.com/barcelona", "barcelona.cat", "bcn.travel", "timeout.cat"];
+    case 'amsterdam':
+      return [...baseDomains, "timeout.com/amsterdam", "iamsterdam.com", "amsterdam.nl", "dutchreview.com"];
+    case 'berlin':
+      return [...baseDomains, "timeout.com/berlin", "berlin.de", "visitberlin.de", "exberliner.com"];
+    case 'rome':
+      return [...baseDomains, "timeout.com/rome", "turismoroma.it", "rome.net", "wantedinrome.com"];
+    case 'madrid':
+      return [...baseDomains, "timeout.com/madrid", "esmadrid.com", "madrid.es", "madridsecreto.co"];
+    case 'lisbon':
+      return [...baseDomains, "timeout.com/lisbon", "visitlisboa.com", "lisbonlux.com", "golisbon.com"];
+    default:
+      return baseDomains;
+  }
+}
 function buildCityEventQuery(city: string): string {
-  return `List 8-10 current events and date activities in ${city} this week. Include event names, dates, times, and websites. Focus on romantic couple activities, cultural events, food experiences, and entertainment.`;
+  return `Search TimeOut, Bandsintown, Meetup, Facebook Events, Ticketmaster, and local venue websites for current events in ${city} this week. Find diverse activities: live music, art exhibitions, food markets, workshops, cultural events, nightlife. Include venue names, dates, times, and direct booking URLs. Focus on couple-friendly experiences from non-Eventbrite sources.`;
 }
 
 // Ultra-aggressive JSON parsing with 0.1% accuracy (7 fallback strategies)
@@ -298,40 +345,60 @@ function extractEventsFromParsedData(parsed: any, city: string): CityEvent[] {
 function generateFallbackEvents(city: string): CityEvent[] {
   const eventTemplates = [
     {
-      title: `Weekend Art Walk in ${city}`,
-      description: `Explore local galleries and street art in ${city}'s cultural district`,
-      category: 'Art & Culture',
-      location: `Downtown ${city}`,
-    },
-    {
-      title: `${city} Food Market`,
-      description: `Discover local flavors and artisanal foods at this weekly market`,
-      category: 'Food & Drink',
-      location: `Central Market, ${city}`,
-    },
-    {
-      title: `Sunset Photography Tour`,
-      description: `Capture the golden hour at ${city}'s most romantic spots`,
-      category: 'Photography',
-      location: `Various locations in ${city}`,
-    },
-    {
-      title: `Live Jazz Night`,
-      description: `Intimate jazz performances at a cozy venue`,
+      title: `Local Music Night at ${city} Jazz Club`,
+      description: `Live jazz and blues performances by local artists`,
       category: 'Music',
-      location: `Jazz Club, ${city}`,
+      location: `Downtown ${city}`,
+      website: 'https://timeout.com'
     },
     {
-      title: `Couples Cooking Class`,
-      description: `Learn to cook local cuisine together`,
+      title: `${city} Food & Wine Festival`,
+      description: `Taste local cuisine and wines from regional producers`,
+      category: 'Food & Drink',
+      location: `Central Park, ${city}`,
+      website: 'https://meetup.com'
+    },
+    {
+      title: `Art Gallery Walk in ${city}`,
+      description: `Explore contemporary art exhibitions and installations`,
+      category: 'Art & Culture',
+      location: `Arts District, ${city}`,
+      website: 'https://timeout.com'
+    },
+    {
+      title: `Couples Salsa Dancing Class`,
+      description: `Learn salsa dancing in a fun, social environment`,
+      category: 'Dance',
+      location: `Dance Studio, ${city}`,
+      website: 'https://meetup.com'
+    },
+    {
+      title: `Rooftop Cinema Under the Stars`,
+      description: `Watch classic films on a rooftop with city views`,
+      category: 'Film',
+      location: `Rooftop Venue, ${city}`,
+      website: 'https://universe.com'
+    },
+    {
+      title: `Local Brewery Tour & Tasting`,
+      description: `Discover craft beers and brewing process`,
+      category: 'Tours',
+      location: `Brewery District, ${city}`,
+      website: 'https://goldstar.com'
+    },
+    {
+      title: `Night Photography Workshop`,
+      description: `Capture the city's beauty in evening light`,
       category: 'Workshop',
-      location: `Culinary School, ${city}`,
+      location: `Various locations, ${city}`,
+      website: 'https://peatix.com'
     },
     {
-      title: `Rooftop Wine Tasting`,
-      description: `Sample local wines with panoramic city views`,
-      category: 'Wine & Dining',
-      location: `Rooftop Bar, ${city}`,
+      title: `Live Comedy Show`,
+      description: `Stand-up comedy featuring local and touring comedians`,
+      category: 'Comedy',
+      location: `Comedy Club, ${city}`,
+      website: 'https://ticketmaster.com'
     }
   ];
 
@@ -344,7 +411,7 @@ function generateFallbackEvents(city: string): CityEvent[] {
     date: 'This Week',
     time: 'Evening',
     price: 'Varies',
-    website: '',
+    website: template.website,
     image: '',
     venue: template.location,
     featured: index < 4
@@ -385,20 +452,30 @@ export async function GET(request: NextRequest) {
     }
 
     const query = buildCityEventQuery(city);
+    const searchDomains = getCitySpecificDomains(city);
     
-    // Call Perplexity API with enhanced system prompt
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a JSON-only event finder. Return ONLY valid JSON array of events in the specified city.
+    console.log('🔍 Perplexity API Request:', {
+      city,
+      query: query.substring(0, 100) + '...',
+      searchDomains: searchDomains.slice(0, 5)
+    });
+    
+    const requestBody = {
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a comprehensive city event finder. Search DEEP across multiple platforms and sources to find diverse, real events happening this week.
+
+SEARCH PRIORITY SOURCES:
+1. TimeOut city guides (timeout.com)
+2. Music venues (bandsintown.com, songkick.com, resident-advisor.net)
+3. Meetup groups (meetup.com)
+4. Local Facebook events
+5. Ticketing platforms (ticketmaster.com, dice.fm)
+6. Cultural venues and museums
+7. Food and nightlife (designmynight.com)
+8. Alternative/niche events (universe.com, peatix.com)
 
 REQUIRED JSON FORMAT:
 [
@@ -409,40 +486,48 @@ REQUIRED JSON FORMAT:
     "location": "Venue/area",
     "date": "Date",
     "time": "Time", 
-    "website": "URL"
+    "website": "Direct event URL"
   }
 ]
 
-RULES:
-- ONLY return valid JSON (no text/markdown)
-- NO comments or explanations
-- Focus on romantic/couple activities
-- 8-10 events maximum
-- Include real websites when possible
-- Current events this week only`
-          },
-          {
-            role: 'user',
-            content: query
-          }
-        ],
-        max_tokens: 1200,
-        temperature: 0.2,
-        top_p: 0.8,
-        return_citations: false,
-        search_domain_filter: ["tripadvisor.com", "eventbrite.com", "timeout.com", "yelp.com"],
-        return_images: false,
-        return_related_questions: false,
-        search_recency_filter: "week",
-        top_k: 0,
-        stream: false,
-        presence_penalty: 0,
-        frequency_penalty: 1
-      }),
+SEARCH REQUIREMENTS:
+- Find 8-10 REAL events from DIVERSE venues/platforms
+- Include cultural events, music shows, food experiences, workshops
+- Prioritize non-Eventbrite sources for variety
+- Focus on romantic/couple-friendly activities
+- Include direct booking/info URLs
+- Current week events only
+- ONLY return valid JSON (no text/explanations)`
+        },
+        {
+          role: 'user',
+          content: query
+        }
+      ],
+      max_tokens: 1200,
+      temperature: 0.2,
+      stream: false
+    };
+    
+    // Call Perplexity API with corrected parameters
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Perplexity API Error Details:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();

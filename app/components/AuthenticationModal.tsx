@@ -117,12 +117,27 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
   };
 
   const handleCheckoutSuccess = () => {
+    // This function is now mainly for demo purposes
+    // In production, Stripe will handle the redirect and webhook will confirm payment
     setCheckoutComplete(true);
     setTimeout(() => {
       onSuccess?.();
       onClose();
     }, 2000);
   };
+
+  // Handle successful payment return from Stripe
+  useEffect(() => {
+    // Check URL parameters for successful payment
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment_success') === 'true') {
+      setCheckoutComplete(true);
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+      }, 2000);
+    }
+  }, [onSuccess, onClose]);
 
   if (!isOpen) return null;
 
@@ -304,7 +319,7 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Stripe Checkout Embed - In production, replace with actual Stripe component */}
+                  {/* Stripe Checkout - Real Stripe Payment Link */}
                   <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
                     <div className="text-center space-y-4">
                       <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto">
@@ -316,41 +331,20 @@ const AuthenticationModal: React.FC<AuthenticationModalProps> = ({
                       <p className="text-gray-600 text-sm">
                         Complete your $8/month subscription using our secure payment system powered by Stripe.
                       </p>
-                      
-                      {/* Simulated Stripe form */}
-                      <div className="space-y-3 text-left">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Card Number</label>
-                          <div className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-400 text-sm">
-                            •••• •••• •••• ••••
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Expiry</label>
-                            <div className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-400 text-sm">
-                              MM/YY
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">CVC</label>
-                            <div className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-400 text-sm">
-                              •••
-                            </div>
-                          </div>
-                        </div>
-                      </div>
 
-                      {/* Demo payment button */}
-                      <button
-                        onClick={handleCheckoutSuccess}
-                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
+                      {/* Stripe Checkout Button */}
+                      <a
+                        href="https://buy.stripe.com/fZufZieg95wF3yFfgi9Zm0d"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2 no-underline"
                       >
-                        <span>Complete Payment - $8.00</span>
-                      </button>
+                        <span>Complete Payment - $8.00/month</span>
+                        <ArrowRight className="h-5 w-5" />
+                      </a>
                       
                       <p className="text-xs text-gray-500">
-                        🔒 Secured by Stripe • This is a demo interface
+                        🔒 Secured by Stripe • Click to proceed to secure checkout
                       </p>
                     </div>
                   </div>
