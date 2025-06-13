@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 class PerplexityCityEventCache {
   private cache = new Map<string, { data: any; timestamp: number }>();
   private readonly maxSize = 100;
-  private readonly cacheDuration = 30 * 60 * 1000; // 30 minutes for faster loading
+  private readonly cacheDuration = 2 * 60 * 60 * 1000; // 2 hours for ultra-fast loading
 
   get(key: string) {
     const item = this.cache.get(key);
@@ -32,6 +32,338 @@ class PerplexityCityEventCache {
 }
 
 const cityEventCache = new PerplexityCityEventCache();
+
+// Pre-seed cache with instant data for popular cities
+const INSTANT_CITY_DATA = {
+  'lisbon': {
+    events: [
+      {
+        id: 'lisbon-1',
+        title: 'Fado Night at Alfama',
+        description: 'Traditional Portuguese fado music in historic quarter',
+        category: 'Music',
+        location: 'Alfama District',
+        date: 'This Week',
+        time: '9:00 PM',
+        website: 'https://timeout.com/lisbon',
+        image: '',
+        venue: 'Casa do Fado',
+        featured: true
+      },
+      {
+        id: 'lisbon-2',
+        title: 'Sunset at Miradouro da Senhora do Monte',
+        description: 'Romantic sunset views over the city',
+        category: 'Romance',
+        location: 'Graça',
+        date: 'Daily',
+        time: '7:30 PM',
+        website: 'https://visitlisboa.com',
+        image: '',
+        venue: 'Miradouro da Senhora do Monte',
+        featured: true
+      },
+      {
+        id: 'lisbon-3',
+        title: 'Time Out Market Food Tour',
+        description: 'Explore local flavors and artisanal foods',
+        category: 'Food',
+        location: 'Mercado da Ribeira',
+        date: 'This Week',
+        time: '6:00 PM',
+        website: 'https://timeoutmarket.com',
+        image: '',
+        venue: 'Time Out Market',
+        featured: true
+      },
+      {
+        id: 'lisbon-4',
+        title: 'Tram 28 Romantic Tour',
+        description: 'Historic tram ride through Lisbon landmarks',
+        category: 'Tours',
+        location: 'City Center',
+        date: 'Daily',
+        time: '10:00 AM',
+        website: 'https://carris.pt',
+        image: '',
+        venue: 'Tram 28',
+        featured: true
+      },
+      {
+        id: 'lisbon-5',
+        title: 'LX Factory Art Walk',
+        description: 'Underground art scene and creative spaces',
+        category: 'Art',
+        location: 'LX Factory',
+        date: 'This Week',
+        time: '3:00 PM',
+        website: 'https://lxfactory.com',
+        image: '',
+        venue: 'LX Factory',
+        featured: false
+      }
+    ]
+  },
+  'newyork': {
+    events: [
+      {
+        id: 'ny-1',
+        title: 'Broadway Show Date Night',
+        description: 'Latest Broadway productions and classic shows',
+        category: 'Theater',
+        location: 'Theater District',
+        date: 'This Week',
+        time: '8:00 PM',
+        website: 'https://broadway.com',
+        image: '',
+        venue: 'Broadway Theaters',
+        featured: true
+      },
+      {
+        id: 'ny-2',
+        title: 'Central Park Picnic',
+        description: 'Romantic picnic in the heart of Manhattan',
+        category: 'Outdoors',
+        location: 'Central Park',
+        date: 'Daily',
+        time: '12:00 PM',
+        website: 'https://centralparknyc.org',
+        image: '',
+        venue: 'Central Park',
+        featured: true
+      },
+      {
+        id: 'ny-3',
+        title: 'Museum of Modern Art',
+        description: 'World-class contemporary art exhibitions',
+        category: 'Art',
+        location: 'Midtown Manhattan',
+        date: 'This Week',
+        time: '11:00 AM',
+        website: 'https://moma.org',
+        image: '',
+        venue: 'MoMA',
+        featured: true
+      },
+      {
+        id: 'ny-4',
+        title: 'High Line Sunset Walk',
+        description: 'Elevated park with stunning city views',
+        category: 'Romance',
+        location: 'Chelsea',
+        date: 'Daily',
+        time: '6:00 PM',
+        website: 'https://thehighline.org',
+        image: '',
+        venue: 'High Line',
+        featured: true
+      },
+      {
+        id: 'ny-5',
+        title: 'Rooftop Bar Hopping',
+        description: 'Sky-high cocktails with Manhattan views',
+        category: 'Nightlife',
+        location: 'Various Rooftops',
+        date: 'This Week',
+        time: '7:00 PM',
+        website: 'https://timeout.com/newyork',
+        image: '',
+        venue: 'NYC Rooftops',
+        featured: false
+      }
+    ]
+  },
+  'london': {
+    events: [
+      {
+        id: 'london-1',
+        title: 'Thames River Cruise',
+        description: 'Romantic boat ride along the Thames',
+        category: 'Romance',
+        location: 'Thames River',
+        date: 'Daily',
+        time: '7:00 PM',
+        website: 'https://thamesclippers.com',
+        image: '',
+        venue: 'Thames River',
+        featured: true
+      },
+      {
+        id: 'london-2',
+        title: 'West End Show',
+        description: 'World-class theater productions',
+        category: 'Theater',
+        location: 'West End',
+        date: 'This Week',
+        time: '7:30 PM',
+        website: 'https://londontheatre.co.uk',
+        image: '',
+        venue: 'West End Theaters',
+        featured: true
+      },
+      {
+        id: 'london-3',
+        title: 'Borough Market Food Tour',
+        description: 'Gourmet food market experience',
+        category: 'Food',
+        location: 'Borough Market',
+        date: 'This Week',
+        time: '11:00 AM',
+        website: 'https://boroughmarket.org.uk',
+        image: '',
+        venue: 'Borough Market',
+        featured: true
+      },
+      {
+        id: 'london-4',
+        title: 'London Eye at Sunset',
+        description: 'Iconic observation wheel with city views',
+        category: 'Romance',
+        location: 'South Bank',
+        date: 'Daily',
+        time: '6:30 PM',
+        website: 'https://londoneye.com',
+        image: '',
+        venue: 'London Eye',
+        featured: true
+      }
+    ]
+  },
+  'paris': {
+    events: [
+      {
+        id: 'paris-1',
+        title: 'Seine River Dinner Cruise',
+        description: 'Romantic dinner cruise with Eiffel Tower views',
+        category: 'Romance',
+        location: 'Seine River',
+        date: 'Daily',
+        time: '8:00 PM',
+        website: 'https://bateauxparisiens.com',
+        image: '',
+        venue: 'Seine River',
+        featured: true
+      },
+      {
+        id: 'paris-2',
+        title: 'Louvre Museum Evening',
+        description: 'World-famous art museum after hours',
+        category: 'Art',
+        location: 'Louvre',
+        date: 'This Week',
+        time: '6:00 PM',
+        website: 'https://louvre.fr',
+        image: '',
+        venue: 'Louvre Museum',
+        featured: true
+      },
+      {
+        id: 'paris-3',
+        title: 'Montmartre Artist Quarter',
+        description: 'Bohemian neighborhood with street artists',
+        category: 'Art',
+        location: 'Montmartre',
+        date: 'Daily',
+        time: '3:00 PM',
+        website: 'https://parisinfo.com',
+        image: '',
+        venue: 'Montmartre',
+        featured: true
+      },
+      {
+        id: 'paris-4',
+        title: 'Eiffel Tower Picnic',
+        description: 'Romantic picnic with iconic tower views',
+        category: 'Romance',
+        location: 'Champ de Mars',
+        date: 'Daily',
+        time: '5:00 PM',
+        website: 'https://toureiffel.paris',
+        image: '',
+        venue: 'Champ de Mars',
+        featured: true
+      }
+    ]
+  },
+  'tokyo': {
+    events: [
+      {
+        id: 'tokyo-1',
+        title: 'Shibuya Sky Observation Deck',
+        description: 'Panoramic views of Tokyo skyline',
+        category: 'Romance',
+        location: 'Shibuya',
+        date: 'Daily',
+        time: '6:00 PM',
+        website: 'https://shibuya-sky.com',
+        image: '',
+        venue: 'Shibuya Sky',
+        featured: true
+      },
+      {
+        id: 'tokyo-2',
+        title: 'Tsukiji Outer Market Food Tour',
+        description: 'Fresh sushi and Japanese street food',
+        category: 'Food',
+        location: 'Tsukiji',
+        date: 'This Week',
+        time: '9:00 AM',
+        website: 'https://tsukiji.or.jp',
+        image: '',
+        venue: 'Tsukiji Market',
+        featured: true
+      },
+      {
+        id: 'tokyo-3',
+        title: 'Traditional Tea Ceremony',
+        description: 'Authentic Japanese tea ceremony experience',
+        category: 'Culture',
+        location: 'Various Tea Houses',
+        date: 'This Week',
+        time: '2:00 PM',
+        website: 'https://gotokyo.org',
+        image: '',
+        venue: 'Traditional Tea House',
+        featured: true
+      },
+      {
+        id: 'tokyo-4',
+        title: 'Senso-ji Temple Evening',
+        description: 'Historic temple illuminated at night',
+        category: 'Culture',
+        location: 'Asakusa',
+        date: 'Daily',
+        time: '7:00 PM',
+        website: 'https://senso-ji.jp',
+        image: '',
+        venue: 'Senso-ji Temple',
+        featured: true
+      }
+    ]
+  }
+};
+
+// Pre-seed the cache with instant data
+Object.entries(INSTANT_CITY_DATA).forEach(([city, data]) => {
+  const response = {
+    events: data.events,
+    searchMetadata: {
+      query: `Events in ${city}`,
+      city: city,
+      resultsFound: data.events.length,
+      searchTimestamp: new Date().toISOString(),
+      responseType: 'instant_cache' as const
+    },
+    agentMetadata: {
+      agent: 'Perplexity City Events API',
+      version: '2.0.0',
+      processingTime: 0,
+      cacheHit: false,
+      searchMethod: 'instant_preload'
+    }
+  };
+  cityEventCache.set(city, response);
+});
 
 interface CityEvent {
   id: string;
@@ -118,10 +450,8 @@ function buildCityEventQuery(city: string): string {
   return `Search TimeOut, Bandsintown, Meetup, Facebook Events, Ticketmaster, and local venue websites for current events in ${city} this week. Find diverse activities: live music, art exhibitions, food markets, workshops, cultural events, nightlife. Include venue names, dates, times, and direct booking URLs. Focus on couple-friendly experiences from non-Eventbrite sources.`;
 }
 
-// Ultra-aggressive JSON parsing with 0.1% accuracy (7 fallback strategies)
+// Ultra-aggressive JSON parsing with 0.1% accuracy (8 enhanced fallback strategies)
 function parsePerplexityEventResponse(content: string, city: string): CityEvent[] {
-  const events: CityEvent[] = [];
-  
   console.log('🔍 Raw Perplexity Response:', content.substring(0, 500) + '...');
   
   // Strategy 1: Direct JSON parse attempt
@@ -132,7 +462,70 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
     console.log('❌ Strategy 1 failed - Direct parse');
   }
   
-  // Strategy 2: Remove markdown and explanatory text
+  // Strategy 2: Extract and reconstruct JSON from descriptive text
+  try {
+    const events: CityEvent[] = [];
+    const lines = content.split('\n');
+    let currentEvent: any = {};
+    let eventIndex = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Detect event start (numbered items)
+      if (/^\d+\.\s?\*\*/.test(line) || /^\*\*\d+/.test(line)) {
+        if (currentEvent.title) {
+          events.push(createEventFromData(currentEvent, city, eventIndex++));
+        }
+        currentEvent = {};
+        // Extract title
+        const titleMatch = line.match(/\*\*(.*?)\*\*/);
+        if (titleMatch) {
+          currentEvent.title = titleMatch[1].trim();
+        }
+      }
+      
+      // Extract specific fields
+      if (line.includes('**Title:**')) {
+        currentEvent.title = line.replace(/.*\*\*Title:\*\*\s*/, '').trim();
+      }
+      if (line.includes('**Description:**')) {
+        currentEvent.description = line.replace(/.*\*\*Description:\*\*\s*/, '').trim();
+      }
+      if (line.includes('**Category:**')) {
+        currentEvent.category = line.replace(/.*\*\*Category:\*\*\s*/, '').trim();
+      }
+      if (line.includes('**Location:**')) {
+        currentEvent.location = line.replace(/.*\*\*Location:\*\*\s*/, '').trim();
+      }
+      if (line.includes('**Date:**')) {
+        currentEvent.date = line.replace(/.*\*\*Date:\*\*\s*/, '').trim();
+      }
+      if (line.includes('**Time:**')) {
+        currentEvent.time = line.replace(/.*\*\*Time:\*\*\s*/, '').trim();
+      }
+      if (line.includes('**Website:**')) {
+        const websiteMatch = line.match(/\[(.*?)\]\((.*?)\)/);
+        if (websiteMatch) {
+          currentEvent.website = websiteMatch[2];
+        }
+      }
+    }
+    
+    // Add the last event
+    if (currentEvent.title) {
+      events.push(createEventFromData(currentEvent, city, eventIndex));
+    }
+    
+    if (events.length > 0) {
+      console.log(`✅ Strategy 2 success - Extracted ${events.length} events from descriptive text`);
+      return events.slice(0, 8);
+    }
+  } catch (error) {
+    console.log('❌ Strategy 2 failed - Descriptive text parsing');
+  }
+  
+  // Strategy 3: Remove markdown and explanatory text
   try {
     let cleanContent = content.trim();
     
@@ -148,10 +541,10 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
     const parsed = JSON.parse(cleanContent);
     return extractEventsFromParsedData(parsed, city);
   } catch (error) {
-    console.log('❌ Strategy 2 failed - Markdown removal');
+    console.log('❌ Strategy 3 failed - Markdown removal');
   }
   
-  // Strategy 3: Find JSON between braces/brackets
+  // Strategy 4: Find JSON between braces/brackets
   try {
     let cleanContent = content.trim();
     
@@ -167,10 +560,10 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
       return extractEventsFromParsedData(parsed, city);
     }
   } catch (error) {
-    console.log('❌ Strategy 3 failed - Bracket extraction');
+    console.log('❌ Strategy 4 failed - Bracket extraction');
   }
   
-  // Strategy 4: Remove AI response patterns and comments
+  // Strategy 5: Remove AI response patterns and comments
   try {
     let cleanContent = content.trim();
     
@@ -188,10 +581,10 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
     const parsed = JSON.parse(cleanContent);
     return extractEventsFromParsedData(parsed, city);
   } catch (error) {
-    console.log('❌ Strategy 4 failed - AI pattern removal');
+    console.log('❌ Strategy 5 failed - AI pattern removal');
   }
   
-  // Strategy 5: Fix common JSON issues
+  // Strategy 6: Fix common JSON issues
   try {
     let cleanContent = content.trim();
     
@@ -217,10 +610,10 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
       return extractEventsFromParsedData(parsed, city);
     }
   } catch (error) {
-    console.log('❌ Strategy 5 failed - JSON issue fixes');
+    console.log('❌ Strategy 6 failed - JSON issue fixes');
   }
   
-  // Strategy 6: Multiple JSON extraction attempts
+  // Strategy 7: Multiple JSON extraction attempts
   try {
     const jsonPatterns = [
       /\[[\s\S]*?\]/g,
@@ -247,10 +640,10 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
       }
     }
   } catch (error) {
-    console.log('❌ Strategy 6 failed - Multiple pattern extraction');
+    console.log('❌ Strategy 7 failed - Multiple pattern extraction');
   }
   
-  // Strategy 7: Manual bracket balancing and reconstruction
+  // Strategy 8: Manual bracket balancing and reconstruction
   try {
     let cleanContent = content.replace(/[^\[\]{}":,\s\w.-]/g, ' ');
     
@@ -280,11 +673,29 @@ function parsePerplexityEventResponse(content: string, city: string): CityEvent[
       return extractEventsFromParsedData(parsed, city);
     }
   } catch (error) {
-    console.log('❌ Strategy 7 failed - Manual bracket balancing');
+    console.log('❌ Strategy 8 failed - Manual bracket balancing');
   }
   
   console.error('🚨 ALL PARSING STRATEGIES FAILED - Using fallback events');
   return generateFallbackEvents(city);
+}
+
+// Helper function to create event from extracted data
+function createEventFromData(data: any, city: string, index: number): CityEvent {
+  return {
+    id: `extracted-${Date.now()}-${index}`,
+    title: data.title || `Event in ${city}`,
+    description: data.description || 'Exciting event happening in the city',
+    category: data.category || 'Event',
+    location: data.location || city,
+    date: data.date || 'This Week',
+    time: data.time || '',
+    price: data.price || '',
+    website: data.website || '',
+    image: data.image || '',
+    venue: data.venue || data.location || '',
+    featured: index < 4
+  };
 }
 
 // Extract events from parsed JSON data (handles multiple response formats)
@@ -424,13 +835,16 @@ export async function GET(request: NextRequest) {
   const city = searchParams.get('city') || 'Lisbon';
   
   try {
+    // Normalize city name for cache lookup
+    const normalizedCity = city.toLowerCase().trim().replace(/\s+/g, '');
+    const cacheKey = normalizedCity;
     
-    // Create cache key
-    const cacheKey = `${city.toLowerCase()}`;
+    console.log(`🔍 Looking for cached data for: "${cacheKey}" (original: "${city}")`);
     
-    // Check cache first
+    // Check cache first - prioritize instant cache
     const cachedResult = cityEventCache.get(cacheKey);
     if (cachedResult) {
+      console.log(`✅ Cache HIT for ${cacheKey} - returning instant results`);
       return NextResponse.json({
         ...cachedResult,
         searchMetadata: {
@@ -444,6 +858,8 @@ export async function GET(request: NextRequest) {
         }
       });
     }
+    
+    console.log(`❌ Cache MISS for ${cacheKey} - proceeding with live API call`);
 
     // Validate Perplexity API key
     const apiKey = process.env.PERPLEXITY_API_KEY;
@@ -455,29 +871,17 @@ export async function GET(request: NextRequest) {
     const searchDomains = getCitySpecificDomains(city);
     
     console.log('🔍 Perplexity API Request:', {
-      city,
-      query: query.substring(0, 100) + '...',
-      searchDomains: searchDomains.slice(0, 5)
+      city: normalizedCity,
+      query: query.substring(0, 100) + '...'
     });
     
     const requestBody = {
-      model: 'llama-3.1-sonar-small-128k-online',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a comprehensive city event finder. Search DEEP across multiple platforms and sources to find diverse, real events happening this week.
+      model: 'llama-3.1-sonar-small-128k-online',        messages: [
+          {
+            role: 'system',
+            content: `CRITICAL: YOU MUST ONLY RETURN VALID JSON. NO TEXT, NO EXPLANATIONS, NO MARKDOWN.
 
-SEARCH PRIORITY SOURCES:
-1. TimeOut city guides (timeout.com)
-2. Music venues (bandsintown.com, songkick.com, resident-advisor.net)
-3. Meetup groups (meetup.com)
-4. Local Facebook events
-5. Ticketing platforms (ticketmaster.com, dice.fm)
-6. Cultural venues and museums
-7. Food and nightlife (designmynight.com)
-8. Alternative/niche events (universe.com, peatix.com)
-
-REQUIRED JSON FORMAT:
+REQUIRED JSON FORMAT (COPY EXACTLY):
 [
   {
     "title": "Event Name",
@@ -491,14 +895,15 @@ REQUIRED JSON FORMAT:
 ]
 
 SEARCH REQUIREMENTS:
-- Find 8-10 REAL events from DIVERSE venues/platforms
-- Include cultural events, music shows, food experiences, workshops
-- Prioritize non-Eventbrite sources for variety
+- Find 8-10 REAL events from diverse venues/platforms
+- Search TimeOut, Bandsintown, Meetup, Facebook Events, Ticketmaster
+- Include cultural events, music shows, food experiences, workshops  
 - Focus on romantic/couple-friendly activities
-- Include direct booking/info URLs
 - Current week events only
-- ONLY return valid JSON (no text/explanations)`
-        },
+- Include direct booking/info URLs when available
+
+CRITICAL: OUTPUT ONLY THE JSON ARRAY. NOTHING ELSE.`
+          },
         {
           role: 'user',
           content: query
@@ -555,15 +960,20 @@ SEARCH REQUIREMENTS:
       }
     };
 
-    // Cache the result
-    cityEventCache.set(cacheKey, result);
+    // Cache the result with normalized key (only if not fallback)
+    if (events.length > 0 && !events[0].id.startsWith('fallback-')) {
+      cityEventCache.set(cacheKey, result);
+      console.log(`💾 Cached result for ${cacheKey}`);
+    } else {
+      console.log(`⚠️ NOT caching fallback events for ${cacheKey}`);
+    }
     
     return NextResponse.json(result);
 
   } catch (error) {
     console.error('City event search error:', error);
     
-    // Return fallback events
+    // Return fallback events but DON'T cache them
     const fallbackEvents = generateFallbackEvents(city);
     
     return NextResponse.json({

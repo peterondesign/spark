@@ -1,12 +1,13 @@
-"use client";
+
 
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
-import { ChevronDown, Calendar, ExternalLink } from 'lucide-react';
+import { Calendar, ExternalLink } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { getImageUrl } from '../../utils/imageService';
+import CityPicker from '../CityPicker';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -30,23 +31,22 @@ const FeaturedIdeasSection = () => {
   const [selectedCity, setSelectedCity] = useState<string>("LISBON");
   const [cityEvents, setCityEvents] = useState<CityEvent[]>([]);
   const [eventImages, setEventImages] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false for instant loading
   const [visibleEvents, setVisibleEvents] = useState(8);
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
 
-  const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCity(event.target.value);
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
     setLoading(true);
     setVisibleEvents(8);
   };
 
-  // Fetch city events from Perplexity API
+  // Fetch city events from Perplexity API with instant loading
   useEffect(() => {
     const fetchCityEvents = async () => {
       try {
-        setLoading(true);
         const response = await fetch(`/api/perplexity-city-events?city=${encodeURIComponent(selectedCity)}`);
         
         if (!response.ok) {
@@ -56,21 +56,35 @@ const FeaturedIdeasSection = () => {
         const data = await response.json();
         setCityEvents(data.events || []);
         
-        // Fetch images for the events
+        // Fetch images for the events in background (non-blocking)
         if (data.events && data.events.length > 0) {
+          // Don't wait for images to load - show content immediately
           const imagePromises = data.events.map(async (event: CityEvent) => {
-            const imageUrl = await getImageUrl(
-              event.image,
-              `${event.title} ${event.category} ${selectedCity}`,
-              400,
-              300
-            );
-            return { [event.id]: imageUrl };
+            try {
+              const imageUrl = await getImageUrl(
+                event.image,
+                `${event.title} ${event.category} ${selectedCity}`,
+                400,
+                300
+              );
+              return { [event.id]: imageUrl };
+            } catch {
+              return { [event.id]: '/placeholder.jpg' };
+            }
           });
 
-          const imageResults = await Promise.all(imagePromises);
-          const imageMap = Object.assign({}, ...imageResults);
-          setEventImages(imageMap);
+          // Load images in background without blocking UI
+          Promise.all(imagePromises).then(imageResults => {
+            const imageMap = Object.assign({}, ...imageResults);
+            setEventImages(imageMap);
+          }).catch(() => {
+            // If image loading fails, use placeholders
+            const placeholderMap = data.events.reduce((acc: Record<string, string>, event: CityEvent) => {
+              acc[event.id] = '/placeholder.jpg';
+              return acc;
+            }, {});
+            setEventImages(placeholderMap);
+          });
         }
       } catch (error) {
         console.error("Error fetching city events:", error);
@@ -131,45 +145,6 @@ const FeaturedIdeasSection = () => {
     return () => ctx.revert();
   }, []);
 
-  if (loading) {
-    return (
-      <section className={`py-20 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}>
-        <div className="container mx-auto px-6">
-          <div className="mb-16">
-            <div className={`h-12 w-3/4 rounded-lg animate-pulse ${
-              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-            }`} />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[...Array(8)].map((_, i) => (
-              <div 
-                key={i} 
-                className={`animate-pulse rounded-2xl overflow-hidden ${
-                  theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-                }`}
-              >
-                <div className="h-48 bg-gray-300 dark:bg-gray-600" />
-                <div className="p-6 space-y-4">
-                  <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4" />
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 bg-gray-300 dark:bg-gray-600 rounded" />
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24" />
-                  </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20" />
-                    <div className="h-4 w-4 bg-gray-300 dark:bg-gray-600 rounded" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-
-
   return (
     <section 
       ref={sectionRef} 
@@ -177,40 +152,43 @@ const FeaturedIdeasSection = () => {
       className={`py-20 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}
     >
       <div className="container mx-auto px-6">
-        <h2 
-          ref={titleRef}
-          className={`text-4xl md:text-5xl font-bold font-heading text-left mb-16 ${
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
-          }`}
-        >
-          WHAT'S HAPPENING THIS WEEK IN{" "}
-          <div className={`inline-flex items-center gap-2 ${
-            theme === 'dark' ? 'text-white' : 'text-gray-900'
-          }`}>
-            <select 
-              value={selectedCity}
-              onChange={handleCityChange}
-              className={`bg-transparent border-b-2 border-gray-400 focus:border-gray-600 outline-none text-4xl md:text-5xl font-bold cursor-pointer ${
-                theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              <option value="LISBON">LISBON</option>
-              <option value="NEW YORK">NEW YORK</option>
-              <option value="LONDON">LONDON</option>
-              <option value="PARIS">PARIS</option>
-              <option value="TOKYO">TOKYO</option>
-              <option value="BARCELONA">BARCELONA</option>
-              <option value="AMSTERDAM">AMSTERDAM</option>
-              <option value="BERLIN">BERLIN</option>
-              <option value="ROME">ROME</option>
-              <option value="MADRID">MADRID</option>
-            </select>
-            <ChevronDown className="w-8 h-8 md:w-10 md:h-10" />
-          </div>
-        </h2>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-16 gap-6">
+          <h2 
+            ref={titleRef}
+            className={`text-4xl md:text-5xl font-bold font-heading ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}
+          >
+            WHAT'S HAPPENING THIS WEEK IN
+          </h2>
+          
+          <CityPicker
+            selectedCity={selectedCity}
+            onCityChange={handleCityChange}
+            loading={loading}
+          />
+        </div>
 
         <div ref={cardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {cityEvents.slice(0, visibleEvents).map((event) => (
+          {loading ? (
+            // Skeletal loading state
+            [...Array(8)].map((_, i) => (
+              <div 
+                key={`skeleton-${i}`}
+                className={`rounded-2xl overflow-hidden ${
+                  theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                } animate-pulse`}
+              >
+                <div className={`h-48 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`} />
+                <div className="p-6 space-y-3">
+                  <div className={`h-6 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'} rounded w-3/4`} />
+                  <div className={`h-4 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'} rounded w-1/2`} />
+                  <div className={`h-4 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'} rounded w-1/3`} />
+                </div>
+              </div>
+            ))
+          ) : (
+            cityEvents.slice(0, visibleEvents).map((event) => (
             <div
               key={event.id}
               className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-2 hover:border-rose-400 ${
@@ -294,10 +272,11 @@ const FeaturedIdeasSection = () => {
                 )}
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
 
-        {cityEvents.length > visibleEvents && (
+        {!loading && cityEvents.length > visibleEvents && (
           <div className="text-center mt-12">
             <button 
               onClick={handleLoadMore}
