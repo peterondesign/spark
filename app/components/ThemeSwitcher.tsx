@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 
 interface ThemeSwitcherProps {
@@ -9,7 +9,12 @@ interface ThemeSwitcherProps {
 }
 
 const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ className = '' }) => {
-  const { theme, toggleTheme, isLightTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const isLightTheme = theme === 'light';
+
+  const toggleTheme = () => {
+    setTheme(isLightTheme ? 'dark' : 'light');
+  };
 
   return (
     <button

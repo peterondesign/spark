@@ -5,7 +5,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
 import { getImageUrl } from '../../utils/imageService';
 import SaveButton from '../SaveButton';
@@ -211,11 +211,6 @@ const FeaturedIdeasSection = () => {
                 }`}>
                   {idea.title}
                 </h3>
-                <p className={`text-sm ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                }`}>
-                  {idea.description}
-                </p>
               </div>
             </div>
           ))}

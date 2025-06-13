@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Filter, X } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
 import { getImageUrl } from '../../utils/imageService';
 import SaveButton from '../SaveButton';

@@ -12,8 +12,9 @@ import AllDateIdeasSection from './components/sections/AllDateIdeasSection';
 import TikTokSection from './components/sections/TikTokSection';
 import Footer from './components/sections/Footer';
 
-// Import theme provider and hook
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+// Import theme provider  
+import { ThemeProvider } from '@/components/theme-provider';
+import { useTheme } from 'next-themes';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);

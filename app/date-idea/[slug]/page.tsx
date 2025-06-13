@@ -8,12 +8,13 @@ import { ChevronDown } from "lucide-react";
 import SaveButton from "../../components/SaveButton";
 import { supabase } from "@/utils/supabaseClient";
 import { getImageUrl, getPlaceholderImage, processDateIdeaImages } from "@/app/utils/imageService";
-import Header from "@/app/components/Header";
+import Header from "@/app/components/sections/Header";
 import Footer from "@/app/components/Footer";
 import WebBrowsingIntegration from "../../components/WebBrowsingIntegration";
 import FastAIActivityGrid from "../../components/FastAIActivityGrid";
 import UltraFastAIGrid from "../../components/UltraFastAIGrid";
 import LightspeedAIGrid from "../../components/LightspeedAIGrid";
+import PerplexityVenueSearch from "../../components/PerplexityVenueSearch";
 
 // Define DateIdea interface
 interface DateIdea {
@@ -202,9 +203,9 @@ export default function DateIdeaDetails() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
+      <main className="container mt-24 mx-auto px-4 py-8 max-w-6xl">
         {/* Title Section with City Dropdown */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
               {dateIdea.title} in
@@ -218,12 +219,42 @@ export default function DateIdeaDetails() {
           </div>
         </div>
 
-        {/* Lightspeed AI-Powered Live Activity Grid - Instant + Sub-100ms Real Data */}
-        <LightspeedAIGrid
-          activity={dateIdea.category || dateIdea.title}
-          city={userCity || 'your city'}
-          dateIdeaTitle={dateIdea.title}
-        />
+        {/* Perplexity Venue Search Section - Moved to Top */}
+        <section className="mb-16">
+          <div className="relative">
+            {/* Hero Image Background */}
+            {imageUrls.length > 0 && (
+              <div className="absolute inset-0 rounded-lg overflow-hidden">
+                <Image
+                  src={imageUrls[0]}
+                  alt={dateIdea.title}
+                  fill
+                  className="object-cover opacity-20"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-background/80 to-background/60"></div>
+              </div>
+            )}
+            
+            <div className="relative bg-card/90 backdrop-blur-sm rounded-lg p-8 shadow-lg border border-border">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground mb-2 uppercase tracking-wider">
+                  Find Real {dateIdea.title} Venues in {userCity || 'Your City'}
+                </h2>
+                <p className="text-muted-foreground">
+                  Discover authentic local spots with AI-powered search
+                </p>
+              </div>
+              
+              <PerplexityVenueSearch 
+                dateIdea={dateIdea.title}
+                city={userCity || ''}
+                className=""
+                autoSearch={true}
+              />
+            </div>
+          </div>
+        </section>
+
 
         {/* About This Date Idea Section */}
         <section className="mb-16">
@@ -232,6 +263,24 @@ export default function DateIdeaDetails() {
           </h2>
           
           <div className="bg-card rounded-lg p-8 shadow-sm border border-border">
+            {/* Date Idea Images Grid */}
+            {imageUrls.length > 0 && (
+              <div className="mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {imageUrls.slice(0, 6).map((imageUrl, index) => (
+                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden">
+                      <Image
+                        src={imageUrl}
+                        alt={`${dateIdea.title} ${index + 1}`}
+                        fill
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="max-w-4xl mx-auto">
               <p className="text-lg text-muted-foreground leading-relaxed mb-6">
                 {dateIdea.description}
@@ -282,18 +331,6 @@ export default function DateIdeaDetails() {
               )}
             </div>
           </div>
-        </section>
-
-        {/* Live Events Section */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-8 uppercase tracking-wider">
-            Live Events Related to This Date Idea
-          </h2>
-          
-          <WebBrowsingIntegration 
-            activity={dateIdea.category || dateIdea.title}
-            city={userCity || 'your city'}
-          />
         </section>
 
         {/* Explore Other Date Ideas Section */}

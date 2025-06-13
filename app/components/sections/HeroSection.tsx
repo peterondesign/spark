@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from 'next-themes';
 import AuthenticationModal from '../AuthenticationModal';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -24,7 +24,7 @@ const HeroSection = () => {
         opacity: 0,
         y: 50,
       });
-      
+
       gsap.set(videoRef.current, {
         opacity: 0,
         x: 100,
@@ -41,24 +41,24 @@ const HeroSection = () => {
         duration: 1,
         ease: "power2.out",
       })
-      .to(subtitleRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: "power2.out",
-      }, "-=0.5")
-      .to(buttonsRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: "power2.out",
-      }, "-=0.4")
-      .to(videoRef.current, {
-        opacity: 1,
-        x: 0,
-        duration: 1,
-        ease: "power2.out",
-      }, "-=0.6");
+        .to(subtitleRef.current, {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        }, "-=0.5")
+        .to(buttonsRef.current, {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        }, "-=0.4")
+        .to(videoRef.current, {
+          opacity: 1,
+          x: 0,
+          duration: 1,
+          ease: "power2.out",
+        }, "-=0.6");
 
     }, heroRef);
 
@@ -86,13 +86,13 @@ const HeroSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[80vh]">
           {/* Left column: Content */}
           <div className={`space-y-8 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
-            <h1 
+            <h1
               ref={titleRef}
               className={`text-5xl md:text-6xl lg:text-7xl font-bold leading-tight font-heading ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}
             >
               New and exciting things to do in your city
             </h1>
-        
+
 
             <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-4">
               <button
@@ -103,30 +103,28 @@ const HeroSection = () => {
               </button>
               <button
                 onClick={openAuthModal}
-                className={`border-2 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 uppercase ${
-                theme === 'light' 
-                  ? 'border-gray-400 text-gray-700 hover:bg-gray-100' 
-                  : 'border-gray-500 text-white hover:bg-gray-800'
-              }`}>
+                className={`border-2 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 uppercase ${theme === 'light'
+                    ? 'border-gray-400 text-gray-700 hover:bg-gray-100'
+                    : 'border-gray-500 text-white hover:bg-gray-800'
+                  }`}>
                 Sign Up with Email/Text
               </button>
             </div>
 
-            <p 
+            <p
               ref={subtitleRef}
               className={`text-xl md:text-2xl max-w-lg ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}
             >
-              We offer exclusive discounts, reminder emails and texts for only $8/month
+              We share exclusive discounts, events, reminders and for just $8/month. Never run out of ideas again.
             </p>
           </div>
 
           {/* Right column: Video */}
           <div ref={videoRef} className="relative">
-            <div className={`relative rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm border ${
-              theme === 'light' 
-                ? 'bg-gray-100/20 border-gray-300/20' 
+            <div className={`relative rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm border ${theme === 'light'
+                ? 'bg-gray-100/20 border-gray-300/20'
                 : 'bg-black/20 border-white/20'
-            }`}>
+              }`}>
               <video
                 autoPlay
                 muted
@@ -137,19 +135,18 @@ const HeroSection = () => {
                 <source src="/SparkIntro.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
-              <div className={`absolute inset-0 ${
-                theme === 'light' 
-                  ? 'bg-gradient-to-t from-gray-200/20 to-transparent' 
+              <div className={`absolute inset-0 ${theme === 'light'
+                  ? 'bg-gradient-to-t from-gray-200/20 to-transparent'
                   : 'bg-gradient-to-t from-black/20 to-transparent'
-              }`}></div>
+                }`}></div>
             </div>
           </div>
         </div>
       </div>
-      
-      <AuthenticationModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+
+      <AuthenticationModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
       />
     </section>
   );
