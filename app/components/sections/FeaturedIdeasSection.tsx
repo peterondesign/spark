@@ -41,6 +41,9 @@ const FeaturedIdeasSection = () => {
     setSelectedCity(city);
     setLoading(true);
     setVisibleEvents(8);
+    // Clear existing events and images when city changes
+    setCityEvents([]);
+    setEventImages({});
   };
 
   // Fetch city events from Perplexity API with instant loading
@@ -58,33 +61,41 @@ const FeaturedIdeasSection = () => {
         
         // Fetch images for the events in background (non-blocking)
         if (data.events && data.events.length > 0) {
-          // Don't wait for images to load - show content immediately
-          const imagePromises = data.events.map(async (event: CityEvent) => {
-            try {
-              const imageUrl = await getImageUrl(
-                event.image,
-                `${event.title} ${event.category} ${selectedCity}`,
-                400,
-                300
-              );
-              return { [event.id]: imageUrl };
-            } catch {
-              return { [event.id]: '/placeholder.jpg' };
-            }
-          });
+          // Load images asynchronously in background
+          const loadImages = async () => {
+            const imageMap: Record<string, string> = {};
+            
+            // Process images in parallel for better performance
+            const imagePromises = data.events.map(async (event: CityEvent) => {
+              try {
+                // Use getImageUrl which will handle fallbacks properly
+                const imageUrl = await getImageUrl(
+                  event.image,
+                  `${event.title} ${event.category} ${selectedCity}`,
+                  400,
+                  300
+                );
+                return { id: event.id, url: imageUrl };
+              } catch (error) {
+                console.warn(`Failed to load image for ${event.title}:`, error);
+                // Return a default romantic date image instead of placeholder
+                return { 
+                  id: event.id, 
+                  url: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+                };
+              }
+            });
 
-          // Load images in background without blocking UI
-          Promise.all(imagePromises).then(imageResults => {
-            const imageMap = Object.assign({}, ...imageResults);
+            const results = await Promise.all(imagePromises);
+            results.forEach(result => {
+              imageMap[result.id] = result.url;
+            });
+            
             setEventImages(imageMap);
-          }).catch(() => {
-            // If image loading fails, use placeholders
-            const placeholderMap = data.events.reduce((acc: Record<string, string>, event: CityEvent) => {
-              acc[event.id] = '/placeholder.jpg';
-              return acc;
-            }, {});
-            setEventImages(placeholderMap);
-          });
+          };
+
+          // Start loading images immediately
+          loadImages();
         }
       } catch (error) {
         console.error("Error fetching city events:", error);
@@ -202,10 +213,15 @@ const FeaturedIdeasSection = () => {
             >
               <div className="relative h-48 overflow-hidden">
                 <Image
-                  src={eventImages[event.id] || '/placeholder.jpg'}
+                  src={eventImages[event.id] || `https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop`}
                   alt={event.title}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-300"
+                  onError={(e) => {
+                    // If image fails to load, use a generic romantic date image
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
+                  }}
                 />
                 <div className="absolute top-4 left-4">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -232,7 +248,7 @@ const FeaturedIdeasSection = () => {
                 <h3 className={`text-xl font-bold font-heading mb-3 group-hover:text-rose-400 transition-colors line-clamp-2 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {event.title}
+                  {String(event.title || '')}
                 </h3>
                 
                 {/* Only show date information */}
@@ -244,7 +260,7 @@ const FeaturedIdeasSection = () => {
                     <span className={`text-sm font-medium ${
                       theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
-                      {event.date} {event.time}
+                      {String(event.date || '')} {String(event.time || '')}
                     </span>
                   </div>
                 )}

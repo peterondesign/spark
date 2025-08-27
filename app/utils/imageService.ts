@@ -130,27 +130,11 @@ export const getImageUrl = async (
   width: number = 400, 
   height: number = 300
 ): Promise<string> => {
-  // Check cache first
-  const cacheKey = `${keyword}-${width}x${height}`;
+  // console.log(`🔍 getImageUrl called with image: ${image}, keyword: ${keyword}`);
   
-  // Try browser cache first (client-side only)
-  const browserCached = getBrowserCachedImage(cacheKey);
-  if (browserCached) {
-    return browserCached.url;
-  }
-  
-  // Then check server memory cache
-  const cachedImage = imageCache[cacheKey];
-  if (cachedImage && Date.now() - cachedImage.timestamp < CACHE_EXPIRY) {
-    // If found in server cache, also save to browser cache
-    if (typeof window !== 'undefined') {
-      saveToBrowserCache(cacheKey, cachedImage);
-    }
-    return cachedImage.url;
-  }
-  
-  // Handle undefined or null
+  // Handle undefined or null - go straight to Pexels
   if (!image) {
+    // console.log(`📸 No image provided, using Pexels for keyword: ${keyword}`);
     return await getPexelsFallbackUrl(keyword, width, height);
   }
   
@@ -160,22 +144,35 @@ export const getImageUrl = async (
     if (
       image.includes('placeholder.svg') || 
       image.includes('/?height=') || 
-      image === '/'
+      image === '/' ||
+      image.includes('placeholder')
     ) {
+      // console.log(`🔄 Placeholder detected (${image}), using Pexels for keyword: ${keyword}`);
       return await getPexelsFallbackUrl(keyword, width, height);
     }
     
-    // If it's already a valid URL, use it
-    return image;
+    // If it's already a valid URL (starts with http), use it
+    if (image.startsWith('http')) {
+      // console.log(`✅ Valid URL found: ${image}`);
+      return image;
+    }
+    
+    // Otherwise, treat as keyword and get from Pexels
+    // console.log(`🔄 Invalid URL (${image}), using Pexels for keyword: ${keyword}`);
+    return await getPexelsFallbackUrl(keyword, width, height);
   }
   
   // Handle objects with url property
   if (image && typeof image === 'object' && 'url' in image && image.url) {
-    return image.url;
+    if (image.url.startsWith('http')) {
+      // console.log(`✅ Valid object URL found: ${image.url}`);
+      return image.url;
+    }
   }
   
-  // Default fallback to placeholder
-  return getPlaceholderImage(width, height, keyword);
+  // Default fallback to Pexels instead of placeholder
+  // console.log(`🔄 No valid image found, using Pexels for keyword: ${keyword}`);
+  return await getPexelsFallbackUrl(keyword, width, height);
 };
 
 /**
@@ -222,13 +219,14 @@ export const getPexelsFallbackUrl = async (
     );
     
     if (!response.ok) {
+      console.warn(`Pexels API error: ${response.status} ${response.statusText}`);
       throw new Error(`Pexels API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
     
     // Check if any results were returned
-    if (data.photos.length > 0) {
+    if (data.photos && data.photos.length > 0) {
       const photo: PexelsPhoto = data.photos[0];
       const imageUrl = photo.src.large;
       
@@ -246,13 +244,17 @@ export const getPexelsFallbackUrl = async (
       // Save to browser cache
       saveToBrowserCache(cacheKey, cacheData);
       
+      // console.log(`✅ Successfully loaded Pexels image for "${keyword}": ${imageUrl}`);
       return imageUrl;
     } else {
-      // If no results, return a placeholder
-      return getPlaceholderImage(width, height, keyword);
+      console.warn(`No Pexels results for keyword: ${keyword}`);
+      // Return a default romantic date image instead of placeholder
+      return 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
     }
   } catch (error: any) {
-    return getPlaceholderImage(width, height, keyword);
+    console.error(`Error fetching Pexels image for "${keyword}":`, error);
+    // Return a default romantic date image instead of placeholder
+    return 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
   }
 };
 

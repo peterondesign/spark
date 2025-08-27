@@ -41,7 +41,6 @@ const HomeContent = () => {
     <main className={`overflow-x-hidden min-h-screen ${theme === 'light' ? 'bg-white' : 'bg-[#212121]'}`}>
       <Header />
       <HeroSection />
-      <FeaturedIdeasSection />
       <AllDateIdeasSection />
       <TikTokSection />
       <Footer />

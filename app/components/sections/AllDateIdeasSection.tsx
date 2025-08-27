@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Filter, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Filter, X, ExternalLink } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
 import { getImageUrl } from '../../utils/imageService';
@@ -14,10 +14,17 @@ interface DateIdea {
   title: string;
   category: string;
   image?: string;
-  slug: string;
+  slug?: string;
   time_of_day?: string;
   mood?: string;
   price_level?: number;
+  description?: string;
+  location?: string;
+  date?: string;
+  time?: string;
+  price?: string;
+  website?: string;
+  venue?: string;
 }
 
 const AllDateIdeasSection = () => {
@@ -35,39 +42,69 @@ const AllDateIdeasSection = () => {
   const [selectedMood, setSelectedMood] = useState<string>("");
   const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
 
-  // Fetch date ideas from Supabase
+  // Fetch date ideas from both Supabase and city events
   useEffect(() => {
-    const fetchDateIdeas = async () => {
+    const fetchAllIdeas = async () => {
       try {
-        const { data, error } = await supabase
+        setLoading(true);
+        
+        // Fetch from Supabase
+        const { data: supabaseData, error } = await supabase
           .from('date_ideas')
           .select('*')
-          .limit(100); // Increase limit to get more ideas
+          .limit(50);
 
         if (error) {
           console.error("Error fetching date ideas:", error);
-        } else {
-          // Randomize the ideas
-          const randomizedData = data ? [...data].sort(() => Math.random() - 0.5) : [];
-          setDateIdeas(randomizedData);
-          setFilteredIdeas(randomizedData);
+        }
 
-          // Fetch images for the date ideas
-          if (randomizedData && randomizedData.length > 0) {
-            const imagePromises = randomizedData.map(async (idea) => {
-              const imageUrl = await getImageUrl(
-                idea.image,
-                `${idea.title} ${idea.category}`,
-                400,
-                300
-              );
-              return { [idea.slug]: imageUrl };
-            });
+        // Fetch city events from Perplexity API
+        const cityResponse = await fetch(`/api/perplexity-city-events?city=${encodeURIComponent(selectedCity)}`);
+        let cityEvents = [];
+        
+        if (cityResponse.ok) {
+          const cityData = await cityResponse.json();
+          cityEvents = cityData.events || [];
+        }
 
-            const imageResults = await Promise.all(imagePromises);
-            const imageMap = Object.assign({}, ...imageResults);
-            setDateIdeaImages(imageMap);
-          }
+        // Combine both sources
+        const supabaseIdeas = supabaseData ? [...supabaseData].sort(() => Math.random() - 0.5) : [];
+        const combinedIdeas = [
+          ...cityEvents.map((event: any) => ({
+            id: event.id,
+            title: event.title,
+            category: event.category,
+            image: event.image,
+            slug: event.id, // Use ID as slug for city events
+            description: event.description,
+            location: event.location,
+            date: event.date,
+            time: event.time,
+            price: event.price,
+            website: event.website,
+            venue: event.venue
+          })),
+          ...supabaseIdeas
+        ];
+
+        setDateIdeas(combinedIdeas);
+        setFilteredIdeas(combinedIdeas);
+
+        // Fetch images for the date ideas
+        if (combinedIdeas && combinedIdeas.length > 0) {
+          const imagePromises = combinedIdeas.map(async (idea) => {
+            const imageUrl = await getImageUrl(
+              idea.image,
+              `${idea.title} ${idea.category} ${selectedCity}`,
+              400,
+              300
+            );
+            return { [idea.slug || idea.id]: imageUrl };
+          });
+
+          const imageResults = await Promise.all(imagePromises);
+          const imageMap = Object.assign({}, ...imageResults);
+          setDateIdeaImages(imageMap);
         }
       } catch (error) {
         console.error("Error fetching date ideas:", error);
@@ -76,11 +113,16 @@ const AllDateIdeasSection = () => {
       }
     };
 
-    fetchDateIdeas();
-  }, []);
+    fetchAllIdeas();
+  }, [selectedCity]); // Now it responds to city changes!
 
   const handleCityChange = (city: string) => {
     setSelectedCity(city);
+    setVisibleIdeas(12); // Reset visible ideas count
+    // Clear existing data when city changes
+    setDateIdeas([]);
+    setFilteredIdeas([]);
+    setDateIdeaImages({});
   };
 
   const handleLoadMore = () => {
@@ -124,14 +166,10 @@ const AllDateIdeasSection = () => {
       <div className="container mx-auto px-6">
         {/* Section Header with City Selector and Filters */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12">
-          <div className='flex flex-col lg:flex-row'>
-            <h2 className={`text-3xl md:text-4xl font-bold font-heading flex items-center gap-3 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
+          <div className='flex flex-col lg:flex-row lg:items-center gap-4'>
+            <h2 className={`text-3xl md:text-4xl font-bold font-heading ${theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-              ALL DATE IDEAS IN{" "}
-              <div className={`inline-flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-              </div>
-
+              ALL DATE IDEAS IN
             </h2>
 
             <CityPicker
@@ -178,21 +216,40 @@ const AllDateIdeasSection = () => {
               {filteredIdeas.slice(0, visibleIdeas).map((idea) => (
                 <div
                   key={idea.id}
-                  className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${theme === 'dark'
+                  className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${theme === 'dark'
                     ? 'bg-[#333333] border border-gray-700'
                     : 'bg-white border border-gray-200'
                     }`}
+                  onClick={() => {
+                    // Handle city events vs regular date ideas
+                    if (idea.website) {
+                      window.open(idea.website, '_blank');
+                    } else if (idea.slug) {
+                      window.location.href = `/date-idea/${idea.slug}`;
+                    }
+                  }}
                 >
-                  <Link href={`/date-idea/${idea.slug}`}>
-                    <div className="relative h-48 overflow-hidden cursor-pointer">
-                      <img
-                        src={dateIdeaImages[idea.slug] || idea.image || '/placeholder.jpg'}
-                        alt={idea.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={dateIdeaImages[idea.slug || idea.id] || idea.image || 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'}
+                      alt={idea.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-                      {/* Save Button */}
+                    {/* Category Badge */}
+                    <div className="absolute top-3 left-3">
+                      <span className="px-3 py-1 bg-rose-500/90 text-white text-xs font-semibold rounded-full">
+                        {idea.category}
+                      </span>
+                    </div>
+
+                    {/* Save Button - only for regular date ideas */}
+                    {idea.slug && (
                       <div className="absolute top-3 right-3">
                         <SaveButton
                           itemSlug={idea.slug}
@@ -200,17 +257,38 @@ const AllDateIdeasSection = () => {
                           className="opacity-90 hover:opacity-100"
                         />
                       </div>
-                    </div>
-                  </Link>
+                    )}
 
-                  <Link href={`/date-idea/${idea.slug}`}>
-                    <div className="p-4 cursor-pointer">
-                      <h3 className={`text-lg font-semibold mb-2 group-hover:text-rose-400 transition-colors ${theme === 'dark' ? 'text-white' : 'text-gray-900'
-                        }`}>
-                        {idea.title}
-                      </h3>
-                    </div>
-                  </Link>
+                    {/* External link indicator for city events */}
+                    {idea.website && (
+                      <div className="absolute top-3 right-3">
+                        <div className="p-2 bg-black/50 rounded-full backdrop-blur-sm">
+                          <ChevronRight className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4">
+                    <h3 className={`text-lg font-semibold mb-2 group-hover:text-rose-400 transition-colors line-clamp-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      }`}>
+                      {String(idea.title || '')}
+                    </h3>
+                    
+                    {/* Show location for city events */}
+                    {idea.location && (
+                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        📍 {String(idea.location)}
+                      </p>
+                    )}
+                    
+                    {/* Show date/time for city events */}
+                    {(idea.date || idea.time) && (
+                      <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        🗓️ {String(idea.date || '')} {String(idea.time || '')}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

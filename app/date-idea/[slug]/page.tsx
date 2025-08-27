@@ -159,21 +159,88 @@ export default function DateIdeaDetails() {
     setUserCity(savedCity);
   }, []);
 
-  // Loading state
+  // Enhanced Loading state with skeletal UI
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <main className="container mt-24 mx-auto px-4 py-8 max-w-6xl">
           <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-1/2 mx-auto mb-12"></div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="aspect-square bg-muted rounded-lg"></div>
-              ))}
+            {/* Title skeleton */}
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="h-10 bg-muted rounded w-64"></div>
+                <div className="h-10 bg-muted rounded w-32"></div>
+              </div>
             </div>
+
+            {/* Hero search section skeleton */}
+            <section className="mb-16">
+              <div className="bg-card/90 rounded-lg p-8 shadow-lg border border-border">
+                <div className="text-center mb-6">
+                  <div className="h-8 bg-muted rounded w-96 mx-auto mb-2"></div>
+                  <div className="h-4 bg-muted rounded w-64 mx-auto"></div>
+                </div>
+                <div className="h-12 bg-muted rounded w-full mb-4"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-48 bg-muted rounded-lg"></div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* About section skeleton */}
+            <section className="mb-16">
+              <div className="h-8 bg-muted rounded w-48 mx-auto mb-8"></div>
+              <div className="bg-card rounded-lg p-8 shadow-sm border border-border">
+                {/* Images grid skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="aspect-video bg-muted rounded-lg"></div>
+                  ))}
+                </div>
+                
+                {/* Description skeleton */}
+                <div className="max-w-4xl mx-auto">
+                  <div className="space-y-3 mb-6">
+                    <div className="h-4 bg-muted rounded w-full"></div>
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="h-4 bg-muted rounded w-5/6"></div>
+                  </div>
+                  
+                  {/* Details grid skeleton */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="bg-muted rounded-lg p-4">
+                        <div className="h-4 bg-muted-foreground/20 rounded w-20 mb-2"></div>
+                        <div className="h-3 bg-muted-foreground/20 rounded w-32"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Other date ideas skeleton */}
+            <section>
+              <div className="h-8 bg-muted rounded w-56 mx-auto mb-8"></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <div key={i} className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
+                    <div className="h-48 bg-muted"></div>
+                    <div className="p-4">
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-full mb-1"></div>
+                      <div className="h-3 bg-muted rounded w-2/3 mb-3"></div>
+                      <div className="h-6 bg-muted rounded w-20"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
-        </div>
+        </main>
         <Footer />
       </div>
     );

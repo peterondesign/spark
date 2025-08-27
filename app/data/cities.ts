@@ -422,7 +422,6 @@ export const WORLD_CITIES: City[] = [
 
   // More Asian Cities - Central, South & Southeast Asia
   { name: "Male", country: "Maldives", continent: "Asia", flag: "🇲🇻", popular: false },
-  { name: "Thimphu", country: "Bhutan", continent: "Asia", flag: "🇧🇹", popular: false },
   { name: "Dili", country: "East Timor", continent: "Asia", flag: "🇹🇱", popular: false },
   { name: "Nay Pyi Taw", country: "Myanmar", continent: "Asia", flag: "🇲🇲", popular: false },
   { name: "Jayapura", country: "Indonesia", continent: "Asia", flag: "🇮🇩", popular: false },
@@ -516,10 +515,6 @@ export const WORLD_CITIES: City[] = [
 
   // More Asian Cities - Additional countries
   { name: "Nur-Sultan", country: "Kazakhstan", continent: "Asia", flag: "🇰🇿", popular: false },
-  { name: "Ashgabat", country: "Turkmenistan", continent: "Asia", flag: "🇹🇲", popular: false },
-  { name: "Dushanbe", country: "Tajikistan", continent: "Asia", flag: "🇹🇯", popular: false },
-  { name: "Bishkek", country: "Kyrgyzstan", continent: "Asia", flag: "🇰🇬", popular: false },
-  { name: "Samarkand", country: "Uzbekistan", continent: "Asia", flag: "🇺🇿", popular: false },
   { name: "Bukhara", country: "Uzbekistan", continent: "Asia", flag: "🇺🇿", popular: false },
 ];
 
