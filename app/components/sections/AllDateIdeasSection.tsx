@@ -412,7 +412,7 @@ const AllDateIdeasSection = () => {
                   </select>
                 </div>
 
-                {/* Mood Filter - Multiselect based on actual database values */}
+                {/* Mood Filter - Multiselect based on actual database valuess */}
                 <div>
                   <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
                     }`}>
