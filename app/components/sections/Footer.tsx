@@ -76,9 +76,6 @@ const Footer = () => {
             <h3 className="font-bold font-heading mb-4">Connect</h3>
             <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-300'}`}>
               <li><Link href="https://www.tiktok.com/@dateideascc" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>TikTok</Link></li>
-              <li><Link href="#" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Instagram</Link></li>
-              <li><Link href="#" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Twitter</Link></li>
-              <li><Link href="#" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Contact</Link></li>
             </ul>
           </div>
         </div>

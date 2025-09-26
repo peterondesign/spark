@@ -44,6 +44,7 @@ const AllDateIdeasSection = () => {
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<string>("");
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]); // Changed to array for multiselect
   const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   // Fetch date ideas from both Supabase and city events
   useEffect(() => {
@@ -142,7 +143,36 @@ const AllDateIdeasSection = () => {
     let filtered = [...dateIdeas];
 
     if (selectedTimeOfDay) {
-      filtered = filtered.filter(idea => idea.timeOfDay === selectedTimeOfDay);
+      // Map user-friendly options to database values
+      if (selectedTimeOfDay === 'Daytime') {
+        filtered = filtered.filter(idea => 
+          idea.timeOfDay === 'Morning' || 
+          idea.timeOfDay === 'Afternoon' || 
+          idea.timeOfDay === 'Varies'
+        );
+      } else if (selectedTimeOfDay === 'Nighttime') {
+        filtered = filtered.filter(idea => 
+          idea.timeOfDay === 'Evening' || 
+          idea.timeOfDay === 'Night'
+        );
+      }
+    }
+
+    if (selectedLocation) {
+      filtered = filtered.filter(idea => {
+        if (typeof idea.location === 'string') {
+          return idea.location.toLowerCase().includes(selectedLocation.toLowerCase());
+        } else if (typeof idea.location === 'object' && idea.location !== null) {
+          // Handle JSON location objects like {"type": "indoor", "setting": "varied"}
+          const locationObj = idea.location as any;
+          const type = locationObj.type;
+          const setting = locationObj.setting;
+          
+          return selectedLocation.toLowerCase() === type?.toLowerCase() || 
+                 setting?.toLowerCase().includes(selectedLocation.toLowerCase());
+        }
+        return false;
+      });
     }
 
     if (selectedMoods.length > 0) {
@@ -170,15 +200,16 @@ const AllDateIdeasSection = () => {
 
     setFilteredIdeas(filtered);
     setVisibleIdeas(12); // Reset visible ideas when filters change
-  }, [selectedTimeOfDay, selectedMoods, selectedPriceLevel, dateIdeas]);
+  }, [selectedTimeOfDay, selectedLocation, selectedMoods, selectedPriceLevel, dateIdeas]);
 
   const clearFilters = () => {
     setSelectedTimeOfDay("");
+    setSelectedLocation("");
     setSelectedMoods([]);
     setSelectedPriceLevel("");
   };
 
-  const hasActiveFilters = selectedTimeOfDay || selectedMoods.length > 0 || selectedPriceLevel;
+  const hasActiveFilters = selectedTimeOfDay || selectedLocation || selectedMoods.length > 0 || selectedPriceLevel;
 
   return (
     <section
@@ -215,7 +246,7 @@ const AllDateIdeasSection = () => {
             Filters
             {hasActiveFilters && (
               <span className="ml-1 bg-white text-rose-500 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                {[selectedTimeOfDay, selectedMoods.length > 0 ? 'mood' : '', selectedPriceLevel].filter(Boolean).length}
+                {[selectedTimeOfDay, selectedLocation, selectedMoods.length > 0 ? 'mood' : '', selectedPriceLevel].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -341,7 +372,7 @@ const AllDateIdeasSection = () => {
 
               {/* Modal Content */}
               <div className="p-6 space-y-6">
-                {/* Time of Day Filter - Based on actual database values */}
+                {/* Time of Day Filter - Simplified options */}
                 <div>
                   <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
                     }`}>
@@ -356,11 +387,28 @@ const AllDateIdeasSection = () => {
                       }`}
                   >
                     <option value="">Any time</option>
-                    <option value="Varies">Varies</option>
-                    <option value="Morning">Morning</option>
-                    <option value="Afternoon">Afternoon</option>
-                    <option value="Evening">Evening</option>
-                    <option value="Night">Night</option>
+                    <option value="Daytime">Daytime</option>
+                    <option value="Nighttime">Nighttime</option>
+                  </select>
+                </div>
+
+                {/* Location Filter - Based on actual database values */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
+                    }`}>
+                    Location Type
+                  </label>
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
+                      ? 'bg-[#333333] border-gray-600 text-white'
+                      : 'bg-white text-gray-900'
+                      }`}
+                  >
+                    <option value="">Any location</option>
+                    <option value="indoor">Indoor</option>
+                    <option value="outdoor">Outdoor</option>
                   </select>
                 </div>
 
