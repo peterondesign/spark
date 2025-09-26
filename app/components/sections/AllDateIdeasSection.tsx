@@ -15,16 +15,19 @@ interface DateIdea {
   category: string;
   image?: string;
   slug?: string;
-  time_of_day?: string;
-  mood?: string;
-  price_level?: number;
+  timeOfDay?: string; // Match database schema
+  mood?: string | object; // Can be JSON object like {"pace": "relaxed", "vibe": "rejuvenating"}
+  priceLevel?: string; // Match database schema as text
   description?: string;
-  location?: string;
+  location?: string | object; // Can be JSON object like {"type": "indoor", "setting": "clinic"}
   date?: string;
   time?: string;
   price?: string;
   website?: string;
   venue?: string;
+  tips?: string;
+  longDescription?: string;
+  trending?: boolean;
 }
 
 const AllDateIdeasSection = () => {
@@ -39,7 +42,7 @@ const AllDateIdeasSection = () => {
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<string>("");
-  const [selectedMood, setSelectedMood] = useState<string>("");
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]); // Changed to array for multiselect
   const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
 
   // Fetch date ideas from both Supabase and city events
@@ -68,7 +71,12 @@ const AllDateIdeasSection = () => {
         }
 
         // Combine both sources
-        const supabaseIdeas = supabaseData ? [...supabaseData].sort(() => Math.random() - 0.5) : [];
+        const supabaseIdeas = supabaseData ? [...supabaseData].sort(() => Math.random() - 0.5).map((item: any) => ({
+          ...item,
+          timeOfDay: item.timeOfDay || item.time_of_day, // Handle both naming conventions
+          priceLevel: item.priceLevel || item.price_level, // Handle both naming conventions
+        })) : [];
+        
         const combinedIdeas = [
           ...cityEvents.map((event: any) => ({
             id: event.id,
@@ -129,34 +137,48 @@ const AllDateIdeasSection = () => {
     setVisibleIdeas(prev => Math.min(prev + 12, filteredIdeas.length));
   };
 
-  // Filter functionality
+  // Filter functionality with accurate field matching based on real database data
   useEffect(() => {
     let filtered = [...dateIdeas];
 
     if (selectedTimeOfDay) {
-      filtered = filtered.filter(idea => idea.time_of_day === selectedTimeOfDay);
+      filtered = filtered.filter(idea => idea.timeOfDay === selectedTimeOfDay);
     }
 
-    if (selectedMood) {
-      filtered = filtered.filter(idea => idea.mood === selectedMood);
+    if (selectedMoods.length > 0) {
+      filtered = filtered.filter(idea => {
+        if (typeof idea.mood === 'string') {
+          return selectedMoods.includes(idea.mood);
+        } else if (typeof idea.mood === 'object' && idea.mood !== null) {
+          // Handle JSON mood objects from database like {"pace": "active", "vibe": "thrilling"}
+          const moodObj = idea.mood as any;
+          const pace = moodObj.pace;
+          const vibe = moodObj.vibe;
+          
+          return selectedMoods.some(selectedMood => 
+            selectedMood.toLowerCase() === pace?.toLowerCase() || 
+            selectedMood.toLowerCase() === vibe?.toLowerCase()
+          );
+        }
+        return false;
+      });
     }
 
     if (selectedPriceLevel) {
-      const priceLevel = parseInt(selectedPriceLevel);
-      filtered = filtered.filter(idea => idea.price_level === priceLevel);
+      filtered = filtered.filter(idea => idea.priceLevel === selectedPriceLevel);
     }
 
     setFilteredIdeas(filtered);
     setVisibleIdeas(12); // Reset visible ideas when filters change
-  }, [selectedTimeOfDay, selectedMood, selectedPriceLevel, dateIdeas]);
+  }, [selectedTimeOfDay, selectedMoods, selectedPriceLevel, dateIdeas]);
 
   const clearFilters = () => {
     setSelectedTimeOfDay("");
-    setSelectedMood("");
+    setSelectedMoods([]);
     setSelectedPriceLevel("");
   };
 
-  const hasActiveFilters = selectedTimeOfDay || selectedMood || selectedPriceLevel;
+  const hasActiveFilters = selectedTimeOfDay || selectedMoods.length > 0 || selectedPriceLevel;
 
   return (
     <section
@@ -193,7 +215,7 @@ const AllDateIdeasSection = () => {
             Filters
             {hasActiveFilters && (
               <span className="ml-1 bg-white text-rose-500 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                {[selectedTimeOfDay, selectedMood, selectedPriceLevel].filter(Boolean).length}
+                {[selectedTimeOfDay, selectedMoods.length > 0 ? 'mood' : '', selectedPriceLevel].filter(Boolean).length}
               </span>
             )}
           </button>
@@ -241,12 +263,12 @@ const AllDateIdeasSection = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-                    {/* Category Badge */}
+                    {/* Category Badge
                     <div className="absolute top-3 left-3">
                       <span className="px-3 py-1 bg-rose-500/90 text-white text-xs font-semibold rounded-full">
                         {idea.category}
                       </span>
-                    </div>
+                    </div> */}
 
                     {/* Save Button - only for regular date ideas */}
                     {idea.slug && (
@@ -275,19 +297,6 @@ const AllDateIdeasSection = () => {
                       {String(idea.title || '')}
                     </h3>
                     
-                    {/* Show location for city events */}
-                    {idea.location && (
-                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                        📍 {String(idea.location)}
-                      </p>
-                    )}
-                    
-                    {/* Show date/time for city events */}
-                    {(idea.date || idea.time) && (
-                      <p className={`text-sm mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                        🗓️ {String(idea.date || '')} {String(idea.time || '')}
-                      </p>
-                    )}
                   </div>
                 </div>
               ))}
@@ -332,7 +341,7 @@ const AllDateIdeasSection = () => {
 
               {/* Modal Content */}
               <div className="p-6 space-y-6">
-                {/* Time of Day Filter */}
+                {/* Time of Day Filter - Based on actual database values */}
                 <div>
                   <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
                     }`}>
@@ -347,6 +356,7 @@ const AllDateIdeasSection = () => {
                       }`}
                   >
                     <option value="">Any time</option>
+                    <option value="Varies">Varies</option>
                     <option value="Morning">Morning</option>
                     <option value="Afternoon">Afternoon</option>
                     <option value="Evening">Evening</option>
@@ -354,30 +364,45 @@ const AllDateIdeasSection = () => {
                   </select>
                 </div>
 
-                {/* Mood Filter */}
+                {/* Mood Filter - Multiselect based on actual database values */}
                 <div>
                   <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
                     }`}>
-                    Mood
+                    Mood (Select multiple)
                   </label>
-                  <select
-                    value={selectedMood}
-                    onChange={(e) => setSelectedMood(e.target.value)}
-                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
-                      ? 'bg-[#333333] border-gray-600 text-white'
-                      : 'bg-white text-gray-900'
-                      }`}
-                  >
-                    <option value="">Any mood</option>
-                    <option value="Romantic">Romantic</option>
-                    <option value="Adventurous">Adventurous</option>
-                    <option value="Relaxing">Relaxing</option>
-                    <option value="Fun">Fun</option>
-                    <option value="Creative">Creative</option>
-                  </select>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {[
+                      { value: 'active', label: 'Active' },
+                      { value: 'leisurely', label: 'Leisurely' }, 
+                      { value: 'relaxed', label: 'Relaxed' },
+                      { value: 'varied', label: 'Varied' },
+                      { value: 'thrilling', label: 'Thrilling' },
+                      { value: 'cozy', label: 'Cozy' },
+                      { value: 'fun', label: 'Fun' },
+                      { value: 'romantic', label: 'Romantic' }
+                    ].map((mood) => (
+                      <label key={mood.value} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedMoods.includes(mood.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedMoods([...selectedMoods, mood.value]);
+                            } else {
+                              setSelectedMoods(selectedMoods.filter(m => m !== mood.value));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
+                        />
+                        <span className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                          {mood.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Price Level Filter */}
+                {/* Price Level Filter - Based on actual database values */}
                 <div>
                   <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
                     }`}>
@@ -392,10 +417,9 @@ const AllDateIdeasSection = () => {
                       }`}
                   >
                     <option value="">Any price</option>
-                    <option value="1">$ - Budget friendly</option>
-                    <option value="2">$$ - Moderate</option>
-                    <option value="3">$$$ - Expensive</option>
-                    <option value="4">$$$$ - Luxury</option>
+                    <option value="Affordable">Affordable</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="High">High</option>
                   </select>
                 </div>
               </div>

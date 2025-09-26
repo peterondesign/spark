@@ -16,6 +16,7 @@ const HeroSection = () => {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLDivElement>(null);
+  const scrollArrowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -28,6 +29,11 @@ const HeroSection = () => {
       gsap.set(videoRef.current, {
         opacity: 0,
         x: 100,
+      });
+
+      gsap.set(scrollArrowRef.current, {
+        opacity: 0,
+        y: 30,
       });
 
       // Animation timeline
@@ -58,7 +64,23 @@ const HeroSection = () => {
           x: 0,
           duration: 1,
           ease: "power2.out",
-        }, "-=0.6");
+        }, "-=0.6")
+        .to(scrollArrowRef.current, {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power2.out",
+        }, "-=0.3");
+
+      // Continuous bounce animation for the arrow
+      gsap.to(scrollArrowRef.current, {
+        y: 10,
+        duration: 1.5,
+        repeat: -1,
+        yoyo: true,
+        ease: "power2.inOut",
+        delay: 2,
+      });
 
     }, heroRef);
 
@@ -66,7 +88,7 @@ const HeroSection = () => {
   }, []);
 
   const scrollToDateIdeas = () => {
-    document.getElementById('date-ideas')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('all-date-ideas')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const openAuthModal = () => {
@@ -90,33 +112,30 @@ const HeroSection = () => {
               ref={titleRef}
               className={`text-5xl md:text-6xl lg:text-7xl font-bold leading-tight font-heading ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}
             >
-              New and exciting things to do in your city
+              Find fun things to do in your city  
             </h1>
 
 
-            <div ref={buttonsRef} className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={scrollToDateIdeas}
-                className="bg-rose-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-rose-700 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 uppercase"
-              >
-                See Date Ideas
-              </button>
-              <button
-                onClick={openAuthModal}
-                className={`border-2 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 uppercase ${theme === 'light'
-                    ? 'border-gray-400 text-gray-700 hover:bg-gray-100'
-                    : 'border-gray-500 text-white hover:bg-gray-800'
-                  }`}>
-                Sign Up with Email/Text
-              </button>
+            <div ref={buttonsRef} className="flex flex-col gap-6">
+      
+              
+              <div className="flex flex-col sm:flex-row gap-4 max-w-md">
+                <input
+                  type="email"
+                  placeholder="youremail@example.com"
+                  className={`flex-1 px-4 py-3 rounded-full border-2 text-lg ${theme === 'light'
+                      ? 'border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:border-rose-500'
+                      : 'border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:border-rose-500'
+                    } focus:outline-none focus:ring-2 focus:ring-rose-500/20`}
+                />
+                <button
+                  className="bg-gray-800 text-white px-6 py-3 rounded-full font-bold text-lg hover:bg-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl whitespace-nowrap"
+                >
+                  Subscribe for reminders €8/month
+                </button>
+              </div>
             </div>
 
-            <p
-              ref={subtitleRef}
-              className={`text-xl md:text-2xl max-w-lg ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}
-            >
-              We share exclusive discounts, events, reminders and for just $8/month. Never run out of ideas again.
-            </p>
           </div>
 
           {/* Right column: Video */}
@@ -140,6 +159,38 @@ const HeroSection = () => {
                   : 'bg-gradient-to-t from-black/20 to-transparent'
                 }`}></div>
             </div>
+          </div>
+        </div>
+
+        {/* Scroll Arrow with Subtitle */}
+        <div 
+          ref={scrollArrowRef}
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center cursor-pointer group"
+          onClick={scrollToDateIdeas}
+        >
+          <p className={`text-sm font-medium mb-2 transition-colors duration-300 ${theme === 'light' 
+              ? 'text-gray-600 group-hover:text-gray-800' 
+              : 'text-gray-400 group-hover:text-gray-200'
+            }`}>
+            Scroll to see date ideas
+          </p>
+          <div className={`transition-colors duration-300 ${theme === 'light' 
+              ? 'text-gray-500 group-hover:text-rose-600' 
+              : 'text-gray-400 group-hover:text-rose-400'
+            }`}>
+            <svg 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className="mx-auto"
+            >
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
           </div>
         </div>
       </div>
