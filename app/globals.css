@@ -110,3 +110,65 @@ body {
   }
 }
 
+/* TikTok Embed Styles */
+.tiktok-container {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: transparent;
+  border-radius: 12px;
+  min-height: 500px;
+  align-items: center;
+}
+
+/* Style the blockquote element with loading state */
+.tiktok-embed {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f8f9fa;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Dark mode support */
+.dark .tiktok-embed {
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  background-color: #1a1a1a;
+}
+
+/* Loading content styles */
+.tiktok-embed section {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dark .tiktok-embed section {
+  color: #999;
+}
+
+/* Hide loading content when iframe is present */
+.tiktok-embed:has(iframe) section {
+  display: none;
+}
+
+/* Loading animation */
+.tiktok-embed section::after {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  border-top-color: #666;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+

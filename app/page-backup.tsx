@@ -1094,7 +1094,7 @@ const Home = () => {
                   className="w-full h-auto rounded-lg shadow-lg"
                   poster="/placeholder.jpg"
                 >
-                  <source src="/Interview.mp4" type="video/mp4" />
+                  <source src="/InterviewMain.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>

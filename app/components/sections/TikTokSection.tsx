@@ -5,6 +5,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
+import TikTokEmbed from '../TikTokEmbed';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -73,32 +74,17 @@ const TikTokSection = () => {
         </h2>
 
         <div className="max-w-4xl mx-auto">
-          {/* Interview Video */}
+          {/* TikTok Video Embed */}
           <div ref={videoRef} className="flex justify-center mb-12">
             <div className="relative w-full max-w-2xl">
-              <div className={`relative rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm ${
-                theme === 'dark' 
-                  ? 'bg-black/20 border border-white/10' 
-                  : 'bg-gray-100/50 border border-gray-200'
-              }`}>
-                <video
-                  controls
-                  className="w-full h-auto"
-                  poster="/placeholder.jpg"
-                >
-                  <source src="/Interview.mp4" type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
+              <TikTokEmbed url="https://www.tiktok.com/@dateideascc/video/7512036229806886166" />
               
               {/* Decorative elements */}
               <div className="absolute -top-4 -left-4 w-8 h-8 bg-pink-500 rounded-full opacity-60"></div>
               <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-purple-500 rounded-full opacity-40"></div>
               <div className="absolute top-1/2 -right-8 w-6 h-6 bg-yellow-400 rounded-full opacity-50"></div>
             </div>
-          </div>
-          
-          <div ref={contentRef} className="text-center">
+          </div>          <div ref={contentRef} className="text-center">
             <p className={`text-xl mb-8 max-w-2xl mx-auto ${
               theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
             }`}>
