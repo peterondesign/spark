@@ -77,3 +77,23 @@ function aggressiveTextReconstruction(content: string, city: string): CityEvent[
     return [];
   }
 }
+
+// Next.js API route handler
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const city = searchParams.get('city');
+    
+    if (!city) {
+      return Response.json({ error: 'City parameter is required' }, { status: 400 });
+    }
+
+    // For now, return empty array until full implementation
+    const events: CityEvent[] = [];
+    
+    return Response.json({ events, city });
+  } catch (error) {
+    console.error('Error in perplexity-city-events API:', error);
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
