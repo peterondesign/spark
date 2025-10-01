@@ -3,12 +3,45 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
-import { getImageUrl } from '../../utils/imageService';
+import { getImageUrl, getImageGallery } from '../../utils/imageService';
 import Header from "@/app/components/sections/Header";
 import Footer from '@/app/components/sections/Footer';
 import AllDateIdeasSection from '@/app/components/sections/AllDateIdeasSection';
 import TikTokSection from '@/app/components/sections/TikTokSection';
 import CityPicker from '@/app/components/CityPicker';
+
+// Define interfaces
+interface VenueResult {
+  title: string;
+  description: string;
+  address: {
+    street: string;
+    neighborhood?: string;
+    city: string;
+    postal_code: string;
+    country: string;
+  };
+  coordinates?: {
+    lat: number;
+    lon: number;
+  };
+  phone?: string;
+  website_url: string;
+  booking_url?: string;
+  opening_hours?: Array<{
+    day: string;
+    open: string;
+    close: string;
+    notes?: string;
+  }>;
+  best_for?: string[];
+  estimated_price_range?: string;
+  duration_suggestion_minutes?: number;
+  accessibility_notes?: string;
+  tags?: string[];
+  source_url: string;
+  last_verified?: string;
+}
 
 
 // Define DateIdea interface
@@ -40,6 +73,9 @@ export default function DateIdeaDetails() {
   const [loading, setLoading] = useState(true);
   const [userCity, setUserCity] = useState<string | null>(null);
   const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [venues, setVenues] = useState<VenueResult[]>([]);
+  const [venueImages, setVenueImages] = useState<string[]>([]);
+  const [venuesLoading, setVenuesLoading] = useState(false);
 
   // Fetch date idea data
   useEffect(() => {
@@ -96,6 +132,12 @@ export default function DateIdeaDetails() {
         }
 
         setLoading(false);
+
+        // Fetch venues if we have a city
+        const savedCity = localStorage.getItem("userCity");
+        if (savedCity && data.title) {
+          fetchVenues(savedCity, data.title);
+        }
       } catch (error) {
         console.error('Error fetching date idea:', error);
         setLoading(false);
@@ -116,6 +158,69 @@ export default function DateIdeaDetails() {
   const handleCityChange = (city: string) => {
     setUserCity(city);
     localStorage.setItem("userCity", city);
+    
+    // Fetch venues for the new city
+    if (dateIdea) {
+      fetchVenues(city, dateIdea.title);
+    }
+  };
+
+  // Fetch venues using Perplexity API
+  const fetchVenues = async (city: string, activity: string) => {
+    if (!city || !activity) {
+      console.log('fetchVenues called with missing parameters:', { city, activity });
+      return;
+    }
+    
+    console.log('Fetching venues for:', { city, activity });
+    setVenuesLoading(true);
+    
+    try {
+      const requestBody = {
+        city: city.trim(),
+        activity: activity.trim(),
+        max_results: 8,
+        language: 'en'
+      };
+      
+      console.log('Request body:', requestBody);
+      
+      const response = await fetch('/api/city-venues', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Received data:', data);
+        
+        if (data.results && Array.isArray(data.results)) {
+          setVenues(data.results);
+          
+          // Generate images for the venues
+          const images = await getImageGallery(
+            `${activity} ${city} venue location`,
+            data.results.length,
+            400,
+            300
+          );
+          setVenueImages(images);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API Error:', response.status, errorData);
+        console.error('Failed to fetch venues:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching venues:', error);
+    } finally {
+      setVenuesLoading(false);
+    }
   };
 
   if (loading) {
@@ -233,41 +338,141 @@ export default function DateIdeaDetails() {
 
           {/* Venue Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(8)].map((_, index) => (
-              <div key={index} className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow">
-                <div className="relative h-48 bg-muted flex items-center justify-center">
-                  <div className="absolute top-4 right-4">
-                    <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </div>
+            {venuesLoading ? (
+              // Loading skeleton
+              [...Array(8)].map((_, index) => (
+                <div key={index} className="bg-card rounded-lg overflow-hidden shadow-sm border border-border animate-pulse">
+                  <div className="relative h-48 bg-muted flex items-center justify-center">
+                    <div className="w-12 h-12 bg-muted-foreground/20 rounded-full"></div>
                   </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-muted-foreground/20 rounded-full mx-auto mb-2 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+                  <div className="p-4">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-full"></div>
+                  </div>
+                </div>
+              ))
+            ) : venues.length > 0 ? (
+              // Real venue data
+              venues.map((venue, index) => (
+                <div key={index} className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow group">
+                  <div className="relative h-48 overflow-hidden">
+                    {venueImages[index] ? (
+                      <img
+                        src={venueImages[index]}
+                        alt={venue.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <div className="w-12 h-12 bg-muted-foreground/20 rounded-full flex items-center justify-center">
+                          <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute top-4 right-4">
+                      <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    {venue.estimated_price_range && (
+                      <div className="absolute bottom-4 left-4">
+                        <span className="bg-black/80 text-white px-2 py-1 rounded text-xs font-medium">
+                          {venue.estimated_price_range}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-rose-500 transition-colors">
+                      {venue.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {venue.description}
+                    </p>
+                    <div className="space-y-2">
+                      {venue.address && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          📍 {venue.address.street}, {venue.address.neighborhood}
+                        </p>
+                      )}
+                      {venue.duration_suggestion_minutes && (
+                        <p className="text-xs text-muted-foreground">
+                          ⏱️ ~{Math.round(venue.duration_suggestion_minutes / 60)}h
+                        </p>
+                      )}
+                      <div className="flex gap-2 mt-3">
+                        {venue.website_url && (
+                          <a
+                            href={venue.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs bg-rose-100 text-rose-800 px-2 py-1 rounded hover:bg-rose-200 transition-colors"
+                          >
+                            Visit
+                          </a>
+                        )}
+                        {venue.booking_url && venue.booking_url !== venue.website_url && (
+                          <a
+                            href={venue.booking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            Book
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-foreground mb-1">
-                    {dateIdea.category} Venue {index + 1}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Perfect spot for {dateIdea.title.toLowerCase()}
-                  </p>
+              ))
+            ) : (
+              // Fallback when no venues found
+              [...Array(8)].map((_, index) => (
+                <div key={index} className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow">
+                  <div className="relative h-48 bg-muted flex items-center justify-center">
+                    <div className="absolute top-4 right-4">
+                      <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-muted-foreground/20 rounded-full mx-auto mb-2 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-1">
+                      {dateIdea.category} Venue {index + 1}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Perfect spot for {dateIdea.title.toLowerCase()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Load More Button */}
           <div className="text-center mb-12">
-            <button className="px-6 py-2 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-              Load more
+            <button 
+              onClick={() => dateIdea && fetchVenues(userCity || 'Lisbon', dateIdea.title)}
+              disabled={venuesLoading}
+              className="px-6 py-2 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {venuesLoading ? 'Loading venues...' : 'Refresh venues'}
             </button>
           </div>
         </section>
