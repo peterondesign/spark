@@ -21,6 +21,23 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-src 'self' https://www.tiktok.com https://vm.tiktok.com; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.tiktok.com; connect-src 'self' https://www.tiktok.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; object-src 'none';"
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          }
+        ],
+      },
+    ]
+  },
 }
 
 mergeConfig(nextConfig, userConfig)

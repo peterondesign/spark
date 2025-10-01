@@ -5,12 +5,15 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useTheme } from 'next-themes';
 import AuthenticationModal from '../AuthenticationModal';
+import StripeModal from '../StripeModal';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const HeroSection = () => {
   const { theme } = useTheme();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showStripeModal, setShowStripeModal] = useState(false);
+  const [email, setEmail] = useState('');
   const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -95,6 +98,10 @@ const HeroSection = () => {
     setShowAuthModal(true);
   };
 
+  const handleSubscribeClick = () => {
+    setShowStripeModal(true);
+  };
+
   return (
     <section ref={heroRef} className={`relative min-h-screen overflow-hidden ${theme === 'light' ? 'bg-white' : 'bg-[#212121]'}`}>
       {/* Background pattern */}
@@ -115,13 +122,21 @@ const HeroSection = () => {
               Find fun things to do in your city  
             </h1>
 
-
             <div ref={buttonsRef} className="flex flex-col gap-6">
-      
+              {/* See Date Ideas Button */}
+              <button
+                onClick={scrollToDateIdeas}
+                className="bg-rose-500 text-white px-8 py-4 rounded-full font-bold text-xl hover:bg-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl w-fit"
+              >
+                See Date Ideas
+              </button>
               
+              {/* Email Subscription */}
               <div className="flex flex-col sm:flex-row gap-4 max-w-md">
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="youremail@example.com"
                   className={`flex-1 px-4 py-3 rounded-full border-2 text-lg ${theme === 'light'
                       ? 'border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:border-rose-500'
@@ -129,6 +144,7 @@ const HeroSection = () => {
                     } focus:outline-none focus:ring-2 focus:ring-rose-500/20`}
                 />
                 <button
+                  onClick={handleSubscribeClick}
                   className="bg-gray-800 text-white px-6 py-3 rounded-full font-bold text-lg hover:bg-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl whitespace-nowrap"
                 >
                   Subscribe for reminders €8/month
@@ -198,6 +214,12 @@ const HeroSection = () => {
       <AuthenticationModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+      
+      <StripeModal
+        isOpen={showStripeModal}
+        onClose={() => setShowStripeModal(false)}
+        email={email}
       />
     </section>
   );

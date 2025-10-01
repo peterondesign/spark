@@ -41,14 +41,14 @@ const CityPicker: React.FC<CityPickerProps> = ({ selectedCity, onCityChange, loa
   }, [searchQuery]);
 
   const handleCitySelect = (city: City) => {
-    onCityChange(city.name.toUpperCase());
+    onCityChange((city.name || '').toUpperCase());
     setIsOpen(false);
     setSearchQuery('');
   };
 
   const getCurrentCity = () => {
     return WORLD_CITIES.find(city => 
-      city.name.toUpperCase() === selectedCity.toUpperCase()
+      (city.name || '').toUpperCase() === (selectedCity || '').toUpperCase()
     ) || WORLD_CITIES[0];
   };
 
@@ -155,7 +155,7 @@ const CityPicker: React.FC<CityPickerProps> = ({ selectedCity, onCityChange, loa
                   <CityOption
                     key={`${city.name}-${city.country}`}
                     city={city}
-                    isSelected={city.name.toUpperCase() === selectedCity.toUpperCase()}
+                    isSelected={(city.name || '').toUpperCase() === (selectedCity || '').toUpperCase()}
                     onClick={() => handleCitySelect(city)}
                     theme={theme}
                   />
@@ -173,7 +173,7 @@ const CityPicker: React.FC<CityPickerProps> = ({ selectedCity, onCityChange, loa
                   <CityOption
                     key={`${city.name}-${city.country}`}
                     city={city}
-                    isSelected={city.name.toUpperCase() === selectedCity.toUpperCase()}
+                    isSelected={(city.name || '').toUpperCase() === (selectedCity || '').toUpperCase()}
                     onClick={() => handleCitySelect(city)}
                     theme={theme}
                   />
@@ -193,7 +193,7 @@ const CityPicker: React.FC<CityPickerProps> = ({ selectedCity, onCityChange, loa
                       <CityOption
                         key={`${city.name}-${city.country}`}
                         city={city}
-                        isSelected={city.name.toUpperCase() === selectedCity.toUpperCase()}
+                        isSelected={(city.name || '').toUpperCase() === (selectedCity || '').toUpperCase()}
                         onClick={() => handleCitySelect(city)}
                         theme={theme}
                       />

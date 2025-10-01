@@ -84,7 +84,11 @@ const nextConfig = {
                 headers: [
                     {
                         key: 'Content-Security-Policy',
-                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://*.getyourguide.com https://cdn.getyourguide.com https://static.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms https://va.vercel-scripts.com; connect-src 'self' * https://api.pexels.com/v1 https://*.pexels.com https://*.api.sanity.io/ https://pexels.com https://images.pexels.com https://*.unsplash.com https://unsplash.com https://*.supabase.co https://*.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://nominatim.openstreetmap.org https://overpass-api.de https://api.openai.com https://*.getyourguide.com https://widget.getyourguide.com; frame-src 'self' https://embeds.beehiiv.com https://widget.getyourguide.com https://*.getyourguide.com;"
+                        value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://widget.getyourguide.com https://*.getyourguide.com https://cdn.getyourguide.com https://static.getyourguide.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://scripts.clarity.ms https://va.vercel-scripts.com https://js.stripe.com https://www.tiktok.com https://*.ttwstatic.com https://sf16-website-login.neutral.ttwstatic.com; connect-src 'self' * https://api.pexels.com/v1 https://*.pexels.com https://*.api.sanity.io/ https://pexels.com https://images.pexels.com https://*.unsplash.com https://unsplash.com https://*.supabase.co https://*.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms https://nominatim.openstreetmap.org https://overpass-api.de https://api.openai.com https://*.getyourguide.com https://widget.getyourguide.com https://api.stripe.com; frame-src 'self' https://embeds.beehiiv.com https://widget.getyourguide.com https://*.getyourguide.com https://www.tiktok.com https://vm.tiktok.com https://js.stripe.com;"
+                    },
+                    {
+                        key: 'Permissions-Policy',
+                        value: 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=*, usb=()'
                     }
                 ]
             },

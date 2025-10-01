@@ -1,20 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronDown } from "lucide-react";
-import SaveButton from "../../components/SaveButton";
 import { supabase } from "@/utils/supabaseClient";
-import { getImageUrl, getPlaceholderImage, processDateIdeaImages } from "@/app/utils/imageService";
+import { getImageUrl } from '../../utils/imageService';
 import Header from "@/app/components/sections/Header";
-import Footer from "@/app/components/Footer";
-import WebBrowsingIntegration from "../../components/WebBrowsingIntegration";
-import FastAIActivityGrid from "../../components/FastAIActivityGrid";
-import UltraFastAIGrid from "../../components/UltraFastAIGrid";
-import LightspeedAIGrid from "../../components/LightspeedAIGrid";
-import PerplexityVenueSearch from "../../components/PerplexityVenueSearch";
+import Footer from '@/app/components/sections/Footer';
+import AllDateIdeasSection from '@/app/components/sections/AllDateIdeasSection';
+import TikTokSection from '@/app/components/sections/TikTokSection';
+import CityPicker from '@/app/components/CityPicker';
+
 
 // Define DateIdea interface
 interface DateIdea {
@@ -43,10 +38,8 @@ export default function DateIdeaDetails() {
   const slug = params?.slug || '';
   const [dateIdea, setDateIdea] = useState<DateIdea | null>(null);
   const [loading, setLoading] = useState(true);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [userCity, setUserCity] = useState<string | null>(null);
-  const [otherDateIdeas, setOtherDateIdeas] = useState<DateIdea[]>([]);
-  const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
+  const [heroImage, setHeroImage] = useState<string | null>(null);
 
   // Fetch date idea data
   useEffect(() => {
@@ -67,39 +60,41 @@ export default function DateIdeaDetails() {
 
         const dateIdeaData: DateIdea = {
           id: data.id,
-          title: data.title,
-          category: data.category,
-          location: data.location,
-          description: data.description,
-          price: data.price,
-          duration: data.duration,
-          slug: data.slug,
-          image: data.image,
+          title: data.title || '',
+          category: data.category || '',
+          location: typeof data.location === 'string' ? data.location : (data.location?.type || 'Various'),
+          description: data.description || '',
+          price: data.price || '',
+          duration: data.duration || '',
+          slug: data.slug || '',
+          image: data.image || '',
           priceLevel: data.price_level || undefined,
           bestForStage: data.best_for_stage || undefined,
-          tips: data.tips || undefined,
+          tips: typeof data.tips === 'string' ? data.tips : (data.tips?.setting || undefined),
           timeOfDay: data.time_of_day || undefined,
           idealFor: data.ideal_for || undefined,
-          relatedDateIdeas: data.related_date_ideas || undefined,
+          relatedDateIdeas: Array.isArray(data.related_date_ideas) ? data.related_date_ideas : undefined,
           longDescription: data.long_description || undefined,
-          images: data.images || [],
+          images: Array.isArray(data.images) ? data.images : [],
         };
 
         setDateIdea(dateIdeaData);
 
-        // Process images
-        const allImages = [data.image];
-        if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-          allImages.push(...data.images);
+        // Load hero image using image service
+        if (data.image || data.title) {
+          try {
+            const imageUrl = await getImageUrl(
+              data.image || `${data.title} ${data.category}`,
+              `${data.title || 'Date idea'} ${data.category || 'activity'}`,
+              800,
+              600
+            );
+            setHeroImage(imageUrl);
+          } catch (error) {
+            console.error('Error loading hero image:', error);
+          }
         }
 
-        const processedImages = await Promise.all(
-          allImages.map(async (img) => {
-            return await getImageUrl(img, `${data.title} ${data.category}`, 800, 600);
-          })
-        );
-
-        setImageUrls(processedImages.filter(Boolean));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching date idea:', error);
@@ -112,133 +107,30 @@ export default function DateIdeaDetails() {
     }
   }, [slug]);
 
-  // Fetch other date ideas
-  useEffect(() => {
-    const fetchOtherDateIdeas = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('date_ideas')
-          .select('*')
-          .neq('slug', slug)
-          .limit(8);
-
-        if (error) {
-          console.error("Error fetching other date ideas:", error);
-          return;
-        }
-
-        if (data) {
-          const otherIdeas: DateIdea[] = data.map(item => ({
-            id: item.id,
-            title: item.title,
-            category: item.category,
-            description: item.description,
-            slug: item.slug,
-            image: item.image
-          }));
-
-          setOtherDateIdeas(otherIdeas);
-
-          // Process images for other date ideas
-          const imageMap = await processDateIdeaImages(otherIdeas, 400, 300);
-          setDateIdeaImages(imageMap);
-        }
-      } catch (error) {
-        console.error('Error fetching other date ideas:', error);
-      }
-    };
-
-    if (dateIdea) {
-      fetchOtherDateIdeas();
-    }
-  }, [dateIdea, slug]);
-
   // Get user city from localStorage
   useEffect(() => {
     const savedCity = localStorage.getItem("userCity");
     setUserCity(savedCity);
   }, []);
 
-  // Enhanced Loading state with skeletal UI
+  const handleCityChange = (city: string) => {
+    setUserCity(city);
+    localStorage.setItem("userCity", city);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mt-24 mx-auto px-4 py-8 max-w-6xl">
-          <div className="animate-pulse">
-            {/* Title skeleton */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <div className="h-10 bg-muted rounded w-64"></div>
-                <div className="h-10 bg-muted rounded w-32"></div>
-              </div>
+        <main className="pt-24">
+          <div className="animate-pulse container mx-auto px-4 py-8">
+            <div className="h-12 bg-muted rounded w-96 mx-auto mb-8"></div>
+            <div className="h-64 bg-muted rounded mb-8"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-48 bg-muted rounded"></div>
+              ))}
             </div>
-
-            {/* Hero search section skeleton */}
-            <section className="mb-16">
-              <div className="bg-card/90 rounded-lg p-8 shadow-lg border border-border">
-                <div className="text-center mb-6">
-                  <div className="h-8 bg-muted rounded w-96 mx-auto mb-2"></div>
-                  <div className="h-4 bg-muted rounded w-64 mx-auto"></div>
-                </div>
-                <div className="h-12 bg-muted rounded w-full mb-4"></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="h-48 bg-muted rounded-lg"></div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* About section skeleton */}
-            <section className="mb-16">
-              <div className="h-8 bg-muted rounded w-48 mx-auto mb-8"></div>
-              <div className="bg-card rounded-lg p-8 shadow-sm border border-border">
-                {/* Images grid skeleton */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="aspect-video bg-muted rounded-lg"></div>
-                  ))}
-                </div>
-                
-                {/* Description skeleton */}
-                <div className="max-w-4xl mx-auto">
-                  <div className="space-y-3 mb-6">
-                    <div className="h-4 bg-muted rounded w-full"></div>
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-5/6"></div>
-                  </div>
-                  
-                  {/* Details grid skeleton */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="bg-muted rounded-lg p-4">
-                        <div className="h-4 bg-muted-foreground/20 rounded w-20 mb-2"></div>
-                        <div className="h-3 bg-muted-foreground/20 rounded w-32"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Other date ideas skeleton */}
-            <section>
-              <div className="h-8 bg-muted rounded w-56 mx-auto mb-8"></div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
-                    <div className="h-48 bg-muted"></div>
-                    <div className="p-4">
-                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                      <div className="h-3 bg-muted rounded w-full mb-1"></div>
-                      <div className="h-3 bg-muted rounded w-2/3 mb-3"></div>
-                      <div className="h-6 bg-muted rounded w-20"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
           </div>
         </main>
         <Footer />
@@ -246,21 +138,14 @@ export default function DateIdeaDetails() {
     );
   }
 
-  // Not found state
   if (!dateIdea) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Date Idea Not Found</h1>
-          <p className="text-muted-foreground mb-8">Sorry, we couldn't find the date idea you're looking for.</p>
-          <Link
-            href="/"
-            className="px-6 py-3 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
-          >
-            Browse Date Ideas
-          </Link>
-        </div>
+        <main className="pt-24">
+          <AllDateIdeasSection />
+          <TikTokSection />
+        </main>
         <Footer />
       </div>
     );
@@ -269,189 +154,203 @@ export default function DateIdeaDetails() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
-      <main className="container mt-24 mx-auto px-4 py-8 max-w-6xl">
-        {/* Title Section with City Dropdown */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              {dateIdea.title} in
-            </h1>
-            <div className="relative">
-              <button className="flex items-center gap-1 text-3xl md:text-4xl font-bold text-foreground hover:text-rose-500 transition-colors">
-                {userCity || 'Your City'}
-                <ChevronDown className="w-6 h-6" />
-              </button>
-            </div>
+      <main className="pt-24">
+        {/* Hero Section - Best Spots Header */}
+        <section className="container mx-auto px-4 py-8">
+          {/* City Picker */}
+          <div className="mb-6">
+            <CityPicker selectedCity={userCity || "LISBON"} onCityChange={handleCityChange} />
           </div>
-        </div>
 
-        {/* Perplexity Venue Search Section - Moved to Top */}
-        <section className="mb-16">
-          <div className="relative">
-            {/* Hero Image Background */}
-            {imageUrls.length > 0 && (
-              <div className="absolute inset-0 rounded-lg overflow-hidden">
-                <Image
-                  src={imageUrls[0]}
-                  alt={dateIdea.title}
-                  fill
-                  className="object-cover opacity-20"
-                />
-                <div className="absolute inset-0 bg-gradient-to-br from-background/80 to-background/60"></div>
-              </div>
-            )}
-            
-            <div className="relative bg-card/90 backdrop-blur-sm rounded-lg p-8 shadow-lg border border-border">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-foreground mb-2 uppercase tracking-wider">
-                  Find Real {dateIdea.title} Venues in {userCity || 'Your City'}
-                </h2>
-                <p className="text-muted-foreground">
-                  Discover authentic local spots with AI-powered search
+          {/* Hero Content with Image */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Left: Text Content */}
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">
+                  BEST SPOTS FOR A
                 </p>
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+                  {dateIdea.title}
+                </h1>
+                <div className="text-xl text-muted-foreground mb-6">
+                  in {userCity || 'Your City'}
+                </div>
               </div>
               
-              <PerplexityVenueSearch 
-                dateIdea={dateIdea.title}
-                city={userCity || ''}
-                className=""
-                autoSearch={true}
-              />
-            </div>
-          </div>
-        </section>
-
-
-        {/* About This Date Idea Section */}
-        <section className="mb-16">
-          <h2 className="text-2xl font-bold text-foreground text-center mb-8 uppercase tracking-wider">
-            About This Date Idea
-          </h2>
-          
-          <div className="bg-card rounded-lg p-8 shadow-sm border border-border">
-            {/* Date Idea Images Grid */}
-            {imageUrls.length > 0 && (
-              <div className="mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {imageUrls.slice(0, 6).map((imageUrl, index) => (
-                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden">
-                      <Image
-                        src={imageUrl}
-                        alt={`${dateIdea.title} ${index + 1}`}
-                        fill
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="max-w-4xl mx-auto">
-              <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-                {dateIdea.description}
-              </p>
-
-              {dateIdea.longDescription && (
-                <div 
-                  className="prose max-w-none prose-neutral dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: dateIdea.longDescription }} 
-                />
-              )}
-
-              {/* Date Idea Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                {dateIdea.duration && (
-                  <div className="bg-muted rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-foreground mb-2">Duration</h3>
-                    <p className="text-muted-foreground">{dateIdea.duration}</p>
-                  </div>
-                )}
-                
-                {dateIdea.timeOfDay && (
-                  <div className="bg-muted rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-foreground mb-2">Best Time</h3>
-                    <p className="text-muted-foreground">{dateIdea.timeOfDay}</p>
-                  </div>
-                )}
-                
-                {dateIdea.idealFor && (
-                  <div className="bg-muted rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-foreground mb-2">Ideal For</h3>
-                    <p className="text-muted-foreground">{dateIdea.idealFor}</p>
-                  </div>
-                )}
+              {/* Activity Description */}
+              <div className="bg-card rounded-lg p-6 border border-border">
+                <p className="text-muted-foreground leading-relaxed">
+                  {typeof dateIdea.description === 'string' 
+                    ? dateIdea.description 
+                    : `Discover the best ${dateIdea.title?.toLowerCase()} spots in ${userCity || 'your city'}. Find authentic local venues and create memorable experiences together.`}
+                </p>
               </div>
 
-              {/* Tips Section */}
-              {dateIdea.tips && (
-                <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                  <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 mb-4 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    Insider Tips
-                  </h3>
-                  <p className="text-blue-700 dark:text-blue-200">{dateIdea.tips}</p>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-card rounded-lg p-4 border border-border">
+                  <div className="text-sm text-muted-foreground">Category</div>
+                  <div className="font-semibold text-foreground">
+                    {typeof dateIdea.category === 'string' ? dateIdea.category : 'Activity'}
+                  </div>
                 </div>
-              )}
+                <div className="bg-card rounded-lg p-4 border border-border">
+                  <div className="text-sm text-muted-foreground">Duration</div>
+                  <div className="font-semibold text-foreground">
+                    {dateIdea.duration || '2-3 hours'}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </section>
 
-        {/* Explore Other Date Ideas Section */}
-        <section>
-          <h2 className="text-2xl font-bold text-foreground text-center mb-8 uppercase tracking-wider">
-            Explore Other Date Ideas
-          </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {otherDateIdeas.map((idea) => (
-              <Link
-                key={idea.id}
-                href={`/date-idea/${idea.slug}`}
-                className="group bg-card rounded-lg shadow-sm overflow-hidden border border-border hover:shadow-md transition-shadow"
-              >
-                <div className="relative h-48">
-                  <Image
-                    src={dateIdeaImages[idea.slug] || getPlaceholderImage(400, 300, idea.title)}
-                    alt={idea.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+            {/* Right: Image */}
+            <div className="relative">
+              {heroImage ? (
+                <div className="relative h-96 lg:h-full rounded-lg overflow-hidden">
+                  <img
+                    src={heroImage}
+                    alt={`${dateIdea.title} in ${userCity || 'your city'}`}
+                    className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                </div>
+              ) : (
+                <div className="bg-muted rounded-lg h-96 lg:h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-muted-foreground/20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-muted-foreground">Loading image...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Venue Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[...Array(8)].map((_, index) => (
+              <div key={index} className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow">
+                <div className="relative h-48 bg-muted flex items-center justify-center">
+                  <div className="absolute top-4 right-4">
+                    <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-muted-foreground/20 rounded-full mx-auto mb-2 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-foreground group-hover:text-rose-500 transition-colors mb-2">
-                    {idea.title}
+                  <h3 className="font-semibold text-foreground mb-1">
+                    {dateIdea.category} Venue {index + 1}
                   </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {idea.description}
+                  <p className="text-sm text-muted-foreground">
+                    Perfect spot for {dateIdea.title.toLowerCase()}
                   </p>
-                  {idea.category && (
-                    <span className="inline-block mt-3 px-2 py-1 text-xs font-medium rounded bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
-                      {idea.category}
-                    </span>
-                  )}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
-          
-          <div className="text-center mt-12">
-            <Link
-              href="/"
-              className="inline-flex items-center px-8 py-3 border-2 border-rose-500 text-rose-500 hover:bg-rose-50 dark:border-rose-400 dark:text-rose-400 dark:hover:bg-rose-900/20 rounded-full transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Browse More Date Ideas
-            </Link>
+
+          {/* Load More Button */}
+          <div className="text-center mb-12">
+            <button className="px-6 py-2 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+              Load more
+            </button>
           </div>
         </section>
-      </main>
 
+        {/* About Section */}
+        <section className="container mx-auto px-4 py-8">
+          <h2 className="text-3xl font-bold text-foreground text-center mb-12">
+            About a {dateIdea.title} Date
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {/* About Activity */}
+            <div className="bg-card rounded-lg p-6 border border-border">
+              <h3 className="text-xl font-bold text-foreground mb-4">About Activity</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {typeof dateIdea.description === 'string' 
+                  ? dateIdea.description 
+                  : `${dateIdea.title} is a wonderful way to spend time together and explore your surroundings.`}
+              </p>
+            </div>
+
+            {/* Tips & Preparation */}
+            <div className="bg-card rounded-lg p-6 border border-border">
+              <h3 className="text-xl font-bold text-foreground mb-4">Tips & Preparation</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {typeof dateIdea.tips === 'string' ? dateIdea.tips : "Wear comfortable clothes and bring water."}
+              </p>
+            </div>
+
+            {/* Location Type */}
+            <div className="bg-card rounded-lg p-6 border border-border">
+              <h3 className="text-xl font-bold text-foreground mb-4">Location Type</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Setting:</span>
+                  <span className="text-foreground">
+                    {typeof dateIdea.location === 'string' ? dateIdea.location : 'Various'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Environment:</span>
+                  <span className="text-foreground">
+                    {dateIdea.category?.includes('outdoor') || dateIdea.category?.includes('park') || dateIdea.category?.includes('beach') 
+                      ? 'Outdoor' 
+                      : dateIdea.category?.includes('indoor') || dateIdea.category?.includes('museum') || dateIdea.category?.includes('restaurant')
+                      ? 'Indoor'
+                      : 'Mixed'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Activity Details */}
+            <div className="bg-card rounded-lg p-6 border border-border">
+              <h3 className="text-xl font-bold text-foreground mb-4">Activity Details</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Best Time:</span>
+                  <span className="text-foreground">
+                    {typeof dateIdea.timeOfDay === 'string' ? dateIdea.timeOfDay : 'Anytime'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Budget:</span>
+                  <span className="text-foreground">
+                    {typeof dateIdea.price === 'string' ? dateIdea.price : 'Varies'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Category:</span>
+                  <span className="text-foreground">
+                    {typeof dateIdea.category === 'string' ? dateIdea.category : 'Activity'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Additional Sections */}
+        <AllDateIdeasSection />
+        <TikTokSection />
+      </main>
       <Footer />
     </div>
   );

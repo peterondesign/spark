@@ -14,6 +14,7 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [embedReady, setEmbedReady] = useState(false);
   const [useIframeFallback, setUseIframeFallback] = useState(false);
+  const [embedError, setEmbedError] = useState(false);
   const blockquoteRef = useRef<HTMLQuoteElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -24,26 +25,32 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
   };
 
   useEffect(() => {
-    if (!scriptLoaded || embedReady) return;
+    if (!scriptLoaded || embedReady || embedError) return;
 
     const processEmbed = () => {
       if (typeof window !== 'undefined' && blockquoteRef.current) {
         const win = window as any;
         
+        // Check if TikTok embed script is available
+        if (!win.tiktok) {
+          console.log('TikTok object not available, trying iframe fallback');
+          setUseIframeFallback(true);
+          return;
+        }
+        
         // Try multiple TikTok embed methods
         const embedMethods = [
-          () => win.tiktok?.lib?.render?.(blockquoteRef.current),
-          () => win.tiktok?.embed?.process?.(),
-          () => win.tiktok?.oembed?.process?.(),
           () => {
-            // Alternative method: look for all blockquotes and process them
+            // Most reliable method - process all blockquotes
             const blockquotes = document.querySelectorAll('blockquote.tiktok-embed');
-            blockquotes.forEach((bq) => {
-              if (win.tiktok?.lib?.render) {
-                win.tiktok.lib.render(bq);
-              }
-            });
-          }
+            if (blockquotes.length > 0 && win.tiktok?.embed?.process) {
+              win.tiktok.embed.process();
+              return true;
+            }
+            return false;
+          },
+          () => win.tiktok?.lib?.render?.(blockquoteRef.current),
+          () => win.tiktok?.oembed?.process?.(),
         ];
 
         for (const method of embedMethods) {
@@ -59,6 +66,13 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
           }
         }
 
+        // Check if the blockquote has been transformed (indicates success)
+        if (blockquoteRef.current && blockquoteRef.current.querySelector('iframe')) {
+          console.log('TikTok iframe detected, embed successful');
+          setEmbedReady(true);
+          return;
+        }
+
         console.log('All embed methods failed, TikTok object:', win.tiktok);
       }
     };
@@ -66,22 +80,22 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
     // Try processing immediately
     processEmbed();
 
-    // Set up fallback timeout (5 seconds)
+    // Set up fallback timeout (3 seconds - shorter timeout)
     timeoutRef.current = setTimeout(() => {
-      if (!embedReady) {
+      if (!embedReady && !embedError) {
         console.log('TikTok embed timeout, switching to iframe fallback');
         setUseIframeFallback(true);
       }
-    }, 5000);
+    }, 3000);
 
-    // Try processing every 500ms for up to 5 seconds
+    // Try processing every 1000ms for up to 3 seconds
     const interval = setInterval(() => {
-      if (!embedReady) {
+      if (!embedReady && !embedError) {
         processEmbed();
       } else {
         clearInterval(interval);
       }
-    }, 500);
+    }, 1000);
 
     return () => {
       clearInterval(interval);
@@ -89,7 +103,7 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [scriptLoaded, embedReady]);
+  }, [scriptLoaded, embedReady, embedError]);
 
   const handleScriptLoad = () => {
     console.log('TikTok embed script loaded');
@@ -98,6 +112,7 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
 
   const handleScriptError = () => {
     console.log('TikTok script failed to load, using iframe fallback');
+    setEmbedError(true);
     setUseIframeFallback(true);
   };
 
@@ -108,11 +123,12 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
       return (
         <div className="tiktok-container">
           <iframe
-            src={`https://www.tiktok.com/embed/v2/${videoId}`}
+            src={`https://www.tiktok.com/embed/v2/${videoId}?referrer=https%3A%2F%2Fdate-ideas.cc`}
             width="325"
             height="580"
             frameBorder="0"
             allow="encrypted-media;"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
             style={{
               maxWidth: '605px',
               minWidth: '325px',
@@ -120,6 +136,39 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
               borderRadius: '8px'
             }}
           />
+        </div>
+      );
+    } else {
+      // If we can't extract video ID, show a link to TikTok
+      return (
+        <div className="tiktok-container" style={{ textAlign: 'center', padding: '40px 20px' }}>
+          <div style={{ 
+            border: '2px dashed #ccc', 
+            borderRadius: '8px', 
+            padding: '40px 20px',
+            maxWidth: '400px',
+            margin: '0 auto'
+          }}>
+            <p style={{ marginBottom: '16px', color: '#666' }}>
+              Unable to embed TikTok video
+            </p>
+            <a 
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-block',
+                backgroundColor: '#000',
+                color: '#fff',
+                padding: '12px 24px',
+                borderRadius: '25px',
+                textDecoration: 'none',
+                fontWeight: 'bold'
+              }}
+            >
+              Watch on TikTok
+            </a>
+          </div>
         </div>
       );
     }
@@ -133,28 +182,6 @@ export default function TikTokEmbed({ url }: TikTokEmbedProps) {
         onLoad={handleScriptLoad}
         onError={handleScriptError}
       />
-      
-      <blockquote
-        ref={blockquoteRef}
-        className="tiktok-embed"
-        cite={url}
-        data-video-id={getVideoId(url)}
-        style={{ maxWidth: '605px', minWidth: '325px', margin: '0 auto' }}
-      >
-        <section>
-          <a 
-            target="_blank" 
-            title="@dateideascc" 
-            href={url} 
-            rel="noopener noreferrer"
-          >
-            Loading TikTok video... If this takes too long, 
-            <span style={{ display: 'block', marginTop: '8px' }}>
-              <strong>click here to view on TikTok</strong>
-            </span>
-          </a>
-        </section>
-      </blockquote>
     </div>
   );
 }
