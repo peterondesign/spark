@@ -228,7 +228,7 @@ export const getPexelsFallbackUrl = async (
     // Check if any results were returned
     if (data.photos && data.photos.length > 0) {
       const photo: PexelsPhoto = data.photos[0];
-      const imageUrl = photo.src.large;
+      const imageUrl = photo.src.medium;
       
       // Create cache object
       const cacheData = {
