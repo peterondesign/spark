@@ -3,7 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
+// OPTIMIZATION: In-memory cache for instant responses
+const MEMORY_CACHE = new Map<string, any>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function POST(req: NextRequest) {
+  const startTime = Date.now(); // OPTIMIZATION: Track response time
   let body: any = {};
   
   try {
@@ -13,6 +18,19 @@ export async function POST(req: NextRequest) {
     const { city, activity, max_results = 8, language = 'en', offset = 0 } = body;
 
     console.log('Parsed parameters:', { city, activity, max_results, language, offset });
+
+    // OPTIMIZATION: Ultra-fast cache check first
+    const cacheKey = `${city.toLowerCase()}_${activity.toLowerCase()}_${offset}`;
+    const cached = MEMORY_CACHE.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+      const response = NextResponse.json({
+        ...cached.data,
+        cached: true,
+        response_time_ms: Date.now() - startTime
+      });
+      response.headers.set('Cache-Control', 'public, s-maxage=300');
+      return response;
+    }
 
     if (!city || !activity) {
       console.log('Missing required parameters:', { city: !!city, activity: !!activity });
@@ -30,11 +48,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const enhancedPrompt = `Find exactly ${max_results} ${offset > 0 ? 'additional ' : ''}real ${activity} venues in ${city}, Portugal${offset > 0 ? `, excluding any you might have mentioned before. Focus on ${offset === 1 ? 'secondary' : offset === 2 ? 'alternative' : 'hidden gem'} venues` : ''}. Research actual businesses with real addresses, websites, and details. Return ONLY a valid JSON object with this exact structure - no additional text or explanations:
-
-{"results":[{"title":"Real venue name","description":"Detailed description of the venue","address":{"street":"Actual street address","city":"${city}","postal_code":"Real postal code","country":"Portugal"},"website_url":"Real website URL (if available)","estimated_price_range":"€ to €€€","duration_suggestion_minutes":90,"source_url":"Source URL where you found this information"}]}
-
-Important: Research real venues that actually exist. Include accurate addresses, descriptions, and websites when available.${offset > 0 ? ' Find different venues than what might have been mentioned in previous requests.' : ''}`;
+    // OPTIMIZED: Minimal prompt for faster processing
+    const enhancedPrompt = `${max_results} ${activity} venues ${city}. JSON only:
+{"results":[{"title":"Name","description":"Brief","address":{"street":"St","city":"${city}","country":"Portugal"},"website_url":"URL","estimated_price_range":"€€"}]}`;
 
     console.log('Enhanced prompt:', enhancedPrompt);
 
@@ -46,22 +62,10 @@ Important: Research real venues that actually exist. Include accurate addresses,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a local venue search assistant. Provide real, accurate venue information for the requested city. Always return valid JSON only, no additional text.'
-          },
-          {
-            role: 'user',
-            content: enhancedPrompt
-          }
-        ],
-        max_tokens: 600,
-        temperature: 0.2,
-        top_p: 0.9,
-        return_images: false,
-        return_related_questions: false,
+        model: 'sonar', // OPTIMIZED: Fastest model
+        messages: [{ role: 'user', content: enhancedPrompt }], // OPTIMIZED: Removed system message
+        max_tokens: 200, // OPTIMIZED: Reduced token limit
+        temperature: 0.1, // OPTIMIZED: Lower for consistency and speed
         stream: false
       }),
     });
@@ -89,28 +93,17 @@ Important: Research real venues that actually exist. Include accurate addresses,
       );
     }
 
+    // OPTIMIZED: Faster JSON cleaning
     let content = data.choices[0].message.content;
-    console.log('Raw Perplexity content:', content);
-    
-    // Step 1: Remove markdown code blocks
     content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
-    // Step 2: Try to extract JSON from the response if it's embedded in text
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       content = jsonMatch[0];
     }
     
-    // Step 3: Clean up control characters but preserve valid JSON structure
-    content = content
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-      .replace(/\n+/g, ' ') // Replace multiple newlines with single space
-      .replace(/\r+/g, '') // Remove carriage returns
-      .replace(/\t+/g, ' ') // Replace tabs with spaces
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
-    
-    console.log('Cleaned content:', content);
+    // OPTIMIZED: Simplified whitespace cleaning
+    content = content.replace(/\s+/g, ' ').trim();
     
     try {
       const parsedContent = JSON.parse(content);
@@ -118,7 +111,7 @@ Important: Research real venues that actually exist. Include accurate addresses,
       // Normalize the response structure for simplified API responses
       let normalizedResponse;
       if (parsedContent.results && Array.isArray(parsedContent.results)) {
-        normalizedResponse = {
+        const normalizedResponse = {
           query: `${activity} in ${city}`,
           city,
           activity,
@@ -138,11 +131,18 @@ Important: Research real venues that actually exist. Include accurate addresses,
             estimated_price_range: venue.estimated_price_range || '€€',
             duration_suggestion_minutes: venue.duration_suggestion_minutes || 120,
             source_url: venue.source_url || venue.website_url || ''
-          }))
+          })),
+          response_time_ms: Date.now() - startTime // OPTIMIZATION: Track performance
         };
       } else {
         throw new Error('Invalid JSON structure: missing results array');
       }
+      
+      // OPTIMIZATION: Cache the response for instant future requests
+      MEMORY_CACHE.set(cacheKey, {
+        data: normalizedResponse,
+        timestamp: Date.now()
+      });
       
       const response = NextResponse.json(normalizedResponse);
       response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=86400');
@@ -253,7 +253,8 @@ Important: Research real venues that actually exist. Include accurate addresses,
         generated_at: new Date().toISOString(),
         currency: "EUR",
         results: [],
-        error: 'Failed to parse venue data'
+        error: 'Failed to parse venue data',
+        response_time_ms: Date.now() - startTime
       });
     }
 
