@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'sonar',
+                model: 'sonar-small',
                 messages: [{
                   role: 'user',
                   content: `${max_results} ${activity} venues in ${city}. JSON: {"results":[{"title":"Name","address":{"street":"St","city":"${city}"},"website_url":"URL"}]}`

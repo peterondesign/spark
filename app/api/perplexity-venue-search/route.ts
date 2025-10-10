@@ -657,7 +657,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: 'sonar-small',
         messages: [
           {
             role: 'system',

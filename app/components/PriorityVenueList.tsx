@@ -1,31 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { StarIcon, ClockIcon, MapPinIcon, TagIcon } from '@heroicons/react/24/solid';
-import { getImageUrl, getPexelsFallbackUrl } from '@/app/utils/imageService';
-
-interface GetYourGuideResult {
-  id: string;
-  title: string;
-  description: string;
-  image_url: string;
-  price?: {
-    amount: number;
-    currency: string;
-    display: string;
-  };
-  rating?: {
-    score: number;
-    count: number;
-    display: string;
-  };
-  duration: string;
-  category: string;
-  booking_url: string;
-  deep_link: string;
-  recommended: boolean;
-  source: string;
-}
+import { MapPinIcon } from '@heroicons/react/24/solid';
+import { getImageUrl } from '@/app/utils/imageService';
 
 interface Venue {
   title: string;
@@ -34,11 +11,15 @@ interface Venue {
     street: string;
     city: string;
     postal_code?: string;
-    country: string;
   };
-  website_url: string;
-  estimated_price_range: string;
-  duration_suggestion_minutes?: number;
+  website_url: string | null;
+  source_url: string | null;
+  source?: string; // 'perplexity' | 'getyourguide'
+  rating?: any;
+  price?: any;
+  duration?: string;
+  recommended?: boolean;
+  searchUrl?: boolean; // For GetYourGuide search links
 }
 
 interface PriorityVenueListProps {
@@ -49,26 +30,25 @@ interface PriorityVenueListProps {
 
 export default function PriorityVenueList({ city, activity, className = '' }: PriorityVenueListProps) {
   const [venues, setVenues] = useState<Venue[]>([]);
-  const [getYourGuideResult, setGetYourGuideResult] = useState<GetYourGuideResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [venueImages, setVenueImages] = useState<Record<string, string>>({});
   const [perplexityResponse, setPerplexityResponse] = useState<any>(null); // Debug state
+  const [loadingStatus, setLoadingStatus] = useState<string>('Searching for venues...');
 
-  // Fetch venues and GetYourGuide recommendation
+  // Fetch venues from optimized API only
   useEffect(() => {
     const fetchData = async () => {
       if (!city || !activity) return;
 
       setLoading(true);
+      setLoadingStatus('Searching for the best venues...');
       
       try {
-        // Fetch GetYourGuide recommendation (priority)
-        const getYourGuidePromise = fetch(
-          `/api/getyourguide?city=${encodeURIComponent(city)}&activity=${encodeURIComponent(activity)}&limit=1`
-        );
-
-        // Fetch local venues
-        const venuesPromise = fetch('/api/city-venues-optimized', {
+        // Update loading status for local venues
+        setLoadingStatus('Discovering venues with AI...');
+        
+        // Fetch only city-venues-optimized (includes both GetYourGuide and Perplexity results)
+        const venuesResponse = await fetch('/api/city-venues-optimized', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -79,18 +59,7 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
           }),
         });
 
-        const [getYourGuideResponse, venuesResponse] = await Promise.all([
-          getYourGuidePromise,
-          venuesPromise
-        ]);
-
-        // Process GetYourGuide result
-        if (getYourGuideResponse.ok) {
-          const getYourGuideData = await getYourGuideResponse.json();
-          if (getYourGuideData.data && getYourGuideData.data.length > 0) {
-            setGetYourGuideResult(getYourGuideData.data[0]);
-          }
-        }
+        setLoadingStatus('Loading venue images...');
 
         // Process venues
         if (venuesResponse.ok) {
@@ -113,16 +82,6 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
   useEffect(() => {
     const loadImages = async () => {
       const imagePromises: Record<string, Promise<string>> = {};
-      
-      // Load image for GetYourGuide result
-      if (getYourGuideResult) {
-        imagePromises['getyourguide'] = getImageUrl(
-          undefined, // No predefined image
-          `${activity} ${city} experience`,
-          400,
-          300
-        );
-      }
 
       // Load images for venues
       venues.forEach((venue, index) => {
@@ -143,15 +102,10 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
       setVenueImages(imageMap);
     };
 
-    if ((getYourGuideResult || venues.length > 0) && !loading) {
+    if (venues.length > 0 && !loading) {
       loadImages();
     }
-  }, [getYourGuideResult, venues, activity, city, loading]);
-
-  const handleGetYourGuideClick = (url: string, title: string) => {
-    console.log('GetYourGuide booking clicked:', { title, url });
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  }, [venues, activity, city, loading]);
 
   if (loading) {
     return (
@@ -159,6 +113,17 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
         <div className="flex items-center gap-3 mb-6">
           <MapPinIcon className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-bold text-foreground">Where to do this activity</h2>
+        </div>
+        
+        {/* Loading status text */}
+        <div className="text-center py-8">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 rounded-full">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-primary font-medium">{loadingStatus}</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            AI is searching for the best {activity.toLowerCase()} spots in {city}
+          </p>
         </div>
         
         {/* Loading skeleton */}
@@ -179,20 +144,8 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
   }
 
   // Combine all results for unified display
-  const allResults: Array<
-    | (GetYourGuideResult & { type: 'getyourguide'; image_key: string })
-    | (Venue & { type: 'venue'; image_key: string; id: string })
-  > = [];
+  const allResults: Array<Venue & { type: 'venue'; image_key: string; id: string }> = [];
   
-  // Add GetYourGuide result first (priority)
-  if (getYourGuideResult) {
-    allResults.push({
-      ...getYourGuideResult,
-      type: 'getyourguide' as const,
-      image_key: 'getyourguide'
-    });
-  }
-
   // Add local venues
   venues.forEach((venue, index) => {
     allResults.push({
@@ -242,7 +195,7 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
             key={result.id || index}
             className="bg-card rounded-lg overflow-hidden shadow-sm border border-border hover:shadow-lg transition-all duration-300 group"
           >
-            {/* Image with GetYourGuide badge overlay */}
+            {/* Image with source badge overlay */}
             <div className="relative h-48 overflow-hidden">
               {venueImages[result.image_key] ? (
                 <img
@@ -257,17 +210,17 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
                 </div>
               )}
               
-              {/* GetYourGuide Partner Badge */}
-              {result.type === 'getyourguide' && (
-                <div className="absolute top-3 left-3">
+              {/* GetYourGuide Badge */}
+              {result.source === 'getyourguide' && (
+                <div className="absolute top-3 right-3">
                   <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
                     🌟 RECOMMENDED
                   </span>
                 </div>
               )}
-            </div>
-
-            <div className="p-4">
+              
+              {/* Remove GetYourGuide badge since we only have venues now */}
+            </div>            <div className="p-4">
               <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
                 {result.title}
               </h3>
@@ -276,40 +229,29 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
                 {result.description}
               </p>
 
-              {/* Address for local venues */}
-              {result.type === 'venue' && (
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-1">
-                  📍 {result.address.street}, {result.address.city}
-                </p>
-              )}
-
-              {/* Ratings for GetYourGuide */}
-              {result.type === 'getyourguide' && result.rating && (
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-1">
-                    <StarIcon className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm font-medium">{result.rating.score}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">({result.rating.count} reviews)</span>
-                </div>
-              )}
+              {/* Address */}
+              <p className="text-xs text-muted-foreground mb-3 line-clamp-1">
+                📍 {result.address.street}, {result.address.city}
+              </p>
 
               {/* Action buttons */}
-              <div className="space-y-2">
-                {result.type === 'getyourguide' ? (
-                  // GetYourGuide booking button with partner attribution
-                  <button
-                    onClick={() => handleGetYourGuideClick(result.booking_url, result.title)}
-                    className="w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-medium rounded-lg transition-all duration-200"
+              <div className="flex gap-2">
+                {result.source === 'getyourguide' ? (
+                  // GetYourGuide search button with enhanced styling
+                  <a
+                    href={result.website_url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 text-center text-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    Book Experience
-                  </button>
+                    🔍 Browse All Experiences
+                  </a>
                 ) : (
-                  // Local venue action buttons
-                  <div className="flex gap-2">
-                    {(result as Venue).website_url && (
+                  // Regular venue buttons
+                  <>
+                    {result.website_url && (
                       <a
-                        href={(result as Venue).website_url}
+                        href={result.website_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 py-2 text-center text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
@@ -318,25 +260,25 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
                       </a>
                     )}
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${result.title} ${(result as Venue).address?.street} ${(result as Venue).address?.city}`)}`}
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${result.title} ${result.address?.street} ${result.address?.city}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 py-2 text-center text-xs bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors"
                     >
                       Maps
                     </a>
-                  </div>
-                )}
-
-                {/* GetYourGuide Partner Attribution - always visible for GetYourGuide results */}
-                {result.type === 'getyourguide' && (
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">
-                      Partner ID: 5QQHAHP • GetYourGuide Recommended
-                    </p>
-                  </div>
+                  </>
                 )}
               </div>
+              
+              {/* Partner attribution for GetYourGuide */}
+              {result.source === 'getyourguide' && (
+                <div className="text-center mt-2">
+                  <p className="text-xs text-muted-foreground">
+                    Partner ID: 5QQHAHP • GetYourGuide
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -345,7 +287,6 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
       {/* Performance info */}
       <div className="text-center text-xs text-muted-foreground">
         Showing {allResults.length} venues in {city}
-        {getYourGuideResult && <span className="text-orange-600"> • Including GetYourGuide recommendation</span>}
       </div>
     </div>
   );

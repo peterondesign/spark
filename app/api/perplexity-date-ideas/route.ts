@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar',
+        model: 'sonar-small',
         messages: [
           { role: 'system', content: 'You are an AI assistant that ONLY outputs valid JSON in the specified format. Respond with only the JSON object and nothing else.' },
           { role: 'user', content: prompt },

@@ -37,7 +37,7 @@ const AllDateIdeasSection = () => {
   const [filteredIdeas, setFilteredIdeas] = useState<DateIdea[]>([]);
   const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [visibleIdeas, setVisibleIdeas] = useState(12);
+  const [visibleIdeas, setVisibleIdeas] = useState(24); // Increased from 12 to show more initially
 
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -52,11 +52,11 @@ const AllDateIdeasSection = () => {
       try {
         setLoading(true);
         
-        // Fetch from Supabase
+        // Fetch from Supabase - get all date ideas and randomize
         const { data: supabaseData, error } = await supabase
           .from('date_ideas')
           .select('*')
-          .limit(50);
+          .limit(250); // Increased to get all available date ideas
 
         if (error) {
           console.error("Error fetching date ideas:", error);
@@ -71,30 +71,44 @@ const AllDateIdeasSection = () => {
           cityEvents = cityData.events || [];
         }
 
+        // Fisher-Yates shuffle algorithm for better randomization
+        const shuffleArray = (array: any[]) => {
+          const shuffled = [...array];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          return shuffled;
+        };
+
         // Combine both sources
-        const supabaseIdeas = supabaseData ? [...supabaseData].sort(() => Math.random() - 0.5).map((item: any) => ({
+        const supabaseIdeas = supabaseData ? shuffleArray(supabaseData).map((item: any) => ({
           ...item,
           timeOfDay: item.timeOfDay || item.time_of_day, // Handle both naming conventions
           priceLevel: item.priceLevel || item.price_level, // Handle both naming conventions
         })) : [];
         
-        const combinedIdeas = [
-          ...cityEvents.map((event: any) => ({
-            id: event.id,
-            title: event.title,
-            category: event.category,
-            image: event.image,
-            slug: event.id, // Use ID as slug for city events
-            description: event.description,
-            location: event.location,
-            date: event.date,
-            time: event.time,
-            price: event.price,
-            website: event.website,
-            venue: event.venue
-          })),
+        // Shuffle city events too
+        const shuffledCityEvents = shuffleArray(cityEvents).map((event: any) => ({
+          id: event.id,
+          title: event.title,
+          category: event.category,
+          image: event.image,
+          slug: event.id, // Use ID as slug for city events
+          description: event.description,
+          location: event.location,
+          date: event.date,
+          time: event.time,
+          price: event.price,
+          website: event.website,
+          venue: event.venue
+        }));
+        
+        // Combine and shuffle the final array
+        const combinedIdeas = shuffleArray([
+          ...shuffledCityEvents,
           ...supabaseIdeas
-        ];
+        ]);
 
         setDateIdeas(combinedIdeas);
         setFilteredIdeas(combinedIdeas);
@@ -127,7 +141,7 @@ const AllDateIdeasSection = () => {
 
   const handleCityChange = (city: string) => {
     setSelectedCity(city);
-    setVisibleIdeas(12); // Reset visible ideas count
+    setVisibleIdeas(24); // Reset to show more ideas initially
     // Clear existing data when city changes
     setDateIdeas([]);
     setFilteredIdeas([]);
@@ -135,7 +149,7 @@ const AllDateIdeasSection = () => {
   };
 
   const handleLoadMore = () => {
-    setVisibleIdeas(prev => Math.min(prev + 12, filteredIdeas.length));
+    setVisibleIdeas(prev => Math.min(prev + 24, filteredIdeas.length)); // Load 24 more at a time
   };
 
   // Filter functionality with accurate field matching based on real database data
@@ -199,7 +213,7 @@ const AllDateIdeasSection = () => {
     }
 
     setFilteredIdeas(filtered);
-    setVisibleIdeas(12); // Reset visible ideas when filters change
+    setVisibleIdeas(24); // Reset to show more ideas when filters change
   }, [selectedTimeOfDay, selectedLocation, selectedMoods, selectedPriceLevel, dateIdeas]);
 
   const clearFilters = () => {
@@ -255,7 +269,7 @@ const AllDateIdeasSection = () => {
         {/* Date Ideas Grid */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(12)].map((_, i) => (
+            {[...Array(24)].map((_, i) => (
               <div
                 key={i}
                 className={`animate-pulse rounded-2xl h-64 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'

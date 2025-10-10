@@ -28,7 +28,7 @@
 ### **2. Model Selection & Parameters**
 ```typescript
 // OPTIMIZED: Fastest model + reduced parameters
-model: 'sonar', // 3x faster than 'sonar'
+model: 'sonar-small', // 3x faster than 'sonar-small'
 max_tokens: 200,                             // vs 600 (67% reduction)
 temperature: 0.1,                            // vs 0.2 (more consistent)
 messages: [{ role: 'user', content: prompt }] // vs system+user (50% fewer tokens)

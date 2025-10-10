@@ -146,7 +146,7 @@ async function fetchRealDataBackground(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar', // Fastest model
+        model: 'sonar-small', // Fastest model
         messages: [
           {
             role: 'user',

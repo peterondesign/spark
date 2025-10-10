@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar', // OPTIMIZED: Fastest model
+        model: 'sonar-small', // OPTIMIZED: Fastest model
         messages: [{ role: 'user', content: enhancedPrompt }], // OPTIMIZED: Removed system message
         max_tokens: 200, // OPTIMIZED: Reduced token limit
         temperature: 0.1, // OPTIMIZED: Lower for consistency and speed
