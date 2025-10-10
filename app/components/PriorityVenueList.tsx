@@ -179,14 +179,14 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
       </div>
 
       {/* Debug: Show Perplexity API Response */}
-      {perplexityResponse && (
+      {/* {perplexityResponse && (
         <div className="mb-6 p-4 bg-gray-100 rounded-lg border">
           <h3 className="font-bold text-sm mb-2">🔍 Perplexity API Response Debug:</h3>
           <pre className="text-xs overflow-auto max-h-40 bg-white p-2 rounded border">
             {JSON.stringify(perplexityResponse, null, 2)}
           </pre>
         </div>
-      )}
+      )} */}
 
       {/* Unified grid of activity venues */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

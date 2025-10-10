@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Link from 'next/link';
@@ -11,8 +11,16 @@ gsap.registerPlugin(ScrollTrigger);
 const Footer = () => {
   const { theme } = useTheme();
   const footerRef = useRef<HTMLElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration by only applying theme after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!mounted) return; // Don't run animations until mounted
+
     const ctx = gsap.context(() => {
       gsap.set(footerRef.current, {
         opacity: 0,
@@ -34,12 +42,28 @@ const Footer = () => {
     }, footerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [mounted]);
+
+  // Prevent hydration mismatch by using consistent styles until mounted
+  if (!mounted) {
+    return (
+      <footer 
+        ref={footerRef} 
+        className="py-16 bg-[#1a1a1a] text-gray-400"
+      >
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+            <div className="col-span-1 md:col-span-2"></div>
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer 
       ref={footerRef} 
-      className={`py-16 ${theme === 'dark' ? 'bg-[#1a1a1a] text-white' : 'bg-[#1a1a1a] text-gray-100'}`}
+      className={`py-16 ${theme === 'dark' ? 'bg-[#1a1a1a] text-white' : 'bg-[#1a1a1a] text-gray-400'}`}
     >
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
@@ -57,32 +81,30 @@ const Footer = () => {
                 <path d="M81.9171 69.0723C78.4037 69.0723 75.867 68.3932 74.3071 67.0351C72.7618 65.677 71.9891 63.5154 71.9891 60.5502V57.6303H79.5991V61.3651C79.5991 62.0555 79.7304 62.5987 79.9928 62.9948C80.2698 63.3796 80.7436 63.572 81.4142 63.572C82.114 63.572 82.595 63.4136 82.8575 63.0967C83.1345 62.7798 83.273 62.2592 83.273 61.5349C83.273 60.6181 83.1563 59.8542 82.9231 59.2431C82.6898 58.6206 82.2816 58.0321 81.6985 57.4775C81.1299 56.9117 80.3354 56.2553 79.3149 55.5083L75.8597 52.9619C73.2793 51.0719 71.9891 48.9102 71.9891 46.477C71.9891 43.9305 72.7472 41.9896 74.2634 40.6541C75.7941 39.3187 78.0028 38.6509 80.8894 38.6509C84.4174 38.6509 86.9176 39.3809 88.39 40.8409C89.8771 42.3008 90.6206 44.519 90.6206 47.4955H82.7919V45.4414C82.7919 45.034 82.6388 44.7171 82.3326 44.4907C82.0411 44.2644 81.6402 44.1512 81.1299 44.1512C80.5176 44.1512 80.0657 44.287 79.7741 44.5587C79.4971 44.819 79.3586 45.1585 79.3586 45.5772C79.3586 45.996 79.5044 46.4487 79.796 46.9353C80.0875 47.422 80.6634 47.9822 81.5235 48.616L85.9627 51.9263C86.852 52.5827 87.6684 53.2788 88.4119 54.0144C89.1554 54.7387 89.7531 55.5875 90.2051 56.5608C90.657 57.5228 90.883 58.6998 90.883 60.0919C90.883 62.8986 90.2124 65.0999 88.8711 66.6956C87.5445 68.2801 85.2265 69.0723 81.9171 69.0723Z" fill="#F4F4F4"/>
               </svg>
             </div>
-            <p className={`max-w-md ${theme === 'dark' ? 'text-gray-400' : 'text-gray-300'}`}>
+            <p className="max-w-md text-gray-400">
               Discover amazing date ideas and never miss out on exciting events with our personalized reminders.
             </p>
           </div>
 
           <div>
             <h3 className="font-bold font-heading mb-4">Quick Links</h3>
-            <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-300'}`}>
-              <li><Link href="/date-idea-generator" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Date Generator</Link></li>
-              <li><Link href="/favorites" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Favorites</Link></li>
-              <li><Link href="/blog" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Blog</Link></li>
-              <li><Link href="/terms" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>Terms</Link></li>
+            <ul className="space-y-2 text-gray-400">
+              <li><Link href="/date-idea-generator" className="transition-colors hover:text-white">Date Generator</Link></li>
+              <li><Link href="/favorites" className="transition-colors hover:text-white">Favorites</Link></li>
+              <li><Link href="/blog" className="transition-colors hover:text-white">Blog</Link></li>
+              <li><Link href="/terms" className="transition-colors hover:text-white">Terms</Link></li>
             </ul>
           </div>
 
           <div>
             <h3 className="font-bold font-heading mb-4">Connect</h3>
-            <ul className={`space-y-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-300'}`}>
-              <li><Link href="https://www.tiktok.com/@dateideascc" className={`transition-colors ${theme === 'dark' ? 'hover:text-white' : 'hover:text-gray-100'}`}>TikTok</Link></li>
+            <ul className="space-y-2 text-gray-400">
+              <li><Link href="https://www.tiktok.com/@dateideascc" className="transition-colors hover:text-white">TikTok</Link></li>
             </ul>
           </div>
         </div>
 
-        <div className={`border-t pt-8 text-center ${
-          theme === 'dark' ? 'border-gray-800 text-gray-400' : 'border-gray-700 text-gray-300'
-        }`}>
+        <div className="border-t pt-8 text-center border-gray-800 text-gray-400">
           <p>&copy; 2025 Date Ideas. All rights reserved.</p>
         </div>
       </div>
