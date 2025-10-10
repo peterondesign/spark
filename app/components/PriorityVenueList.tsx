@@ -32,7 +32,6 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [venueImages, setVenueImages] = useState<Record<string, string>>({});
-  const [perplexityResponse, setPerplexityResponse] = useState<any>(null); // Debug state
   const [loadingStatus, setLoadingStatus] = useState<string>('Searching for venues...');
 
   // Fetch venues from optimized API only
@@ -64,7 +63,6 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
         // Process venues
         if (venuesResponse.ok) {
           const venuesData = await venuesResponse.json();
-          setPerplexityResponse(venuesData); // Store full response for debugging
           setVenues(venuesData.results || []);
         }
 
@@ -177,16 +175,6 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
         <MapPinIcon className="w-6 h-6 text-primary" />
         <h2 className="text-2xl font-bold text-foreground">Where to do this activity</h2>
       </div>
-
-      {/* Debug: Show Perplexity API Response */}
-      {/* {perplexityResponse && (
-        <div className="mb-6 p-4 bg-gray-100 rounded-lg border">
-          <h3 className="font-bold text-sm mb-2">🔍 Perplexity API Response Debug:</h3>
-          <pre className="text-xs overflow-auto max-h-40 bg-white p-2 rounded border">
-            {JSON.stringify(perplexityResponse, null, 2)}
-          </pre>
-        </div>
-      )} */}
 
       {/* Unified grid of activity venues */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
