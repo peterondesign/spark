@@ -36,13 +36,12 @@ export default function SimpleTikTokEmbed({ url }: SimpleTikTokEmbedProps) {
           try {
             win.tiktok.embed.process();
             setEmbedLoaded(true);
-            console.log('TikTok embed processed');
           } catch (error) {
             console.error('TikTok embed error:', error);
             setShowFallback(true);
           }
         } else {
-          console.log('TikTok embed not ready, retrying...');
+          // Retry without logging
           setTimeout(tryEmbed, 500);
         }
       };
@@ -60,7 +59,6 @@ export default function SimpleTikTokEmbed({ url }: SimpleTikTokEmbedProps) {
     // Fallback timeout
     const timeout = setTimeout(() => {
       if (!embedLoaded) {
-        console.log('TikTok embed timeout, showing fallback');
         setShowFallback(true);
       }
     }, 5000);

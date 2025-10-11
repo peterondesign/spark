@@ -145,6 +145,33 @@ export default function DateIdeaDetails() {
   useEffect(() => {
     const savedCity = localStorage.getItem("userCity");
     setUserCity(savedCity);
+
+    // Add global error handler for browser extension errors
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // Ignore browser extension errors
+      if (event.reason?.message?.includes('message channel closed') || 
+          event.reason?.message?.includes('listener indicated an asynchronous response')) {
+        event.preventDefault();
+        console.debug('Ignored browser extension error:', event.reason?.message);
+      }
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      // Ignore permissions policy violations from extensions
+      if (event.message?.includes('Permissions policy violation') ||
+          event.message?.includes('accelerometer is not allowed')) {
+        event.preventDefault();
+        console.debug('Ignored permissions policy violation:', event.message);
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
   }, []);
 
   const handleCityChange = (city: string) => {

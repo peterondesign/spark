@@ -83,9 +83,17 @@ export async function POST(req: NextRequest) {
       country = "Italy";
     }
 
-    // Ultra-optimized prompt for speed
-    const prompt = `${max_results} ${activity} venues in ${city}, ${country}. JSON only:
+    // Enhanced prompt based on offset to get different venues
+    let prompt;
+    if (offset > 0) {
+      // For load more, ask for alternative/hidden gem venues
+      prompt = `Find ${max_results} alternative, lesser-known ${activity} venues in ${city}, ${country}. Focus on hidden gems, local favorites, and unique spots that tourists might miss. Avoid mainstream chains. JSON only:
+{"results":[{"title":"Unique venue name","description":"What makes this special","address":{"street":"Street","city":"${city}"},"website_url":"URL or null"}]}`;
+    } else {
+      // For initial load, use standard prompt
+      prompt = `${max_results} popular ${activity} venues in ${city}, ${country}. JSON only:
 {"results":[{"title":"Name","description":"Brief","address":{"street":"Street","city":"${city}"},"website_url":"URL"}]}`;
+    }
 
     // Speed-optimized API call with reduced timeout
     const controller = new AbortController();
@@ -326,36 +334,35 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // Create GetYourGuide search results instead of API call
+    // Create GetYourGuide search results only for initial load (offset = 0)
     let getYourGuideResults: any[] = [];
-    try {
-      console.log("[GetYourGuide] Creating search links...");
+    
+    if (offset === 0) {
+      try {
+        // Create GetYourGuide search URL with partner attribution
+        const searchTerm = encodeURIComponent(`${activity} ${city}`);
+        const partnerSearchUrl = `https://www.getyourguide.com/?q=${searchTerm}&partner_id=5QQHAHP`;
 
-      // Create GetYourGuide search URL with partner attribution
-      const searchTerm = encodeURIComponent(`${activity} ${city}`);
-      const partnerSearchUrl = `https://www.getyourguide.com/?q=${searchTerm}&partner_id=5QQHAHP`;
-
-      // Create a GetYourGuide search recommendation
-      getYourGuideResults = [
-        {
-          title: `Find ${activity} experiences in ${city}`,
-          description: `Browse verified ${activity.toLowerCase()} tours and activities in ${city} with instant booking and free cancellation`,
-          address: {
-            street: "Multiple locations",
-            city: city,
-            postal_code: "",
+        // Create a GetYourGuide search recommendation
+        getYourGuideResults = [
+          {
+            title: `Find ${activity} experiences in ${city}`,
+            description: `Browse verified ${activity.toLowerCase()} tours and activities in ${city} with instant booking and free cancellation`,
+            address: {
+              street: "Multiple locations",
+              city: city,
+              postal_code: "",
+            },
+            website_url: partnerSearchUrl,
+            source_url: partnerSearchUrl,
+            source: "getyourguide",
+            recommended: true,
+            searchUrl: true, // Flag to indicate this is a search link
           },
-          website_url: partnerSearchUrl,
-          source_url: partnerSearchUrl,
-          source: "getyourguide",
-          recommended: true,
-          searchUrl: true, // Flag to indicate this is a search link
-        },
-      ];
-
-      console.log("[GetYourGuide] Created search link:", partnerSearchUrl);
-    } catch (gygError) {
-      console.log("[GetYourGuide] Error creating search link:", gygError);
+        ];
+      } catch (gygError) {
+        // Silently handle GetYourGuide errors for load more requests
+      }
     }
 
     // Combine results with GetYourGuide first (priority)

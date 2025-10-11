@@ -33,18 +33,49 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
   const [loading, setLoading] = useState(true);
   const [venueImages, setVenueImages] = useState<Record<string, string>>({});
   const [loadingStatus, setLoadingStatus] = useState<string>('Searching for venues...');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentOffset, setCurrentOffset] = useState(0);
+  const [hasMoreVenues, setHasMoreVenues] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const loadingSteps = [
+    { text: '🔍 Analyzing your activity preferences...', progress: 20 },
+    { text: '🤖 AI is discovering local venues...', progress: 60 },
+    { text: '🖼️ Loading venue images and details...', progress: 100 }
+  ];
 
   // Fetch venues from optimized API only
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (isLoadMore = false) => {
       if (!city || !activity) return;
 
-      setLoading(true);
-      setLoadingStatus('Searching for the best venues...');
+      if (!isLoadMore) {
+        setLoading(true);
+        setCurrentOffset(0);
+        setVenues([]);
+        setHasMoreVenues(true);
+        setLoadingProgress(0);
+        setCurrentStep(0);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      // Progress step 1: Analyzing preferences
+      if (!isLoadMore) {
+        setCurrentStep(0);
+        setLoadingStatus(loadingSteps[0].text);
+        setLoadingProgress(loadingSteps[0].progress);
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate analysis time
+      }
       
       try {
-        // Update loading status for local venues
-        setLoadingStatus('Discovering venues with AI...');
+        // Progress step 2: AI discovery
+        if (!isLoadMore) {
+          setCurrentStep(1);
+          setLoadingStatus(loadingSteps[1].text);
+          setLoadingProgress(loadingSteps[1].progress);
+        }
         
         // Fetch only city-venues-optimized (includes both GetYourGuide and Perplexity results)
         const venuesResponse = await fetch('/api/city-venues-optimized', {
@@ -54,27 +85,85 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
             city: city.trim(),
             activity: activity.trim(),
             max_results: 6,
-            language: 'en'
+            language: 'en',
+            offset: isLoadMore ? currentOffset : 0
           }),
         });
 
-        setLoadingStatus('Loading venue images...');
+        // Progress step 3: Loading images
+        if (!isLoadMore) {
+          setCurrentStep(2);
+          setLoadingStatus(loadingSteps[2].text);
+          setLoadingProgress(loadingSteps[2].progress);
+        }
 
         // Process venues
         if (venuesResponse.ok) {
           const venuesData = await venuesResponse.json();
-          setVenues(venuesData.results || []);
+          const newVenues = venuesData.results || [];
+          
+          if (isLoadMore) {
+            setVenues(prev => [...prev, ...newVenues]);
+            setCurrentOffset(prev => prev + newVenues.length);
+          } else {
+            setVenues(newVenues);
+            setCurrentOffset(newVenues.length);
+          }
+          
+          // Check if there are more venues to load
+          setHasMoreVenues(newVenues.length === 6);
         }
 
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     };
 
     fetchData();
   }, [city, activity]);
+
+  // Load more venues function
+  const handleLoadMore = async () => {
+    if (!city || !activity || loadingMore || !hasMoreVenues) return;
+
+    setLoadingMore(true);
+    
+    try {
+      const venuesResponse = await fetch('/api/city-venues-optimized', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          city: city.trim(),
+          activity: activity.trim(),
+          max_results: 6,
+          language: 'en',
+          offset: currentOffset
+        }),
+      });
+
+      if (venuesResponse.ok) {
+        const venuesData = await venuesResponse.json();
+        const newVenues = venuesData.results || [];
+        
+        if (newVenues.length > 0) {
+          setVenues(prev => [...prev, ...newVenues]);
+          setCurrentOffset(prev => prev + newVenues.length);
+          
+          // Check if there are more venues to load
+          setHasMoreVenues(newVenues.length === 6);
+        } else {
+          setHasMoreVenues(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading more venues:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Load images for venues using the image service
   useEffect(() => {
@@ -113,15 +202,47 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
           <h2 className="text-2xl font-bold text-foreground">Where to do this activity</h2>
         </div>
         
-        {/* Loading status text */}
+        {/* Enhanced loading status with progress bar */}
         <div className="text-center py-8">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 rounded-full">
-            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-primary font-medium">{loadingStatus}</span>
+          <div className="max-w-md mx-auto">
+            {/* Status message with icon */}
+            <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 rounded-full mb-6">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-primary font-medium">{loadingStatus}</span>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="w-full bg-muted rounded-full h-2 mb-4">
+              <div 
+                className="bg-gradient-to-r from-primary to-primary/80 h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${loadingProgress}%` }}
+              ></div>
+            </div>
+            
+            {/* Progress steps indicator */}
+            <div className="flex justify-between items-center mb-6">
+              {loadingSteps.map((step, index) => (
+                <div key={index} className="flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                    index <= currentStep 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <span className={`text-xs mt-2 transition-colors duration-300 ${
+                    index <= currentStep ? 'text-foreground' : 'text-muted-foreground'
+                  }`}>
+                    {index === 0 ? 'Analyze' : index === 1 ? 'Discover' : 'Load'}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            <p className="text-sm text-muted-foreground">
+              Finding the best {activity.toLowerCase()} spots in {city}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-3">
-            AI is searching for the best {activity.toLowerCase()} spots in {city}
-          </p>
         </div>
         
         {/* Loading skeleton */}
@@ -237,7 +358,7 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
                 ) : (
                   // Regular venue buttons
                   <>
-                    {result.website_url && (
+                    {result.website_url && result.website_url !== 'null' && result.website_url.trim() !== '' ? (
                       <a
                         href={result.website_url}
                         target="_blank"
@@ -245,6 +366,15 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
                         className="flex-1 py-2 text-center text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
                       >
                         Website
+                      </a>
+                    ) : (
+                      <a
+                        href={`https://www.google.com/search?q=${encodeURIComponent(`${result.title} ${result.address?.city}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2 text-center text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                      >
+                        Search
                       </a>
                     )}
                     <a
@@ -272,9 +402,36 @@ export default function PriorityVenueList({ city, activity, className = '' }: Pr
         ))}
       </div>
 
+      {/* Load More Button */}
+      {hasMoreVenues && !loading && allResults.length > 0 && (
+        <div className="text-center mt-8">
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-primary-foreground font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:transform-none"
+          >
+            {loadingMore ? (
+              <>
+                <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                Finding Hidden Gems...
+              </>
+            ) : (
+              <>
+                <MapPinIcon className="w-4 h-4" />
+                Discover More Local Spots
+              </>
+            )}
+          </button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Load more unique local recommendations
+          </p>
+        </div>
+      )}
+
       {/* Performance info */}
-      <div className="text-center text-xs text-muted-foreground">
+      <div className="text-center text-xs text-muted-foreground mt-4">
         Showing {allResults.length} venues in {city}
+        {!hasMoreVenues && allResults.length > 6 && " • All venues loaded"}
       </div>
     </div>
   );
