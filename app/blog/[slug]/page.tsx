@@ -1,8 +1,8 @@
 import { groq } from 'next-sanity';
 import { client } from '@/sanity/lib/client';
 import { getPexelsFallbackUrl } from '@/app/utils/imageService';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import Header from '../../components/sections/Header';
+import Footer from '../../components/sections/Footer';
 import BlogPostClient from '../../components/BlogPostClient';
 
 const query = groq`*[_type == "blog" && slug.current == $slug][0] {

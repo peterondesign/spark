@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { HeartIcon, MapPinIcon, StarIcon, XIcon } from './icons';
+import { HeartIcon, MapPinIcon, StarIcon, XIcon, UndoIcon, ChevronLeftIcon, ChevronRightIcon } from './icons';
 import SaveButton from './SaveButton';
 
 interface DateIdea {
@@ -30,14 +30,17 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [recentFavorites, setRecentFavorites] = useState<DateIdea[]>([]);
+  const [swipeHistory, setSwipeHistory] = useState<number[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [animatingIdea, setAnimatingIdea] = useState<DateIdea | null>(null);
   
   useEffect(() => {
     // Load saved favorites from localStorage
     const savedIdeas = localStorage.getItem("savedDateIdeas");
     if (savedIdeas) {
       const allFavorites = JSON.parse(savedIdeas);
-      // Get only the 3 most recent favorites
-      setRecentFavorites(allFavorites.slice(0, 3));
+      setRecentFavorites(allFavorites);
     }
   }, []);
 
@@ -54,7 +57,14 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
   const handleSwipe = (liked: boolean) => {
     setDirection(liked ? 'right' : 'left');
     
+    // Add current index to history for undo functionality
+    setSwipeHistory(prev => [...prev, currentIndex]);
+    
     if (liked) {
+      // Set up animation
+      setAnimatingIdea(currentIdea);
+      setShowAnimation(true);
+      
       // Save to favorites if swiped right
       const savedIdeas = localStorage.getItem("savedDateIdeas");
       const existingIdeas = savedIdeas ? JSON.parse(savedIdeas) : [];
@@ -63,8 +73,14 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
       if (!existingIdeas.some((idea: DateIdea) => idea.id === currentIdea.id)) {
         const updatedIdeas = [currentIdea, ...existingIdeas];
         localStorage.setItem("savedDateIdeas", JSON.stringify(updatedIdeas));
-        setRecentFavorites(updatedIdeas.slice(0, 3));
+        setRecentFavorites(updatedIdeas);
       }
+      
+      // Hide animation after delay
+      setTimeout(() => {
+        setShowAnimation(false);
+        setAnimatingIdea(null);
+      }, 1500);
     }
     
     // Small delay to show the animation before changing card
@@ -75,16 +91,36 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
       );
     }, 300);
   };
+
+  const handleUndo = () => {
+    if (swipeHistory.length > 0) {
+      const previousIndex = swipeHistory[swipeHistory.length - 1];
+      setSwipeHistory(prev => prev.slice(0, -1));
+      setCurrentIndex(previousIndex);
+    }
+  };
+
+  const removeFavorite = (ideaId: number) => {
+    const savedIdeas = localStorage.getItem("savedDateIdeas");
+    if (savedIdeas) {
+      const existingIdeas = JSON.parse(savedIdeas);
+      const updatedIdeas = existingIdeas.filter((idea: DateIdea) => idea.id !== ideaId);
+      localStorage.setItem("savedDateIdeas", JSON.stringify(updatedIdeas));
+      setRecentFavorites(updatedIdeas);
+    }
+  };
   
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-full max-w-md">
-        <div 
-          className={`relative h-[70vh] max-h-[600px] w-full rounded-xl overflow-hidden shadow-lg transition-transform duration-300 ${
-            direction === 'left' ? 'translate-x-[-100px] rotate-[-8deg] opacity-0' : 
-            direction === 'right' ? 'translate-x-[100px] rotate-[8deg] opacity-0' : ''
-          }`}
-        >
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Main Swipe Area */}
+      <div className="flex flex-col items-center flex-1">
+        <div className="w-full max-w-md">
+          <div 
+            className={`relative h-[70vh] max-h-[600px] w-full rounded-xl overflow-hidden shadow-lg transition-transform duration-300 ${
+              direction === 'left' ? 'translate-x-[-100px] rotate-[-8deg] opacity-0' : 
+              direction === 'right' ? 'translate-x-[100px] rotate-[8deg] opacity-0' : ''
+            }`}
+          >
           {dateIdeaImages[currentIdea.slug] ? (
             <Image
               src={dateIdeaImages[currentIdea.slug]}
@@ -108,7 +144,6 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
             <h3 className="text-2xl font-bold mb-2">{currentIdea.title}</h3>
             
             <p className="text-sm line-clamp-3 mb-3">{currentIdea.description}</p>
-
           </div>
           
           <Link 
@@ -125,6 +160,14 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
           >
             <XIcon className="h-8 w-8" />
           </button>
+
+          <button 
+            onClick={handleUndo}
+            disabled={swipeHistory.length === 0}
+            className="p-4 bg-white text-blue-500 rounded-full shadow-md hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <UndoIcon className="h-8 w-8" />
+          </button>
           
           <button 
             onClick={() => handleSwipe(true)} 
@@ -137,45 +180,111 @@ export default function TinderSwipeView({ dateIdeas, dateIdeaImages }: TinderSwi
         <div className="mt-4 text-center text-gray-500">
           Idea {currentIndex + 1} of {dateIdeas.length}
         </div>
+      </div>
 
-        {/* Favorites Preview Section */}
-        {recentFavorites.length > 0 && (
-          <div className="mt-8 w-full max-w-md">
-            <div className="border-t pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Recent Favorites</h3>
-                <Link 
-                  href="/favorites" 
-                  className="text-rose-500 hover:text-rose-600 text-sm font-medium"
-                >
-                  View All
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {recentFavorites.map((favorite) => (
-                  <Link 
-                    key={favorite.id} 
-                    href={`/date-idea/${favorite.slug}`}
-                    className="relative aspect-square rounded-lg overflow-hidden group"
-                  >
-                    <Image
-                      src={dateIdeaImages[favorite.slug]}
-                      alt={favorite.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-end p-2">
-                      <span className="text-white text-sm font-medium line-clamp-2">
-                        {favorite.title}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+      {/* Animation for favorites */}
+      {showAnimation && animatingIdea && (
+        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-full shadow-lg animate-pulse">
+            <div className="flex items-center space-x-2">
+              <HeartIcon className="h-6 w-6" />
+              <span className="font-medium">Added to Favorites!</span>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
-  );
+
+    {/* Collapsible Favorites Sidebar */}
+    <div className={`${isSidebarOpen ? 'w-80' : 'w-12'} transition-all duration-300 bg-white rounded-lg shadow-lg flex flex-col h-[70vh] max-h-[600px]`}>
+      <button
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        className="p-3 flex items-center justify-center hover:bg-gray-50 transition-colors flex-shrink-0"
+      >
+        {isSidebarOpen ? (
+          <ChevronRightIcon className="h-6 w-6 text-gray-600" />
+        ) : (
+          <ChevronLeftIcon className="h-6 w-6 text-gray-600" />
+        )}
+      </button>
+
+      {isSidebarOpen && (
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="p-4 border-b flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">Favorites</h3>
+              <span className="text-sm text-gray-500">{recentFavorites.length}</span>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            {recentFavorites.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                <HeartIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p>No favorites yet</p>
+                <p className="text-sm">Swipe right to add ideas!</p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {recentFavorites.map((favorite) => (
+                  <div 
+                    key={favorite.id}
+                    className="relative group border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <Link href={`/date-idea/${favorite.slug}`} className="block">
+                      <div className="flex">
+                        <div className="relative w-20 h-20 flex-shrink-0">
+                          {dateIdeaImages[favorite.slug] ? (
+                            <Image
+                              src={dateIdeaImages[favorite.slug]}
+                              alt={favorite.title}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-xs text-gray-500">Loading...</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 p-3">
+                          <h4 className="font-medium text-sm text-gray-800 line-clamp-2">
+                            {favorite.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {favorite.category}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        removeFavorite(favorite.id);
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <XIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {recentFavorites.length > 0 && (
+            <div className="p-4 border-t flex-shrink-0">
+              <Link 
+                href="/favorites" 
+                className="w-full bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors text-center block"
+              >
+                View All Favorites
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+);
 }

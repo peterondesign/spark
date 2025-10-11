@@ -2,8 +2,8 @@ import { groq } from 'next-sanity';
 import { client } from '@/sanity/lib/client';
 import { getPexelsFallbackUrl } from '@/app/utils/imageService';
 import styles from './blog.module.css';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import Header from '../components/sections/Header';
+import Footer from '../components/sections/Footer';
 import BlogClient from '../components/BlogClient';
 import Link from "next/link";
 

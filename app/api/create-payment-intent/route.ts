@@ -33,7 +33,20 @@ export async function POST(req: NextRequest) {
     }
 
     const stripeInstance = await getStripe();
-    const { email, amount, currency = 'eur' } = await req.json();
+    
+    // Parse request body with error handling
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request format' },
+        { status: 400 }
+      );
+    }
+    
+    const { email, amount, currency = 'eur' } = requestData;
 
     if (!email || !amount) {
       return NextResponse.json(
@@ -42,9 +55,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Validate amount is a positive number
+    const numericAmount = parseInt(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Amount must be a positive number' },
+        { status: 400 }
+      );
+    }
+
     // Create a PaymentIntent with the order amount and currency
     const paymentIntent = await stripeInstance.paymentIntents.create({
-      amount: amount, // Amount in cents
+      amount: numericAmount, // Amount in cents
       currency: currency,
       automatic_payment_methods: {
         enabled: true,

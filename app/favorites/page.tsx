@@ -1,461 +1,512 @@
 "use client";
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { HeartIcon, MapPinIcon, StarIcon } from "../components/icons";
-import { CalendarIcon, SparklesIcon, SunIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import { getImage, getPlaceholderImage, getImageUrl } from "../utils/imageService";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageTitle from "../components/PageTitle";
-import { PAGE_TITLES } from "../utils/titleUtils";
-import { favoritesService } from '../services/favoritesService';
 
-// Type definition for date ideas
-type DateIdea = {
-  id?: string;
-  slug: string;
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Filter, X, ExternalLink, Heart } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { getImageUrl } from '../utils/imageService';
+import SaveButton from '../components/SaveButton';
+import Link from 'next/link';
+
+// Import sections
+import Header from '../components/sections/Header';
+import Footer from '../components/sections/Footer';
+
+// Import theme provider  
+import { ThemeProvider } from '@/components/theme-provider';
+
+interface DateIdea {
+  id: string;
   title: string;
   category: string;
-  rating: number;
-  location: string;
-  description: string;
-  price: string;
-  duration: string;
-  image: string | {
-    url: string;
-    attribution?: {
-      name: string;
-      username: string;
-      profileUrl: string;
-    } | null;
-  };
-};
+  image?: string;
+  slug?: string;
+  timeOfDay?: string;
+  mood?: string | object;
+  priceLevel?: string;
+  description?: string;
+  location?: string | object;
+  date?: string;
+  time?: string;
+  price?: string;
+  website?: string;
+  venue?: string;
+  tips?: string;
+  longDescription?: string;
+  trending?: boolean;
+}
 
-export default function Favorites() {
-  const [savedIdeas, setSavedIdeas] = useState<DateIdea[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
-  const [imagesLoading, setImagesLoading] = useState(false);
+const FavoritesContent = () => {
+  const { theme } = useTheme();
+  const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
+  const [filteredIdeas, setFilteredIdeas] = useState<DateIdea[]>([]);
+  const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [visibleIdeas, setVisibleIdeas] = useState(24);
 
+  // Filter states
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<string>("");
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
+
+  // Fetch saved favorites from localStorage
   useEffect(() => {
-    // Sync favorites with Supabase when the favorites page loads
-    favoritesService.syncFavorites().catch(error =>
-      console.warn('Failed to sync favorites:', error)
-    );
+    const fetchFavorites = async () => {
+      try {
+        setLoading(true);
+        
+        // Get saved ideas from localStorage
+        const savedIdeas = localStorage.getItem("savedDateIdeas");
+        const favoriteIdeas = savedIdeas ? JSON.parse(savedIdeas) : [];
+        
+        setDateIdeas(favoriteIdeas);
+        setFilteredIdeas(favoriteIdeas);
 
-    // Fetch saved ideas from localStorage
-    const loadSavedIdeas = () => {
-      const saved = localStorage.getItem("savedDateIdeas");
-      if (saved) {
-        setSavedIdeas(JSON.parse(saved));
+        // Fetch images for the date ideas
+        if (favoriteIdeas && favoriteIdeas.length > 0) {
+          const imagePromises = favoriteIdeas.map(async (idea: any) => {
+            try {
+              // Ensure we have valid data before calling getImageUrl
+              const title = idea?.title || 'date idea';
+              const category = idea?.category || 'general';
+              const imageUrl = await getImageUrl(
+                idea?.image,
+                `${title} ${category}`,
+                400,
+                300
+              );
+              return { [idea?.slug || idea?.id || 'default']: imageUrl };
+            } catch (error) {
+              console.error('Error fetching image for idea:', idea, error);
+              return { [idea?.slug || idea?.id || 'default']: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop' };
+            }
+          });
+
+          const imageResults = await Promise.all(imagePromises);
+          const imageMap = Object.assign({}, ...imageResults);
+          setDateIdeaImages(imageMap);
+        }
+      } catch (error) {
+        console.error("Error fetching favorite date ideas:", error);
+      } finally {
+        setLoading(false);
       }
-      setIsLoading(false);
     };
 
-    loadSavedIdeas();
+    fetchFavorites();
   }, []);
 
-  useEffect(() => {
-    const loadImageUrls = async () => {
-      setImagesLoading(true);
-      const urls: Record<string, string> = {};
-      for (const idea of savedIdeas) {
-        urls[idea.slug] = await getImageUrl(
-          idea.image,
-          `${idea.title} ${idea.category}`,
-          400,
-          300
-        );
-      }
-      setImageUrls(urls);
-      setImagesLoading(false);
-    };
-
-    if (savedIdeas.length > 0) {
-      loadImageUrls();
-    }
-  }, [savedIdeas]);
-
-  // Update removeFromFavorites to use favoritesService
-  const removeFromFavorites = async (ideaSlug: string) => {
-    const ideaToRemove = savedIdeas.find(idea => idea.slug === ideaSlug);
-    if (ideaToRemove && ideaToRemove.id) {
-      await favoritesService.removeFavorite(Number(ideaToRemove.id));
-    }
-
-    const updatedIdeas = savedIdeas.filter(idea => idea.slug !== ideaSlug);
-    setSavedIdeas(updatedIdeas);
-    localStorage.setItem("savedDateIdeas", JSON.stringify(updatedIdeas));
+  const handleLoadMore = () => {
+    setVisibleIdeas(prev => Math.min(prev + 24, filteredIdeas.length));
   };
 
-  // Update clearAllFavorites to remove from Supabase too
-  const clearAllFavorites = async () => {
-    // Remove each favorite from Supabase
-    for (const idea of savedIdeas) {
-      if (idea.id) {
-        await favoritesService.removeFavorite(Number(idea.id));
-      }
-    }
-
-    setSavedIdeas([]);
+  const clearAllFavorites = () => {
+    setDateIdeas([]);
+    setFilteredIdeas([]);
+    setDateIdeaImages({});
     localStorage.removeItem("savedDateIdeas");
   };
 
-  // Skeleton UI component for loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <PageTitle title={PAGE_TITLES.FAVORITES} />
-        <Header />
+  const removeFromFavorites = (ideaSlug: string) => {
+    try {
+      if (!ideaSlug) {
+        console.warn('No slug provided for removal');
+        return;
+      }
+      
+      const updatedIdeas = dateIdeas.filter(idea => (idea?.slug || idea?.id) !== ideaSlug);
+      setDateIdeas(updatedIdeas);
+      setFilteredIdeas(updatedIdeas);
+      localStorage.setItem("savedDateIdeas", JSON.stringify(updatedIdeas));
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+    }
+  };
 
-        <div className="container mx-auto py-12 px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-              <div className="h-8 w-64 bg-gray-200 rounded-md animate-pulse mb-2"></div>
-              <div className="h-5 w-96 bg-gray-200 rounded-md animate-pulse"></div>
-            </div>
-            <div className="mt-4 md:mt-0 h-10 w-40 bg-gray-200 rounded-md animate-pulse"></div>
-          </div>
+  // Filter functionality
+  useEffect(() => {
+    let filtered = [...dateIdeas];
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md">
-                <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
-                <div className="p-4">
-                  <div className="h-5 w-24 bg-gray-200 rounded-md animate-pulse mb-2"></div>
-                  <div className="h-7 w-full bg-gray-200 rounded-md animate-pulse mb-2"></div>
-                  <div className="h-4 w-full bg-gray-200 rounded-md animate-pulse mb-1"></div>
-                  <div className="h-4 w-4/5 bg-gray-200 rounded-md animate-pulse mb-3"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    if (selectedTimeOfDay) {
+      if (selectedTimeOfDay === 'Daytime') {
+        filtered = filtered.filter(idea => 
+          idea.timeOfDay === 'Morning' || 
+          idea.timeOfDay === 'Afternoon' || 
+          idea.timeOfDay === 'Varies'
+        );
+      } else if (selectedTimeOfDay === 'Nighttime') {
+        filtered = filtered.filter(idea => 
+          idea.timeOfDay === 'Evening' || 
+          idea.timeOfDay === 'Night'
+        );
+      }
+    }
 
-        <Footer />
-      </div>
-    );
-  }
+    if (selectedLocation) {
+      filtered = filtered.filter(idea => {
+        if (typeof idea.location === 'string') {
+          return idea.location.toLowerCase().includes(selectedLocation.toLowerCase());
+        } else if (typeof idea.location === 'object' && idea.location !== null) {
+          const locationObj = idea.location as any;
+          const type = locationObj.type;
+          const setting = locationObj.setting;
+          
+          return selectedLocation.toLowerCase() === type?.toLowerCase() || 
+                 setting?.toLowerCase().includes(selectedLocation.toLowerCase());
+        }
+        return false;
+      });
+    }
 
-  // Empty state
-  if (!isLoading && savedIdeas.length === 0) {
-    return (
-      <div className="min-h-screen bg-white">
-        <PageTitle title={PAGE_TITLES.FAVORITES} />
-        <Header />
+    if (selectedMoods.length > 0) {
+      filtered = filtered.filter(idea => {
+        if (typeof idea.mood === 'string') {
+          return selectedMoods.includes(idea.mood);
+        } else if (typeof idea.mood === 'object' && idea.mood !== null) {
+          const moodObj = idea.mood as any;
+          const pace = moodObj.pace;
+          const vibe = moodObj.vibe;
+          
+          return selectedMoods.some(selectedMood => 
+            selectedMood.toLowerCase() === pace?.toLowerCase() || 
+            selectedMood.toLowerCase() === vibe?.toLowerCase()
+          );
+        }
+        return false;
+      });
+    }
 
-        {/* Introduction section with meaningful content */}
-        <section className="bg-gradient-to-b from-white to-gray-50/30 border-t border-neutral-100/50">
-          <div className="container mx-auto py-24 px-4">
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
-                <div>
-                  <h1 className="text-5xl md:text-6xl font-medium text-gray-900 mb-8 leading-tight tracking-tight">
-                    Your Curated
-                    Date Collection
-                  </h1>
-                  <p className="text-xl text-gray-600 leading-relaxed font-light">
-                    A thoughtfully saved collection of moments waiting to be experienced together.
-                  </p>
-                </div>
-                <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-                  <Image
-                    src="/bikeriding.webp"
-                    alt="Couple enjoying a date"
-                    fill
-                    className="object-cover transition-transform duration-700 hover:scale-105"
-                    priority
-                  />
-                </div>
-              </div>
+    if (selectedPriceLevel) {
+      filtered = filtered.filter(idea => idea.priceLevel === selectedPriceLevel);
+    }
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-24">
-                <div className="bg-white rounded-2xl p-10 shadow-sm hover:shadow-lg transition-all duration-300 border border-neutral-100">
-                  <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mb-6">
-                    <CalendarIcon className="w-8 h-8 text-rose-600" />
-                  </div>
-                  <h3 className="text-2xl font-medium text-gray-900 mb-4">Plan with Ease</h3>
-                  <p className="text-gray-600 font-light text-lg leading-relaxed">Schedule your favorite moments for the perfect date night.</p>
-                </div>
+    setFilteredIdeas(filtered);
+    setVisibleIdeas(24);
+  }, [selectedTimeOfDay, selectedLocation, selectedMoods, selectedPriceLevel, dateIdeas]);
 
-                <div className="bg-white rounded-2xl p-10 shadow-sm hover:shadow-lg transition-all duration-300 border border-neutral-100">
-                  <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mb-6">
-                    <SparklesIcon className="w-8 h-8 text-violet-600" />
-                  </div>
-                  <h3 className="text-2xl font-medium text-gray-900 mb-4">Keep it Fresh</h3>
-                  <p className="text-gray-600 font-light text-lg leading-relaxed">Discover new experiences to keep your relationship vibrant.</p>
-                </div>
+  const clearFilters = () => {
+    setSelectedTimeOfDay("");
+    setSelectedLocation("");
+    setSelectedMoods([]);
+    setSelectedPriceLevel("");
+  };
 
-                <div className="bg-white rounded-2xl p-10 shadow-sm hover:shadow-lg transition-all duration-300 border border-neutral-100">
-                  <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                    <HeartIcon className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-2xl font-medium text-gray-900 mb-4">Share Together</h3>
-                  <p className="text-gray-600 font-light text-lg leading-relaxed">Create a shared wishlist of experiences to enjoy with your partner.</p>
-                </div>
-              </div>
+  const hasActiveFilters = selectedTimeOfDay || selectedLocation || selectedMoods.length > 0 || selectedPriceLevel;
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div className="order-2 lg:order-1">
-                  <div className="grid grid-cols-2 gap-4">
-                    <Image
-                      src="/romanticpaint.jpg"
-                      alt="Romantic paint night"
-                      width={300}
-                      height={400}
-                      className="rounded-xl object-cover w-full h-[200px] md:h-[300px]"
-                    />
-                    <Image
-                      src="/couplegokart.webp"
-                      alt="Couple go-karting"
-                      width={300}
-                      height={400}
-                      className="rounded-xl object-cover w-full h-[200px] md:h-[300px] mt-8"
-                    />
-                  </div>
-                </div>
-
-                <div className="order-1 lg:order-2">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">Making the Most of Your Favorites</h2>
-                  <ul className="space-y-4">
-                    {[
-                      {
-                        title: "Schedule Directly",
-                        description: "Drag favorites to your date calendar for easy planning",
-                        icon: <CalendarIcon className="w-5 h-5 text-rose-500" />
-                      },
-                      {
-                        title: "Budget Smart",
-                        description: "Include a mix of free, affordable, and special occasion dates",
-                        icon: <CurrencyDollarIcon className="w-5 h-5 text-rose-500" />
-                      },
-                      {
-                        title: "Stay Seasonal",
-                        description: "Find perfect date ideas for any season or weather",
-                        icon: <SunIcon className="w-5 h-5 text-rose-500" />
-                      }
-                    ].map((item, index) => (
-                      <li key={index} className="flex items-start gap-4">
-                        <div className="mt-1">{item.icon}</div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                          <p className="text-gray-600">{item.description}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
-                <div className="max-w-3xl mx-auto text-center">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">Ready to Start Planning?</h2>
-                  <p className="text-lg text-gray-700 mb-8">
-                    Browse our collection and click the heart icon on any date that interests you, or try our date idea generator
-                    to discover experiences tailored to your preferences.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Link
-                      href="/"
-                      className="inline-flex items-center justify-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
-                    >
-                      Browse Date Ideas
-                    </Link>
-                    <Link
-                      href="/date-idea-generator"
-                      className="inline-flex items-center justify-center px-6 py-3 bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50 rounded-full font-medium transition-colors"
-                    >
-                      Try Date Generator
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Empty State */}
-        <div className="max-w-4xl mx-auto py-16 px-4 text-center">
-          <div className="mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-rose-100 rounded-full mb-6">
-              <HeartIcon className="h-10 w-10 text-rose-500" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-3">No Saved Date Ideas Yet</h1>
-            <p className="text-gray-600 max-w-md mx-auto mb-8">
-              When you find date ideas you love, click the heart icon to save them here for easy access later.
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
-            >
-              Discover Date Ideas
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </Link>
-          </div>
-
-          <div className="mt-16">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">How Favorites Work</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-              <div>
-                <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-                <h3 className="font-medium text-gray-800 mb-2">Save Ideas</h3>
-                <p className="text-sm text-gray-600">Click the heart icon on any date idea to save it to your favorites.</p>
-              </div>
-              <div>
-                <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                  </svg>
-                </div>
-                <h3 className="font-medium text-gray-800 mb-2">Access Anytime</h3>
-                <p className="text-sm text-gray-600">Your favorites are saved to this device for easy access later.</p>
-              </div>
-              <div>
-                <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="font-medium text-gray-800 mb-2">Plan Dates</h3>
-                <p className="text-sm text-gray-600">Use your favorites list to plan your next perfect date.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Skeleton UI component for image loading
-  const ImageSkeleton = () => (
-    <div className="w-full h-48 bg-gray-200 rounded-t-lg animate-pulse"></div>
-  );
-
-  // Favorites list with saved ideas
   return (
-    <>
-      {/* Header and Page Title */}
-      <div className="min-h-screen bg-white">
-        <Header />
-        <PageTitle title={PAGE_TITLES.FAVORITES} />
-
-        {/* Favorites Content */}
-        <div className="container mx-auto py-8 px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">Your Saved Date Ideas</h1>
-              <p className="text-gray-600">Here are all the date ideas you've saved for easy access and future planning.</p>
+    <main className={`overflow-x-hidden min-h-screen ${theme === 'light' ? 'bg-white' : 'bg-[#212121]'}`}>
+      <Header />
+      
+      <section
+        className={`py-16 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}
+        id="favorite-date-ideas"
+      >
+        <div className="container mt-16 mx-auto px-6">
+          {/* Section Header with Filters and Clear All */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12">
+            <div className='flex flex-col lg:flex-row lg:items-center gap-4'>
+              <h2 className={`text-3xl md:text-4xl font-bold font-heading ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                YOUR FAVORITE DATE IDEAS
+              </h2>
             </div>
 
-            {savedIdeas.length > 0 && (
+            <div className="flex gap-4">
+              {/* Clear All Button */}
+              {dateIdeas.length > 0 && (
+                <button
+                  onClick={clearAllFavorites}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full border-2 transition-all duration-300 ${
+                    theme === 'dark'
+                      ? 'border-red-600 text-red-400 hover:bg-red-600 hover:text-white'
+                      : 'border-red-500 text-red-500 hover:bg-red-500 hover:text-white'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                  Clear All
+                </button>
+              )}
+
+              {/* Filter Button */}
               <button
-                onClick={clearAllFavorites}
-                className="mt-4 md:mt-0 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 flex items-center"
+                onClick={() => setShowFilters(true)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full border-2 transition-all duration-300 ${hasActiveFilters
+                  ? 'bg-rose-500 text-white border-rose-500'
+                  : theme === 'dark'
+                    ? 'border-gray-600 text-white hover:border-rose-500'
+                    : 'border-gray-300 text-gray-700 hover:border-rose-500'
+                  }`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                Clear All Favorites
+                <Filter className="w-5 h-5" />
+                Filters
+                {hasActiveFilters && (
+                  <span className="ml-1 bg-white text-rose-500 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                    {[selectedTimeOfDay, selectedLocation, selectedMoods.length > 0 ? 'mood' : '', selectedPriceLevel].filter(Boolean).length}
+                  </span>
+                )}
               </button>
-            )}
+            </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
+          {/* Empty State */}
+          {!loading && dateIdeas.length === 0 && (
+            <div className="text-center py-16">
+              <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 ${
+                theme === 'dark' ? 'bg-gray-700' : 'bg-rose-100'
+              }`}>
+                <Heart className={`h-10 w-10 ${theme === 'dark' ? 'text-gray-400' : 'text-rose-500'}`} />
+              </div>
+              <h3 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                No Saved Date Ideas Yet
+              </h3>
+              <p className={`text-lg mb-8 max-w-md mx-auto ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                When you find date ideas you love, click the heart icon to save them here for easy access later.
+              </p>
+              <Link
+                href="/"
+                className="inline-flex items-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
+              >
+                Discover Date Ideas
+                <ChevronRight className="w-5 h-5 ml-2" />
+              </Link>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {savedIdeas.map((idea) => (
-                <div key={idea.slug} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    {imagesLoading ? (
-                      <ImageSkeleton />
-                    ) : imageUrls[idea.slug] ? (
-                      <Image
-                        src={imageUrls[idea.slug]!}
-                        alt={idea.title}
-                        width={400}
-                        height={300}
-                        className="w-full h-48 object-cover"
-                      />
-                    ) : (
-                      <ImageSkeleton />
-                    )}
-                    <button
-                      className="absolute top-3 right-3 bg-white p-3 rounded-full shadow-lg hover:bg-gray-100"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        removeFromFavorites(idea.slug);
-                      }}
-                    >
-                      <HeartIcon className="h-7 w-7 text-rose-500" />
-                    </button>
-                  </div>
+          )}
 
-                  <div className="p-4">
-                    <div className="flex items-center mb-2">
-                      <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">
-                        {idea.category}
-                      </span>
-                    </div>
-
-                    <h3 className="text-lg font-bold text-gray-800 mb-1 hover:text-rose-500 transition-colors">
-                      <Link href={`/date-idea/${idea.slug}`}>
-                        {idea.title}
-                      </Link>
-                    </h3>
-
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{idea.description}</p>
-                  </div>
-                </div>
+          {/* Date Ideas Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {[...Array(24)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`animate-pulse rounded-2xl h-64 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}
+                />
               ))}
             </div>
+          ) : (
+            <>
+              {filteredIdeas.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
+                  {filteredIdeas.slice(0, visibleIdeas).map((idea) => (
+                    <div
+                      key={idea.slug || idea.id}
+                      className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${theme === 'dark'
+                        ? 'bg-[#333333] border border-gray-700'
+                        : 'bg-white border border-gray-200'
+                        }`}
+                      onClick={() => {
+                        if (idea.website) {
+                          window.open(idea.website, '_blank');
+                        } else if (idea.slug) {
+                          window.location.href = `/date-idea/${idea.slug}`;
+                        }
+                      }}
+                    >
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={dateIdeaImages[idea.slug || idea.id] || idea.image || 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'}
+                          alt={idea.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+                        {/* Remove from favorites button */}
+                        <div className="absolute top-3 right-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromFavorites(idea.slug || idea.id);
+                            }}
+                            className="p-2 bg-red-500 hover:bg-red-600 rounded-full backdrop-blur-sm transition-colors"
+                          >
+                            <X className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="p-4">
+                        <h3 className={`text-lg font-semibold mb-2 group-hover:text-rose-400 transition-colors line-clamp-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                          {String(idea.title || '')}
+                        </h3>
+                        
+                        {idea.description && (
+                          <p className={`text-sm line-clamp-2 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {idea.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Load More Button */}
+              {filteredIdeas.length > visibleIdeas && (
+                <div className="text-center">
+                  <button
+                    onClick={handleLoadMore}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    Load More
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <section className="mt-16 py-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl shadow-xl">
-          <div className="container mx-auto px-6">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center">Turn Your Favorites into a Date Calendar</h2>
-            <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        {/* Filter Modal */}
+        {showFilters && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className={`w-full max-w-md rounded-2xl shadow-2xl ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-white'}`}>
+              {/* Modal Header */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  Filter Favorites
+                </h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${theme === 'dark' ? 'hover:bg-gray-700 text-white' : 'text-gray-500'}`}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Time of Day Filter */}
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Plan Memorable Dates</h3>
-                  <p className="text-lg text-gray-600 mb-6">
-                    Use your saved favorites to create a personalized date calendar. Schedule your favorite ideas and make planning your next date night effortless.
-                  </p>
-                  <Link
-                    href="/calendar"
-                    className="inline-flex items-center px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full font-medium transition-colors"
+                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                    Time of Day
+                  </label>
+                  <select
+                    value={selectedTimeOfDay}
+                    onChange={(e) => setSelectedTimeOfDay(e.target.value)}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
+                      ? 'bg-[#333333] border-gray-600 text-white'
+                      : 'bg-white text-gray-900'
+                      }`}
                   >
-                    Open Date Calendar
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </Link>
+                    <option value="">Any time</option>
+                    <option value="Daytime">Daytime</option>
+                    <option value="Nighttime">Nighttime</option>
+                  </select>
                 </div>
-                <div className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl">
-                  <Image
-                    src="/calendar-preview.jpg"
-                    alt="Date calendar preview"
-                    fill
-                    className="object-cover transition-transform duration-700 hover:scale-105"
-                  />
+
+                {/* Location Filter */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                    Location Type
+                  </label>
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
+                      ? 'bg-[#333333] border-gray-600 text-white'
+                      : 'bg-white text-gray-900'
+                      }`}
+                  >
+                    <option value="">Any location</option>
+                    <option value="indoor">Indoor</option>
+                    <option value="outdoor">Outdoor</option>
+                  </select>
                 </div>
+
+                {/* Mood Filter */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                    Mood (Select multiple)
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {[
+                      { value: 'active', label: 'Active' },
+                      { value: 'leisurely', label: 'Leisurely' }, 
+                      { value: 'relaxed', label: 'Relaxed' },
+                      { value: 'varied', label: 'Varied' },
+                      { value: 'thrilling', label: 'Thrilling' },
+                      { value: 'cozy', label: 'Cozy' },
+                      { value: 'fun', label: 'Fun' },
+                      { value: 'romantic', label: 'Romantic' }
+                    ].map((mood) => (
+                      <label key={mood.value} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedMoods.includes(mood.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedMoods([...selectedMoods, mood.value]);
+                            } else {
+                              setSelectedMoods(selectedMoods.filter(m => m !== mood.value));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
+                        />
+                        <span className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                          {mood.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price Level Filter */}
+                <div>
+                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
+                    Price Level
+                  </label>
+                  <select
+                    value={selectedPriceLevel}
+                    onChange={(e) => setSelectedPriceLevel(e.target.value)}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
+                      ? 'bg-[#333333] border-gray-600 text-white'
+                      : 'bg-white text-gray-900'
+                      }`}
+                  >
+                    <option value="">Any price</option>
+                    <option value="Affordable">Affordable</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 p-6 border-t border-gray-200">
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className={`flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors ${theme === 'dark'
+                      ? 'border-gray-600 text-white hover:bg-gray-700'
+                      : ''
+                      }`}
+                  >
+                    Clear All
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="flex-1 py-3 px-4 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
+                >
+                  Apply Filters
+                </button>
               </div>
             </div>
           </div>
-        </section>
+        )}
+              <Footer />
+      </section>  
+    </main>
+  );
+};
 
-      </div>
-      <Footer />
-    </>
+export default function Favorites() {
+  return (
+    <ThemeProvider>
+      <FavoritesContent />
+    </ThemeProvider>
   );
 }

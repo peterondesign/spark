@@ -37,6 +37,13 @@ const StripeModal = ({ isOpen, onClose, email: initialEmail }: StripeModalProps)
       return false;
     }
     
+    // Basic validation: must contain @ symbol
+    if (!emailValue.includes('@')) {
+      setEmailError('Email must contain @ symbol');
+      return false;
+    }
+    
+    // More comprehensive email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailValue)) {
       setEmailError('Please enter a valid email address');
@@ -51,10 +58,8 @@ const StripeModal = ({ isOpen, onClose, email: initialEmail }: StripeModalProps)
     const newEmail = e.target.value;
     setEmail(newEmail);
     
-    // Clear error when user starts typing
-    if (emailError) {
-      setEmailError('');
-    }
+    // Real-time validation to update button state
+    validateEmail(newEmail);
   };
 
   const handleEmailBlur = () => {
@@ -63,8 +68,14 @@ const StripeModal = ({ isOpen, onClose, email: initialEmail }: StripeModalProps)
     }
   };
 
+  // Check if email is valid for enabling the button
+  const isEmailValid = () => {
+    return email.trim() && email.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const createPaymentIntent = async () => {
-    if (!validateEmail(email)) {
+    if (!isEmailValid()) {
+      validateEmail(email); // Show validation error
       return;
     }
 
@@ -208,23 +219,29 @@ const StripeModal = ({ isOpen, onClose, email: initialEmail }: StripeModalProps)
             </Elements>
           ) : (
             <div className="text-center py-4">
-              {email.trim() && !emailError ? (
-                <button
-                  onClick={createPaymentIntent}
-                  disabled={isLoading}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 ${
-                    isLoading
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-rose-500 hover:bg-rose-600 hover:shadow-lg'
-                  }`}
-                >
-                  Continue to Payment
-                </button>
-              ) : (
-                <p className={`text-sm ${
+              <button
+                onClick={createPaymentIntent}
+                disabled={!isEmailValid() || isLoading}
+                className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-300 ${
+                  !isEmailValid() || isLoading
+                    ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                    : 'bg-rose-500 hover:bg-rose-600 hover:shadow-lg'
+                }`}
+              >
+                {isLoading ? 'Setting up...' : 'Continue to Payment'}
+              </button>
+              {!isEmailValid() && email.trim() && (
+                <p className={`text-sm mt-2 ${
                   theme === 'light' ? 'text-gray-600' : 'text-gray-400'
                 }`}>
                   Please enter a valid email address to continue
+                </p>
+              )}
+              {!email.trim() && (
+                <p className={`text-sm mt-2 ${
+                  theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                }`}>
+                  Please enter your email address to continue
                 </p>
               )}
             </div>

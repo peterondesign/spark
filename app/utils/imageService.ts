@@ -132,34 +132,40 @@ export const getImageUrl = async (
 ): Promise<string> => {
   // console.log(`🔍 getImageUrl called with image: ${image}, keyword: ${keyword}`);
   
+  // Ensure keyword is always a string
+  const safeKeyword = (keyword && typeof keyword === 'string') ? keyword : "date";
+  
   // Handle undefined or null - go straight to Pexels
   if (!image) {
-    // console.log(`📸 No image provided, using Pexels for keyword: ${keyword}`);
-    return await getPexelsFallbackUrl(keyword, width, height);
+    // console.log(`📸 No image provided, using Pexels for keyword: ${safeKeyword}`);
+    return await getPexelsFallbackUrl(safeKeyword, width, height);
   }
   
   // Handle strings
   if (typeof image === 'string') {
+    // Ensure the string exists before calling methods on it
+    const safeImage = image || '';
+    
     // If it's a placeholder URL or empty path, use Pexels fallback
     if (
-      image.includes('placeholder.svg') || 
-      image.includes('/?height=') || 
-      image === '/' ||
-      image.includes('placeholder')
+      safeImage.includes('placeholder.svg') || 
+      safeImage.includes('/?height=') || 
+      safeImage === '/' ||
+      safeImage.includes('placeholder')
     ) {
-      // console.log(`🔄 Placeholder detected (${image}), using Pexels for keyword: ${keyword}`);
-      return await getPexelsFallbackUrl(keyword, width, height);
+      // console.log(`🔄 Placeholder detected (${safeImage}), using Pexels for keyword: ${safeKeyword}`);
+      return await getPexelsFallbackUrl(safeKeyword, width, height);
     }
     
     // If it's already a valid URL (starts with http), use it
-    if (image.startsWith('http')) {
-      // console.log(`✅ Valid URL found: ${image}`);
-      return image;
+    if (safeImage.startsWith('http')) {
+      // console.log(`✅ Valid URL found: ${safeImage}`);
+      return safeImage;
     }
     
     // Otherwise, treat as keyword and get from Pexels
-    // console.log(`🔄 Invalid URL (${image}), using Pexels for keyword: ${keyword}`);
-    return await getPexelsFallbackUrl(keyword, width, height);
+    // console.log(`🔄 Invalid URL (${safeImage}), using Pexels for keyword: ${safeKeyword}`);
+    return await getPexelsFallbackUrl(safeKeyword, width, height);
   }
   
   // Handle objects with url property
@@ -208,7 +214,13 @@ export const getPexelsFallbackUrl = async (
   }
   
   try {
-    // Call the Pexels Search API
+    // Check if we're in a browser environment and avoid CORS issues
+    if (typeof window !== 'undefined') {
+      console.warn('Pexels API called from client side, using fallback image');
+      return 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
+    }
+    
+    // Call the Pexels Search API (server-side only)
     const response = await fetch(
       `${PEXELS_API_URL}/search?query=${encodeURIComponent(keyword)}&per_page=1&size=medium`,
       {
