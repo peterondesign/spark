@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const stripeInstance = await getStripe();
     
-    // Parse request body with error handling
+    // Parse request body with error handling.
     let requestData;
     try {
       requestData = await req.json();
