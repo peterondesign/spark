@@ -264,9 +264,9 @@ export default function AlphabetDatingPage() {
               <h3 className="text-xl font-semibold mb-2 text-purple-600">Spin the Wheel</h3>
               <p className="text-gray-600">Let fate choose your next date adventure with our random wheel.</p>
             </Link>
-            <Link href="/date-ideas-near-me" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold mb-2 text-pink-600">Date Ideas Near Me</h3>
-              <p className="text-gray-600">Discover date ideas based on your location.</p>
+                        <Link href="/spin-the-wheel" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Spin the Wheel</h3>
+              <p className="text-gray-600">Let fate decide your next romantic adventure with our fun date spinner.</p>
             </Link>
           </div>
         </div>

@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Filter, X, ExternalLink } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
-import { getImageUrl } from '../../utils/imageService';
 import SaveButton from '../SaveButton';
 import Link from 'next/link';
 import CityPicker from '../CityPicker';
+import { useLazyImages } from '../../hooks/useLazyImages';
 
 interface DateIdea {
   id: string;
@@ -35,9 +35,14 @@ const AllDateIdeasSection = () => {
   const [selectedCity, setSelectedCity] = useState<string>("LISBON");
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [filteredIdeas, setFilteredIdeas] = useState<DateIdea[]>([]);
-  const [dateIdeaImages, setDateIdeaImages] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [visibleIdeas, setVisibleIdeas] = useState(24); // Increased from 12 to show more initially
+
+  // Use lazy loading hook for images
+  const { imageMap, isLoading: imagesLoading, backgroundLoading, observe, loadedCount, totalCount, loadMoreImages } = useLazyImages(filteredIdeas.slice(0, visibleIdeas), {
+    batchSize: 8,
+    threshold: 0.1
+  });
 
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -46,12 +51,12 @@ const AllDateIdeasSection = () => {
   const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<string>("");
 
-  // Fetch date ideas from both Supabase and city events
+  // Fetch date ideas from Supabase
   useEffect(() => {
     const fetchAllIdeas = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch from Supabase - get all date ideas and randomize
         const { data: supabaseData, error } = await supabase
           .from('date_ideas')
@@ -60,15 +65,6 @@ const AllDateIdeasSection = () => {
 
         if (error) {
           console.error("Error fetching date ideas:", error);
-        }
-
-        // Fetch city events from Perplexity API
-        const cityResponse = await fetch(`/api/perplexity-city-events?city=${encodeURIComponent(selectedCity)}`);
-        let cityEvents = [];
-        
-        if (cityResponse.ok) {
-          const cityData = await cityResponse.json();
-          cityEvents = cityData.events || [];
         }
 
         // Fisher-Yates shuffle algorithm for better randomization
@@ -81,54 +77,19 @@ const AllDateIdeasSection = () => {
           return shuffled;
         };
 
-        // Combine both sources
+        // Process Supabase data
         const supabaseIdeas = supabaseData ? shuffleArray(supabaseData).map((item: any) => ({
           ...item,
           timeOfDay: item.timeOfDay || item.time_of_day, // Handle both naming conventions
           priceLevel: item.priceLevel || item.price_level, // Handle both naming conventions
         })) : [];
-        
-        // Shuffle city events too
-        const shuffledCityEvents = shuffleArray(cityEvents).map((event: any) => ({
-          id: event.id,
-          title: event.title,
-          category: event.category,
-          image: event.image,
-          slug: event.id, // Use ID as slug for city events
-          description: event.description,
-          location: event.location,
-          date: event.date,
-          time: event.time,
-          price: event.price,
-          website: event.website,
-          venue: event.venue
-        }));
-        
-        // Combine and shuffle the final array
-        const combinedIdeas = shuffleArray([
-          ...shuffledCityEvents,
-          ...supabaseIdeas
-        ]);
 
-        setDateIdeas(combinedIdeas);
-        setFilteredIdeas(combinedIdeas);
+        setDateIdeas(supabaseIdeas);
+        setFilteredIdeas(supabaseIdeas);
 
-        // Fetch images for the date ideas
-        if (combinedIdeas && combinedIdeas.length > 0) {
-          const imagePromises = combinedIdeas.map(async (idea) => {
-            const imageUrl = await getImageUrl(
-              idea.image,
-              `${idea.title} ${idea.category} ${selectedCity}`,
-              400,
-              300
-            );
-            return { [idea.slug || idea.id]: imageUrl };
-          });
-
-          const imageResults = await Promise.all(imagePromises);
-          const imageMap = Object.assign({}, ...imageResults);
-          setDateIdeaImages(imageMap);
-        }
+        // Only load images for the first batch (visible items)
+        // Lazy loading will handle the rest
+        console.log(`🔥 Total date ideas loaded: ${supabaseIdeas.length}`);
       } catch (error) {
         console.error("Error fetching date ideas:", error);
       } finally {
@@ -145,11 +106,20 @@ const AllDateIdeasSection = () => {
     // Clear existing data when city changes
     setDateIdeas([]);
     setFilteredIdeas([]);
-    setDateIdeaImages({});
+    // Note: imageMap will be cleared automatically by the lazy loading hook
   };
 
   const handleLoadMore = () => {
-    setVisibleIdeas(prev => Math.min(prev + 24, filteredIdeas.length)); // Load 24 more at a time
+    const currentVisible = visibleIdeas;
+    const newVisible = Math.min(currentVisible + 24, filteredIdeas.length);
+    const newItems = filteredIdeas.slice(currentVisible, newVisible);
+    
+    setVisibleIdeas(newVisible);
+    
+    // Trigger immediate loading of the new items
+    if (newItems.length > 0) {
+      loadMoreImages(newItems);
+    }
   };
 
   // Filter functionality with accurate field matching based on real database data
@@ -159,14 +129,14 @@ const AllDateIdeasSection = () => {
     if (selectedTimeOfDay) {
       // Map user-friendly options to database values
       if (selectedTimeOfDay === 'Daytime') {
-        filtered = filtered.filter(idea => 
-          idea.timeOfDay === 'Morning' || 
-          idea.timeOfDay === 'Afternoon' || 
+        filtered = filtered.filter(idea =>
+          idea.timeOfDay === 'Morning' ||
+          idea.timeOfDay === 'Afternoon' ||
           idea.timeOfDay === 'Varies'
         );
       } else if (selectedTimeOfDay === 'Nighttime') {
-        filtered = filtered.filter(idea => 
-          idea.timeOfDay === 'Evening' || 
+        filtered = filtered.filter(idea =>
+          idea.timeOfDay === 'Evening' ||
           idea.timeOfDay === 'Night'
         );
       }
@@ -181,9 +151,9 @@ const AllDateIdeasSection = () => {
           const locationObj = idea.location as any;
           const type = locationObj.type;
           const setting = locationObj.setting;
-          
-          return selectedLocation.toLowerCase() === type?.toLowerCase() || 
-                 setting?.toLowerCase().includes(selectedLocation.toLowerCase());
+
+          return selectedLocation.toLowerCase() === type?.toLowerCase() ||
+            setting?.toLowerCase().includes(selectedLocation.toLowerCase());
         }
         return false;
       });
@@ -198,9 +168,9 @@ const AllDateIdeasSection = () => {
           const moodObj = idea.mood as any;
           const pace = moodObj.pace;
           const vibe = moodObj.vibe;
-          
-          return selectedMoods.some(selectedMood => 
-            selectedMood.toLowerCase() === pace?.toLowerCase() || 
+
+          return selectedMoods.some(selectedMood =>
+            selectedMood.toLowerCase() === pace?.toLowerCase() ||
             selectedMood.toLowerCase() === vibe?.toLowerCase()
           );
         }
@@ -280,30 +250,30 @@ const AllDateIdeasSection = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-              {filteredIdeas.slice(0, visibleIdeas).map((idea) => (
+              {filteredIdeas.slice(0, visibleIdeas).map((idea, index) => (
                 <div
                   key={idea.id}
+                  ref={(el) => observe(el, index)}
                   className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${theme === 'dark'
                     ? 'bg-[#333333] border border-gray-700'
                     : 'bg-white border border-gray-200'
                     }`}
                   onClick={() => {
-                    // Handle city events vs regular date ideas
-                    if (idea.website) {
-                      window.open(idea.website, '_blank');
-                    } else if (idea.slug) {
+                    // Navigate to date idea page
+                    if (idea.slug) {
                       window.location.href = `/date-idea/${idea.slug}`;
                     }
                   }}
                 >
                   <div className="relative h-48 overflow-hidden">
                     <img
-                      src={dateIdeaImages[idea.slug || idea.id] || idea.image || 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'}
-                      alt={idea.title}
+                      src={imageMap[idea.slug || idea.id] || idea.image || '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title)}
+                      alt={`${idea.title} - diverse couple date idea`}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      loading="lazy"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
+                        target.src = '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title);
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -315,7 +285,7 @@ const AllDateIdeasSection = () => {
                       </span>
                     </div> */}
 
-                    {/* Save Button - only for regular date ideas */}
+                    {/* Save Button */}
                     {idea.slug && (
                       <div className="absolute top-3 right-3">
                         <SaveButton
@@ -325,15 +295,6 @@ const AllDateIdeasSection = () => {
                         />
                       </div>
                     )}
-
-                    {/* External link indicator for city events */}
-                    {idea.website && (
-                      <div className="absolute top-3 right-3">
-                        <div className="p-2 bg-black/50 rounded-full backdrop-blur-sm">
-                          <ChevronRight className="w-4 h-4 text-white" />
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div className="p-4">
@@ -341,11 +302,24 @@ const AllDateIdeasSection = () => {
                       }`}>
                       {String(idea.title || '')}
                     </h3>
-                    
+
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Image Loading Progress */}
+            {(imagesLoading || backgroundLoading) && (
+              <div className="text-center py-4">
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-rose-500 border-t-transparent"></div>
+                  {imagesLoading ? 
+                    `Loading images... (${loadedCount}/${Math.min(totalCount, visibleIdeas)})` :
+                    `Loading in background... (${loadedCount}/${totalCount})`
+                  }
+                </div>
+              </div>
+            )}
 
             {/* Load More Button */}
             {filteredIdeas.length > visibleIdeas && (
@@ -435,7 +409,7 @@ const AllDateIdeasSection = () => {
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {[
                       { value: 'active', label: 'Active' },
-                      { value: 'leisurely', label: 'Leisurely' }, 
+                      { value: 'leisurely', label: 'Leisurely' },
                       { value: 'relaxed', label: 'Relaxed' },
                       { value: 'varied', label: 'Varied' },
                       { value: 'thrilling', label: 'Thrilling' },

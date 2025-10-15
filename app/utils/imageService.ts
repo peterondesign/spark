@@ -1,6 +1,8 @@
 /**
- * Utility functions for handling images using the Pexels API
+ * Utility functions for handling images using AI generation
  */
+
+import ReplicateImageService from './newImageService';
 
 const PEXELS_ACCESS_KEY = process.env.NEXT_PUBLIC_PEXELS_ACCESS_KEY || "uCWBRGyGfG2SPRGVszsdP9WFzVNMwVC6co4xLTAaivaRCnleATbRcIEe";
 const PEXELS_API_URL = "https://api.pexels.com/v1";
@@ -182,92 +184,53 @@ export const getImageUrl = async (
 };
 
 /**
- * Get a fallback image URL from Pexels based on a search query
- * 
- * @param keyword Search keyword for the image
- * @param width Image width
- * @param height Image height
- * @returns Image URL string from Pexels
+ * Get image URL using AI generation (replacement for Pexels)
+ * Fast lookup from Supabase storage with fallback
  */
 export const getPexelsFallbackUrl = async (
   keyword: string = "date", 
   width: number = 400, 
   height: number = 300
 ): Promise<string> => {
-  // Create a cache key
-  const cacheKey = `${keyword}-${width}x${height}`;
-  
-  // Check browser cache first
-  const browserCached = getBrowserCachedImage(cacheKey);
-  if (browserCached) {
-    return browserCached.url;
-  }
-
-  // Then check memory cache
-  if (imageCache[cacheKey] && Date.now() - imageCache[cacheKey].timestamp < CACHE_EXPIRY) {
-    const cached = imageCache[cacheKey];
-    
-    // Also save to browser cache
-    saveToBrowserCache(cacheKey, cached);
-    
-    return cached.url;
-  }
-  
-  try {
-    // Check if we're in a browser environment and avoid CORS issues
-    if (typeof window !== 'undefined') {
-      console.warn('Pexels API called from client side, using fallback image');
-      return 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
-    }
-    
-    // Call the Pexels Search API (server-side only)
-    const response = await fetch(
-      `${PEXELS_API_URL}/search?query=${encodeURIComponent(keyword)}&per_page=1&size=medium`,
-      {
+  // If we're on the client side, make a fast API call to lookup existing images
+  if (typeof window !== 'undefined') {
+    try {
+      const response = await fetch('/api/lookup-image', {
+        method: 'POST',
         headers: {
-          Authorization: PEXELS_ACCESS_KEY,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ keyword, width, height })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.imageUrl) {
+          return data.imageUrl;
+        }
       }
-    );
-    
-    if (!response.ok) {
-      console.warn(`Pexels API error: ${response.status} ${response.statusText}`);
-      throw new Error(`Pexels API error: ${response.status} ${response.statusText}`);
+    } catch (error) {
+      console.error('❌ Image lookup failed:', error);
     }
     
-    const data = await response.json();
-    
-    // Check if any results were returned
-    if (data.photos && data.photos.length > 0) {
-      const photo: PexelsPhoto = data.photos[0];
-      const imageUrl = photo.src.medium;
-      
-      // Create cache object
-      const cacheData = {
-        url: imageUrl,
-        photographer: photo.photographer,
-        photographerUrl: photo.photographer_url,
-        timestamp: Date.now()
-      };
-      
-      // Save to memory cache
-      imageCache[cacheKey] = cacheData;
-      
-      // Save to browser cache
-      saveToBrowserCache(cacheKey, cacheData);
-      
-      // console.log(`✅ Successfully loaded Pexels image for "${keyword}": ${imageUrl}`);
-      return imageUrl;
-    } else {
-      console.warn(`No Pexels results for keyword: ${keyword}`);
-      // Return a default romantic date image instead of placeholder
-      return 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
-    }
-  } catch (error: any) {
-    console.error(`Error fetching Pexels image for "${keyword}":`, error);
-    // Return a default romantic date image instead of placeholder
-    return 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop';
+    // If lookup fails, return placeholder immediately (no generation on client)
+    return getPlaceholderImage(width, height, keyword);
   }
+  
+  // Server-side: Try direct lookup from ReplicateImageService
+  try {
+    const replicateService = ReplicateImageService.getInstance();
+    const existingImageUrl = await replicateService.findExistingImage(keyword, width, height);
+    
+    if (existingImageUrl) {
+      return existingImageUrl;
+    }
+  } catch (error) {
+    console.error('❌ Server-side image lookup failed:', error);
+  }
+  
+  // If server-side lookup fails, return placeholder
+  return getPlaceholderImage(width, height, keyword);
 };
 
 /**
@@ -365,8 +328,24 @@ export const updateDateIdeaImages = async (dateIdea: any): Promise<any> => {
 };
 
 /**
+ * Get image URL from Replicate AI for a given keyword
+ * @param keyword Search keyword for the image
+ * @param width Desired width for the image  
+ * @param height Desired height for the image
+ * @returns Image URL string from Replicate AI
+ */
+export const getAIImageUrl = async (
+  keyword: string = "date", 
+  width: number = 400, 
+  height: number = 300
+): Promise<string> => {
+  // Use the main getImageUrl function which handles AI generation
+  return await getImageUrl(undefined, keyword, width, height);
+};
+
+/**
  * Legacy function for backward compatibility
- * @deprecated Use getPexelsFallbackUrl instead
+ * @deprecated Use getAIImageUrl instead
  */
 export const getImage = (keyword: string = "date", width: number = 400, height: number = 300): string => {
   // For server components where we can't use async, we'll use the source URL directly

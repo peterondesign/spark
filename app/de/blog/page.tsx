@@ -1,6 +1,7 @@
 import { groq } from 'next-sanity';
+import { notFound } from 'next/navigation';
 import { client } from '@/sanity/lib/client';
-import { getPexelsFallbackUrl } from '@/app/utils/imageService';
+import { getAIImageUrl } from '@/app/utils/imageService';
 import styles from '@/app/blog/blog.module.css'
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -20,7 +21,7 @@ export default async function BlogPage() {
   const postsWithImages = await Promise.all(
     posts.map(async (post: any) => ({
       ...post,
-      imageUrl: await getPexelsFallbackUrl(post.title, 400, 300)
+      imageUrl: await getAIImageUrl(post.title, 400, 300)
     }))
   );
 

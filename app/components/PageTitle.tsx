@@ -31,20 +31,10 @@ const PageTitle: React.FC<PageTitleProps> = ({
         return PAGE_TITLES.PREFERENCES;
       case "/calendar":
         return PAGE_TITLES.CALENDAR;
-      case "/date-ideas-near-me":
-        return PAGE_TITLES.DATE_IDEAS_NEAR_ME;
       default:
         // For dynamic paths like date detail pages
         if (pathname?.includes("/date-idea/")) {
           return customTitle ? PAGE_TITLES.DATE_DETAIL(customTitle) : PAGE_TITLES.HOME;
-        }
-        // For /date-ideas-near-me/[location] paths
-        if (pathname?.includes("/date-ideas-near-me/")) {
-          const location = pathname.split('/').pop() || '';
-          const formattedLocation = location.split('-').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ');
-          return getPageTitle(`Date Ideas in ${formattedLocation} - Local Date Night Suggestions`);
         }
         return PAGE_TITLES.HOME;
     }
@@ -62,20 +52,10 @@ const PageTitle: React.FC<PageTitleProps> = ({
         return META_DESCRIPTIONS.PREFERENCES;
       case "/calendar":
         return META_DESCRIPTIONS.CALENDAR;
-      case "/date-ideas-near-me":
-        return META_DESCRIPTIONS.DATE_IDEAS_NEAR_ME;
       default:
         // For dynamic paths like date detail pages
         if (pathname?.includes("/date-idea/") && customTitle) {
           return META_DESCRIPTIONS.DATE_DETAIL(customTitle);
-        }
-        // For /date-ideas-near-me/[location] paths
-        if (pathname?.includes("/date-ideas-near-me/")) {
-          const location = pathname.split('/').pop() || '';
-          const formattedLocation = location.split('-').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ');
-          return `Find the best date ideas in ${formattedLocation}. Discover local date night spots and activities for couples in this area.`;
         }
         return META_DESCRIPTIONS.HOME;
     }

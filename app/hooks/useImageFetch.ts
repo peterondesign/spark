@@ -21,6 +21,29 @@ const clientSideCache: Record<string, {
 // Cache expiry time (1 hour)
 const CACHE_EXPIRY = 60 * 60 * 1000; 
 
+// Function to call our new Replicate API endpoint
+const generateImageFromAPI = async (keyword: string, width: number = 400, height: number = 300): Promise<string | null> => {
+  try {
+    const response = await fetch('/api/generate-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ keyword, width, height }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.imageUrl || null;
+  } catch (error) {
+    console.error('Error calling generate-image API:', error);
+    return null;
+  }
+}; 
+
 export function useImageFetch(query: string, width?: number, height?: number) {
   const [imageData, setImageData] = useState({
     url: '/placeholder.svg',

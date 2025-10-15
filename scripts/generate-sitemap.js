@@ -13,18 +13,13 @@ const outputRobotsPath = path.join(__dirname, '../public/robots.txt');
 async function generateSitemap() {
   console.log('Generating sitemap...');
 
-  // Static routes in your app - add all your important pages here
+  // Static pages - updated list
   const staticPages = [
-    '',
-    '/blog',
-    '/date-ideas-near-me',
-    '/date-idea-generator',
+    '/',
     '/spin-the-wheel',
-    '/calendar',
-    '/terms',
-    '/favorites',
     '/alphabet-date-ideas',
-    '/date-night-box-subscription',
+    '/favorites',
+    '/terms'
   ];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

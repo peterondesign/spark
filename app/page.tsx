@@ -7,7 +7,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 // Import all section components
 import Header from './components/sections/Header';
 import HeroSection from './components/sections/HeroSection';
-import FeaturedIdeasSection from './components/sections/FeaturedIdeasSection';
 import AllDateIdeasSection from './components/sections/AllDateIdeasSection';
 import TikTokSection from './components/sections/TikTokSection';
 import Footer from './components/sections/Footer';

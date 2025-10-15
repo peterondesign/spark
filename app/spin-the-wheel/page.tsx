@@ -201,9 +201,9 @@ export default function SpinTheWheelPage() {
               <h3 className="text-xl font-semibold mb-2 text-purple-600">Alphabet Date Ideas</h3>
               <p className="text-gray-600">Work through the alphabet with themed date ideas for each letter.</p>
             </Link>
-            <Link href="/date-ideas-near-me" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold mb-2 text-pink-600">Date Ideas Near Me</h3>
-              <p className="text-gray-600">Discover date ideas based on your location.</p>
+                        <Link href="/alphabet-date-ideas" className="block bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Alphabet Date Ideas</h3>
+              <p className="text-gray-600">Try our A-Z date challenge with unique ideas for every letter.</p>
             </Link>
           </div>
         </div>
