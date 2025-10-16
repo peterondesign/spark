@@ -1,177 +1,45 @@
 /**
- * ULTRA-FAST Image Service - Direct URL generation with localStorage caching
- * No API calls, instant responses!
+ * ULTRA-SIMPLE Image Service - Direct mapping to your Supabase bucket!
  */
 
-// We can remove the Replicate import since we're not using API calls anymore
-// import ReplicateImageService from './newImageService';
+// Your actual Supabase bucket configuration
+const SUPABASE_PROJECT_ID = 'ljixbbwscwfdqygjmljq'; // Your actual project ID!
+const SUPABASE_BUCKET_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/date-images`;
 
-// We no longer need these API keys since we're generating URLs directly
-// const PEXELS_ACCESS_KEY = process.env.NEXT_PUBLIC_PEXELS_ACCESS_KEY || "uCWBRGyGfG2SPRGVszsdP9WFzVNMwVC6co4xLTAaivaRCnleATbRcIEe";
-// const PEXELS_API_URL = "https://api.pexels.com/v1";
-
-// Old Pexels type - no longer needed since we generate URLs directly
-// type PexelsPhoto = { ... };
-
-// Enhanced cache with direct URL storage - no more API calls!
-type ImageCache = {
-  [key: string]: {
-    url: string;
-    timestamp: number;
-    compressed?: string;
-  };
-};
-
-// Extended cache duration since URLs are stable
-const imageCache: ImageCache = {};
-const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-const BROWSER_CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days for browser cache
-
-// Direct URL generation for stable image URLs - no API calls needed!
-const generateStableImageUrl = (keyword: string, width: number = 400, height: number = 300): string => {
-  // Generate a consistent hash from the keyword for stable URLs
-  const cleanKeyword = keyword.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-  const keywordHash = cleanKeyword.split('').reduce((a, b) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0);
+// Direct mapping to your actual bucket images (based on the files you showed)
+const directImageMapping: Record<string, string> = {
+  // Exact title matches from your CSV
+  'acupuncture session': 'acupuncture_session_relaxation_diverse_couple_400x300_17605137834.jpg',
+  'amusement park': 'amusement_park_entertainment_diverse_couple_400x300_1760513796.jpg',
+  'aquarium date': 'aquarium_date_entertainment_general_interracial_couple_400x300_17.jpg',
+  'arcade night': 'arcade_night_entertainment_diverse_couple_400x300_1760513819587.jpg',
+  'archery lessons': 'archery_lessons_outdoor_white_couple_400x300_1760513832450.jpg', 
+  'aromatherapy massage': 'aromatherapy_massage_relaxation_diverse_couple_400x300_176051382.jpg',
+  'art class': 'art_class_cultural_mixed_race_couple_400x300_1760513858570.jpg',
+  'art exhibition': 'art_exhibition_cultural_interracial_couple_400x300_1760513870274.jpg',
+  'art gallery tour': 'art_gallery_tour_entertainment_mixed_race_couple_400x300_176051375.jpg',
+  'axe throwing': 'axe_throwing_adventure_asian_couple_400x300_1760513896032.jpg',
+  'baking class': 'baking_class_food_&_drink_interracial_couple_400x300_176051391055.jpg',
+  'baking together': 'baking_together_food_&_drink_latino_couple_400x300_176051392404.jpg',
+  'ballet performance': 'ballet_performance_entertainment_diverse_couple_400x300_17605139.jpg',
+  'beach cinema': 'beach_cinema_entertainment_caucasian_couple_400x300_176051590612.jpg',
   
-  // Use absolute value to ensure positive number
-  const imageId = Math.abs(keywordHash) % 1000 + 1;
-  
-  // Use Unsplash Source API for stable, fast URLs
-  // This creates consistent URLs based on keyword and size
-  const searchTerm = encodeURIComponent(cleanKeyword.replace(/\s+/g, ','));
-  return `https://source.unsplash.com/featured/${width}x${height}?${searchTerm}&sig=${imageId}`;
-};
-
-// Image compression utility
-const compressImageUrl = (url: string, quality: number = 80): string => {
-  // For Pexels images, we can modify the URL to get different qualities
-  if (url.includes('pexels.com')) {
-    // Use smaller size for faster loading
-    return url.replace(/(\?.*)?$/, `?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2`);
-  }
-  return url;
+  // Alternative matches (keyword variants)
+  'acupuncture': 'acupuncture_session_relaxation_diverse_couple_400x300_17605137834.jpg',
+  'amusement': 'amusement_park_entertainment_diverse_couple_400x300_1760513796.jpg',
+  'aquarium': 'aquarium_date_entertainment_general_interracial_couple_400x300_17.jpg',
+  'arcade': 'arcade_night_entertainment_diverse_couple_400x300_1760513819587.jpg',
+  'archery': 'archery_lessons_outdoor_white_couple_400x300_1760513832450.jpg',
+  'massage': 'aromatherapy_massage_relaxation_diverse_couple_400x300_176051382.jpg',
+  'art': 'art_class_cultural_mixed_race_couple_400x300_1760513858570.jpg',
+  'axe': 'axe_throwing_adventure_asian_couple_400x300_1760513896032.jpg',
+  'baking': 'baking_class_food_&_drink_interracial_couple_400x300_176051391055.jpg',
+  'ballet': 'ballet_performance_entertainment_diverse_couple_400x300_17605139.jpg',
+  'beach': 'beach_cinema_entertainment_caucasian_couple_400x300_176051590612.jpg'
 };
 
 /**
- * Get a placeholder image URL with specified dimensions and text
- * @param width Image width
- * @param height Image height
- * @param text Optional text to display on the placeholder
- * @returns URL string for the placeholder image
- */
-export const getPlaceholderImage = (width: number = 400, height: number = 300, text?: string): string => {
-  const baseUrl = `/placeholder.svg?height=${height}&width=${width}`;
-  return text ? `${baseUrl}&text=${encodeURIComponent(text)}` : baseUrl;
-};
-
-/**
- * Ultra-fast function to check localStorage for cached image URLs
- * @param cacheKey Cache key to check
- * @returns Cached image URL or null
- */
-const getFromLocalCache = (cacheKey: string): string | null => {
-  if (typeof window === 'undefined') return null;
-  
-  try {
-    const cached = localStorage.getItem(`img_${cacheKey}`);
-    if (cached) {
-      const parsedData = JSON.parse(cached);
-      if (Date.now() - parsedData.timestamp < BROWSER_CACHE_EXPIRY) {
-        return parsedData.url;
-      } else {
-        // Remove expired cache
-        localStorage.removeItem(`img_${cacheKey}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error reading from cache:', error);
-  }
-  
-  return null;
-};
-
-/**
- * Ultra-fast function to save image URL to localStorage
- * @param cacheKey Cache key
- * @param imageUrl The image URL to cache
- */
-const saveToLocalCache = (cacheKey: string, imageUrl: string) => {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    const dataToCache = {
-      url: imageUrl,
-      timestamp: Date.now()
-    };
-    
-    localStorage.setItem(`img_${cacheKey}`, JSON.stringify(dataToCache));
-  } catch (error) {
-    // Handle quota exceeded by clearing old items
-    if (error instanceof DOMException && error.code === 22) {
-      console.warn('LocalStorage quota exceeded, clearing old cache');
-      clearOldImageCache();
-      // Try again after clearing
-      try {
-        localStorage.setItem(`img_${cacheKey}`, JSON.stringify({ url: imageUrl, timestamp: Date.now() }));
-      } catch (e) {
-        console.error('Still cannot save to localStorage after cleanup:', e);
-      }
-    }
-  }
-};
-
-/**
- * Clear old image cache entries to free up space
- */
-const clearOldImageCache = () => {
-  if (typeof window === 'undefined') return;
-  
-  const keys = Object.keys(localStorage);
-  const imageKeys = keys.filter(key => key.startsWith('img_'));
-  
-  // Sort by timestamp and remove oldest 50%
-  const itemsWithTimestamp = imageKeys.map(key => {
-    try {
-      const data = JSON.parse(localStorage.getItem(key) || '{}');
-      return { key, timestamp: data.timestamp || 0 };
-    } catch {
-      return { key, timestamp: 0 };
-    }
-  }).sort((a, b) => a.timestamp - b.timestamp);
-  
-  const itemsToRemove = itemsWithTimestamp.slice(0, Math.floor(itemsWithTimestamp.length * 0.5));
-  itemsToRemove.forEach(item => localStorage.removeItem(item.key));
-};
-
-/**
- * Ultra-fast preload images function
- * @param urls Array of image URLs to preload
- */
-export const preloadImages = (urls: string[]) => {
-  if (typeof window === 'undefined') return;
-  
-  urls.forEach(url => {
-    const img = new Image();
-    img.src = compressImageUrl(url);
-    // Optional: Add to cache when loaded
-    img.onload = () => {
-      console.log(`Preloaded: ${url}`);
-    };
-  });
-};
-
-/**
- * ULTRA-FAST image URL function - no API calls, instant response!
- * 
- * @param image Image source (string or object) 
- * @param keyword Keyword for fallback image
- * @param width Image width
- * @param height Image height
- * @param useCompressed Whether to use compressed version
- * @returns Image URL string (instant, no async needed!)
+ * SUPER SIMPLE - Get image URL instantly!
  */
 export const getImageUrl = async (
   image: string | { url?: string } | undefined,
@@ -180,54 +48,48 @@ export const getImageUrl = async (
   height: number = 300,
   useCompressed: boolean = true
 ): Promise<string> => {
-  // Ensure keyword is always a string
-  const safeKeyword = (keyword && typeof keyword === 'string') ? keyword : "date";
-  const cacheKey = `${safeKeyword}_${width}_${height}`;
   
-  // 1. Check localStorage first - INSTANT if cached
-  const cachedUrl = getFromLocalCache(cacheKey);
-  if (cachedUrl) {
-    return useCompressed ? compressImageUrl(cachedUrl) : cachedUrl;
+  // 1. If image is already a valid URL, use it
+  if (image && typeof image === 'string' && image.startsWith('http')) {
+    return image;
+  }
+  if (image && typeof image === 'object' && image.url && image.url.startsWith('http')) {
+    return image.url;
   }
   
-  // 2. Handle existing valid URLs
-  if (image) {
-    if (typeof image === 'string' && image.startsWith('http')) {
-      const finalUrl = useCompressed ? compressImageUrl(image) : image;
-      saveToLocalCache(cacheKey, finalUrl);
-      return finalUrl;
-    }
-    
-    if (typeof image === 'object' && image.url && image.url.startsWith('http')) {
-      const finalUrl = useCompressed ? compressImageUrl(image.url) : image.url;
-      saveToLocalCache(cacheKey, finalUrl);
-      return finalUrl;
+  // 2. Try to find in your bucket (this is the magic!)
+  const cleanKeyword = keyword.toLowerCase().trim();
+  
+  // Direct match
+  if (directImageMapping[cleanKeyword]) {
+    return `${SUPABASE_BUCKET_URL}/${directImageMapping[cleanKeyword]}`;
+  }
+  
+  // Fuzzy match - check if keyword contains any of our mapped terms
+  for (const [key, filename] of Object.entries(directImageMapping)) {
+    if (cleanKeyword.includes(key) || key.includes(cleanKeyword.split(' ')[0])) {
+      return `${SUPABASE_BUCKET_URL}/${filename}`;
     }
   }
   
-  // 3. Generate stable URL directly - NO API CALL!
-  const directUrl = generateStableImageUrl(safeKeyword, width, height);
-  const finalUrl = useCompressed ? compressImageUrl(directUrl) : directUrl;
-  
-  // Cache for next time
-  saveToLocalCache(cacheKey, finalUrl);
-  
-  return finalUrl;
+  // 3. Fallback to Unsplash for unmapped items
+  const searchTerm = encodeURIComponent(cleanKeyword.replace(/\s+/g, ','));
+  return `https://source.unsplash.com/featured/${width}x${height}?${searchTerm}`;
 };
 
-/**
- * ULTRA-FAST fallback URL generation - no API calls!
- * Generates stable URLs based on keyword hash
- */
-export const getPexelsFallbackUrl = async (
-  keyword: string = "date", 
-  width: number = 400, 
-  height: number = 300,
-  useCompressed: boolean = true
-): Promise<string> => {
-  // Just use the direct URL generation - no API calls!
-  const directUrl = generateStableImageUrl(keyword, width, height);
-  return useCompressed ? compressImageUrl(directUrl) : directUrl;
+// Keep the old functions for compatibility
+export const getPexelsFallbackUrl = getImageUrl;
+export const getPlaceholderImage = (width: number = 400, height: number = 300, text?: string): string => {
+  const baseUrl = `/placeholder.svg?height=${height}&width=${width}`;
+  return text ? `${baseUrl}&text=${encodeURIComponent(text)}` : baseUrl;
+};
+
+export const preloadImages = (urls: string[]) => {
+  if (typeof window === 'undefined') return;
+  urls.forEach(url => {
+    const img = new Image();
+    img.src = url;
+  });
 };
 
 /**
@@ -258,7 +120,7 @@ export const getImageGallery = async (
   // Generate enough images to meet the count
   for (let i = 0; i < count; i++) {
     const variantIndex = i % variants.length;
-    images.push(await getPexelsFallbackUrl(variants[variantIndex], width, height, true));
+    images.push(await getPexelsFallbackUrl(undefined, variants[variantIndex], width, height, true));
   }
   
   return images;

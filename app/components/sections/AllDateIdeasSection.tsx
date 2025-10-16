@@ -7,7 +7,6 @@ import { supabase } from '../../../utils/supabaseClient';
 import SaveButton from '../SaveButton';
 import Link from 'next/link';
 import CityPicker from '../CityPicker';
-import { useLazyImages } from '../../hooks/useLazyImages';
 // import { ImageSkeletonGrid } from '../ui/image-skeleton';
 
 interface DateIdea {
@@ -38,12 +37,6 @@ const AllDateIdeasSection = () => {
   const [filteredIdeas, setFilteredIdeas] = useState<DateIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleIdeas, setVisibleIdeas] = useState(24); // Increased from 12 to show more initially
-
-  // Use lazy loading hook for images
-  const { imageMap, isLoading: imagesLoading, backgroundLoading, observe, loadedCount, totalCount, loadMoreImages } = useLazyImages(filteredIdeas.slice(0, visibleIdeas), {
-    batchSize: 8,
-    threshold: 0.1
-  });
 
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
@@ -88,8 +81,6 @@ const AllDateIdeasSection = () => {
         setDateIdeas(supabaseIdeas);
         setFilteredIdeas(supabaseIdeas);
 
-        // Only load images for the first batch (visible items)
-        // Lazy loading will handle the rest
         console.log(`🔥 Total date ideas loaded: ${supabaseIdeas.length}`);
       } catch (error) {
         console.error("Error fetching date ideas:", error);
@@ -107,7 +98,6 @@ const AllDateIdeasSection = () => {
     // Clear existing data when city changes
     setDateIdeas([]);
     setFilteredIdeas([]);
-    // Note: imageMap will be cleared automatically by the lazy loading hook
   };
 
   const handleLoadMore = () => {
@@ -116,11 +106,6 @@ const AllDateIdeasSection = () => {
     const newItems = filteredIdeas.slice(currentVisible, newVisible);
     
     setVisibleIdeas(newVisible);
-    
-    // Trigger immediate loading of the new items
-    if (newItems.length > 0) {
-      loadMoreImages(newItems);
-    }
   };
 
   // Filter functionality with accurate field matching based on real database data
@@ -254,7 +239,6 @@ const AllDateIdeasSection = () => {
               {filteredIdeas.slice(0, visibleIdeas).map((idea, index) => (
                 <div
                   key={idea.id}
-                  ref={(el) => observe(el, index)}
                   className={`group rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${theme === 'dark'
                     ? 'bg-[#333333] border border-gray-700'
                     : 'bg-white border border-gray-200'
@@ -267,40 +251,13 @@ const AllDateIdeasSection = () => {
                   }}
                 >
                   <div className="relative h-48 overflow-hidden">
-                    {/* Show skeleton only if no image URL is available AND we're still loading */}
-                    {!imageMap[idea.slug || idea.id] && !idea.image && (imagesLoading || backgroundLoading) ? (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent animate-shimmer"></div>
-                        {/* Subtle pattern overlay */}
-                        <div className="absolute inset-0 opacity-20">
-                          <div className="w-full h-full bg-gradient-to-br from-rose-100 to-orange-100 dark:from-rose-900/30 dark:to-orange-900/30"></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <img
-                        key={`${idea.slug || idea.id}-${imageMap[idea.slug || idea.id] ? 'loaded' : 'fallback'}`}
-                        src={imageMap[idea.slug || idea.id] || idea.image || '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title)}
-                        alt={`${idea.title} - diverse couple date idea`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
-                        loading="lazy"
-                        onLoad={(e) => {
-                          // Fade in smoothly when image loads
-                          const target = e.target as HTMLImageElement;
-                          target.style.opacity = '1';
-                        }}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          // Only fallback to placeholder if the current src is not already a placeholder
-                          if (!target.src.includes('placeholder.svg')) {
-                            target.src = '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title);
-                          }
-                        }}
-                        style={{ 
-                          opacity: imageMap[idea.slug || idea.id] ? 1 : 0.8, 
-                          transition: 'opacity 0.3s ease-in-out' 
-                        }}
-                      />
-                    )}
+                    <img
+                      src={idea.image}
+                      alt={`${idea.title} - diverse couple date idea`}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
+                      loading="lazy"
+                    />
+                    Peter
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                     {/* Category Badge
