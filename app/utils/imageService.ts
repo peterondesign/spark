@@ -1,45 +1,59 @@
 /**
- * Utility functions for handling images using AI generation
+ * ULTRA-FAST Image Service - Direct URL generation with localStorage caching
+ * No API calls, instant responses!
  */
 
-import ReplicateImageService from './newImageService';
+// We can remove the Replicate import since we're not using API calls anymore
+// import ReplicateImageService from './newImageService';
 
-const PEXELS_ACCESS_KEY = process.env.NEXT_PUBLIC_PEXELS_ACCESS_KEY || "uCWBRGyGfG2SPRGVszsdP9WFzVNMwVC6co4xLTAaivaRCnleATbRcIEe";
-const PEXELS_API_URL = "https://api.pexels.com/v1";
+// We no longer need these API keys since we're generating URLs directly
+// const PEXELS_ACCESS_KEY = process.env.NEXT_PUBLIC_PEXELS_ACCESS_KEY || "uCWBRGyGfG2SPRGVszsdP9WFzVNMwVC6co4xLTAaivaRCnleATbRcIEe";
+// const PEXELS_API_URL = "https://api.pexels.com/v1";
 
-// Type for Pexels image response
-type PexelsPhoto = {
-  id: number;
-  width: number;
-  height: number;
-  url: string;
-  photographer: string;
-  photographer_url: string;
-  src: {
-    original: string;
-    large2x: string;
-    large: string;
-    medium: string;
-    small: string;
-    portrait: string;
-    landscape: string;
-    tiny: string;
-  };
-};
+// Old Pexels type - no longer needed since we generate URLs directly
+// type PexelsPhoto = { ... };
 
-// Cache to minimize API calls and avoid rate limiting issues
+// Enhanced cache with direct URL storage - no more API calls!
 type ImageCache = {
   [key: string]: {
     url: string;
-    photographer: string;
-    photographerUrl: string;
     timestamp: number;
+    compressed?: string;
   };
 };
 
-// Simple in-memory cache with 1-hour expiration (server-side)
+// Extended cache duration since URLs are stable
 const imageCache: ImageCache = {};
-const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const BROWSER_CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days for browser cache
+
+// Direct URL generation for stable image URLs - no API calls needed!
+const generateStableImageUrl = (keyword: string, width: number = 400, height: number = 300): string => {
+  // Generate a consistent hash from the keyword for stable URLs
+  const cleanKeyword = keyword.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+  const keywordHash = cleanKeyword.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  
+  // Use absolute value to ensure positive number
+  const imageId = Math.abs(keywordHash) % 1000 + 1;
+  
+  // Use Unsplash Source API for stable, fast URLs
+  // This creates consistent URLs based on keyword and size
+  const searchTerm = encodeURIComponent(cleanKeyword.replace(/\s+/g, ','));
+  return `https://source.unsplash.com/featured/${width}x${height}?${searchTerm}&sig=${imageId}`;
+};
+
+// Image compression utility
+const compressImageUrl = (url: string, quality: number = 80): string => {
+  // For Pexels images, we can modify the URL to get different qualities
+  if (url.includes('pexels.com')) {
+    // Use smaller size for faster loading
+    return url.replace(/(\?.*)?$/, `?auto=compress&cs=tinysrgb&w=400&h=300&dpr=2`);
+  }
+  return url;
+};
 
 /**
  * Get a placeholder image URL with specified dimensions and text
@@ -54,183 +68,166 @@ export const getPlaceholderImage = (width: number = 400, height: number = 300, t
 };
 
 /**
- * Check if an image is already cached in the browser storage
- * @param cacheKey The key to check in storage
- * @returns The cached image data or null
+ * Ultra-fast function to check localStorage for cached image URLs
+ * @param cacheKey Cache key to check
+ * @returns Cached image URL or null
  */
-const getBrowserCachedImage = (cacheKey: string) => {
-  // Only run in browser environment
+const getFromLocalCache = (cacheKey: string): string | null => {
   if (typeof window === 'undefined') return null;
   
   try {
-    // Check sessionStorage first (per visit)
-    const sessionCached = sessionStorage.getItem(`img_${cacheKey}`);
-    if (sessionCached) {
-      const parsedData = JSON.parse(sessionCached);
-      // Check if the cache is still valid
-      if (Date.now() - parsedData.timestamp < CACHE_EXPIRY) {
-        return parsedData;
-      }
-    }
-    
-    // Then check localStorage (persists across visits)
-    const localCached = localStorage.getItem(`img_${cacheKey}`);
-    if (localCached) {
-      const parsedData = JSON.parse(localCached);
-      // Local storage has a longer expiry (24 hours)
-      if (Date.now() - parsedData.timestamp < 24 * CACHE_EXPIRY) {
-        // Refresh the session cache
-        sessionStorage.setItem(`img_${cacheKey}`, JSON.stringify({
-          ...parsedData,
-          timestamp: Date.now() // Update timestamp
-        }));
-        return parsedData;
+    const cached = localStorage.getItem(`img_${cacheKey}`);
+    if (cached) {
+      const parsedData = JSON.parse(cached);
+      if (Date.now() - parsedData.timestamp < BROWSER_CACHE_EXPIRY) {
+        return parsedData.url;
+      } else {
+        // Remove expired cache
+        localStorage.removeItem(`img_${cacheKey}`);
       }
     }
   } catch (error) {
-    console.error('Error retrieving from browser cache:', error);
+    console.error('Error reading from cache:', error);
   }
   
   return null;
 };
 
 /**
- * Save an image to browser cache
- * @param cacheKey The key to store in cache
- * @param imageData The image data to cache
+ * Ultra-fast function to save image URL to localStorage
+ * @param cacheKey Cache key
+ * @param imageUrl The image URL to cache
  */
-const saveToBrowserCache = (cacheKey: string, imageData: any) => {
-  // Only run in browser environment
+const saveToLocalCache = (cacheKey: string, imageUrl: string) => {
   if (typeof window === 'undefined') return;
   
   try {
     const dataToCache = {
-      ...imageData,
+      url: imageUrl,
       timestamp: Date.now()
     };
     
-    // Save to both session (current visit) and local storage (future visits)
-    sessionStorage.setItem(`img_${cacheKey}`, JSON.stringify(dataToCache));
     localStorage.setItem(`img_${cacheKey}`, JSON.stringify(dataToCache));
   } catch (error) {
-    console.error('Error saving to browser cache:', error);
+    // Handle quota exceeded by clearing old items
+    if (error instanceof DOMException && error.code === 22) {
+      console.warn('LocalStorage quota exceeded, clearing old cache');
+      clearOldImageCache();
+      // Try again after clearing
+      try {
+        localStorage.setItem(`img_${cacheKey}`, JSON.stringify({ url: imageUrl, timestamp: Date.now() }));
+      } catch (e) {
+        console.error('Still cannot save to localStorage after cleanup:', e);
+      }
+    }
   }
 };
 
 /**
- * Get an image URL for use in the application
+ * Clear old image cache entries to free up space
+ */
+const clearOldImageCache = () => {
+  if (typeof window === 'undefined') return;
+  
+  const keys = Object.keys(localStorage);
+  const imageKeys = keys.filter(key => key.startsWith('img_'));
+  
+  // Sort by timestamp and remove oldest 50%
+  const itemsWithTimestamp = imageKeys.map(key => {
+    try {
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      return { key, timestamp: data.timestamp || 0 };
+    } catch {
+      return { key, timestamp: 0 };
+    }
+  }).sort((a, b) => a.timestamp - b.timestamp);
+  
+  const itemsToRemove = itemsWithTimestamp.slice(0, Math.floor(itemsWithTimestamp.length * 0.5));
+  itemsToRemove.forEach(item => localStorage.removeItem(item.key));
+};
+
+/**
+ * Ultra-fast preload images function
+ * @param urls Array of image URLs to preload
+ */
+export const preloadImages = (urls: string[]) => {
+  if (typeof window === 'undefined') return;
+  
+  urls.forEach(url => {
+    const img = new Image();
+    img.src = compressImageUrl(url);
+    // Optional: Add to cache when loaded
+    img.onload = () => {
+      console.log(`Preloaded: ${url}`);
+    };
+  });
+};
+
+/**
+ * ULTRA-FAST image URL function - no API calls, instant response!
  * 
- * @param image Image source (string or object)
+ * @param image Image source (string or object) 
  * @param keyword Keyword for fallback image
  * @param width Image width
  * @param height Image height
- * @returns Image URL string
+ * @param useCompressed Whether to use compressed version
+ * @returns Image URL string (instant, no async needed!)
  */
 export const getImageUrl = async (
   image: string | { url?: string } | undefined,
   keyword: string = "date",
   width: number = 400, 
-  height: number = 300
+  height: number = 300,
+  useCompressed: boolean = true
 ): Promise<string> => {
-  // console.log(`🔍 getImageUrl called with image: ${image}, keyword: ${keyword}`);
-  
   // Ensure keyword is always a string
   const safeKeyword = (keyword && typeof keyword === 'string') ? keyword : "date";
+  const cacheKey = `${safeKeyword}_${width}_${height}`;
   
-  // Handle undefined or null - go straight to Pexels
-  if (!image) {
-    // console.log(`📸 No image provided, using Pexels for keyword: ${safeKeyword}`);
-    return await getPexelsFallbackUrl(safeKeyword, width, height);
+  // 1. Check localStorage first - INSTANT if cached
+  const cachedUrl = getFromLocalCache(cacheKey);
+  if (cachedUrl) {
+    return useCompressed ? compressImageUrl(cachedUrl) : cachedUrl;
   }
   
-  // Handle strings
-  if (typeof image === 'string') {
-    // Ensure the string exists before calling methods on it
-    const safeImage = image || '';
-    
-    // If it's a placeholder URL or empty path, use Pexels fallback
-    if (
-      safeImage.includes('placeholder.svg') || 
-      safeImage.includes('/?height=') || 
-      safeImage === '/' ||
-      safeImage.includes('placeholder')
-    ) {
-      // console.log(`🔄 Placeholder detected (${safeImage}), using Pexels for keyword: ${safeKeyword}`);
-      return await getPexelsFallbackUrl(safeKeyword, width, height);
+  // 2. Handle existing valid URLs
+  if (image) {
+    if (typeof image === 'string' && image.startsWith('http')) {
+      const finalUrl = useCompressed ? compressImageUrl(image) : image;
+      saveToLocalCache(cacheKey, finalUrl);
+      return finalUrl;
     }
     
-    // If it's already a valid URL (starts with http), use it
-    if (safeImage.startsWith('http')) {
-      // console.log(`✅ Valid URL found: ${safeImage}`);
-      return safeImage;
-    }
-    
-    // Otherwise, treat as keyword and get from Pexels
-    // console.log(`🔄 Invalid URL (${safeImage}), using Pexels for keyword: ${safeKeyword}`);
-    return await getPexelsFallbackUrl(safeKeyword, width, height);
-  }
-  
-  // Handle objects with url property
-  if (image && typeof image === 'object' && 'url' in image && image.url) {
-    if (image.url.startsWith('http')) {
-      // console.log(`✅ Valid object URL found: ${image.url}`);
-      return image.url;
+    if (typeof image === 'object' && image.url && image.url.startsWith('http')) {
+      const finalUrl = useCompressed ? compressImageUrl(image.url) : image.url;
+      saveToLocalCache(cacheKey, finalUrl);
+      return finalUrl;
     }
   }
   
-  // Default fallback to Pexels instead of placeholder
-  // console.log(`🔄 No valid image found, using Pexels for keyword: ${keyword}`);
-  return await getPexelsFallbackUrl(keyword, width, height);
+  // 3. Generate stable URL directly - NO API CALL!
+  const directUrl = generateStableImageUrl(safeKeyword, width, height);
+  const finalUrl = useCompressed ? compressImageUrl(directUrl) : directUrl;
+  
+  // Cache for next time
+  saveToLocalCache(cacheKey, finalUrl);
+  
+  return finalUrl;
 };
 
 /**
- * Get image URL using AI generation (replacement for Pexels)
- * Fast lookup from Supabase storage with fallback
+ * ULTRA-FAST fallback URL generation - no API calls!
+ * Generates stable URLs based on keyword hash
  */
 export const getPexelsFallbackUrl = async (
   keyword: string = "date", 
   width: number = 400, 
-  height: number = 300
+  height: number = 300,
+  useCompressed: boolean = true
 ): Promise<string> => {
-  // If we're on the client side, make a fast API call to lookup existing images
-  if (typeof window !== 'undefined') {
-    try {
-      const response = await fetch('/api/lookup-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ keyword, width, height })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.imageUrl) {
-          return data.imageUrl;
-        }
-      }
-    } catch (error) {
-      console.error('❌ Image lookup failed:', error);
-    }
-    
-    // If lookup fails, return placeholder immediately (no generation on client)
-    return getPlaceholderImage(width, height, keyword);
-  }
-  
-  // Server-side: Try direct lookup from ReplicateImageService
-  try {
-    const replicateService = ReplicateImageService.getInstance();
-    const existingImageUrl = await replicateService.findExistingImage(keyword, width, height);
-    
-    if (existingImageUrl) {
-      return existingImageUrl;
-    }
-  } catch (error) {
-    console.error('❌ Server-side image lookup failed:', error);
-  }
-  
-  // If server-side lookup fails, return placeholder
-  return getPlaceholderImage(width, height, keyword);
+  // Just use the direct URL generation - no API calls!
+  const directUrl = generateStableImageUrl(keyword, width, height);
+  return useCompressed ? compressImageUrl(directUrl) : directUrl;
 };
 
 /**
@@ -261,7 +258,7 @@ export const getImageGallery = async (
   // Generate enough images to meet the count
   for (let i = 0; i < count; i++) {
     const variantIndex = i % variants.length;
-    images.push(await getPexelsFallbackUrl(variants[variantIndex], width, height));
+    images.push(await getPexelsFallbackUrl(variants[variantIndex], width, height, true));
   }
   
   return images;

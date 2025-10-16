@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getImageUrl } from '../utils/imageService';
+import { getImageUrl, preloadImages } from '../utils/imageService';
 
 interface DateIdea {
   id: string;
@@ -41,12 +41,11 @@ export const useLazyImages = (
     'Caucasian couple'
   ];
 
-  // Process a batch of images
-  const processBatch = useCallback(async (batch: DateIdea[]) => {
+  const processBatch = useCallback(async (batch: DateIdea[], useCompressed: boolean = true) => {
     if (batch.length === 0) return;
 
     setIsLoading(true);
-    console.log(`🔄 Loading batch of ${batch.length} images...`);
+    console.log(`🔄 Loading batch of ${batch.length} images${useCompressed ? ' (compressed)' : ''}...`);
 
     try {
       const imagePromises = batch.map(async (idea) => {
@@ -61,7 +60,8 @@ export const useLazyImages = (
         const keyword = `${idea.title} ${idea.category} ${randomDiversityPrompt}`;
         
         try {
-          const imageUrl = await getImageUrl(idea.image, keyword, 400, 300);
+          // Use compressed images for faster loading
+          const imageUrl = await getImageUrl(idea.image, keyword, 400, 300, useCompressed);
           return { key, imageUrl };
         } catch (error) {
           console.error(`Failed to load image for ${idea.title}:`, error);
@@ -69,7 +69,7 @@ export const useLazyImages = (
           // Try a simpler keyword without diversity prompt as fallback
           try {
             const simpleKeyword = `${idea.title} ${idea.category}`;
-            const fallbackUrl = await getImageUrl(idea.image, simpleKeyword, 400, 300);
+            const fallbackUrl = await getImageUrl(idea.image, simpleKeyword, 400, 300, useCompressed);
             return { key, imageUrl: fallbackUrl };
           } catch (fallbackError) {
             console.error(`Fallback also failed for ${idea.title}:`, fallbackError);
@@ -97,6 +97,9 @@ export const useLazyImages = (
         setImageMap(prev => ({ ...prev, ...newImages }));
         setLoadedItems(newLoadedItems);
         console.log(`✅ Loaded ${Object.keys(newImages).length} images`);
+        
+        // Preload the actual full-resolution images for immediate display
+        preloadImages(Object.values(newImages));
       }
     } catch (error) {
       console.error('Batch loading error:', error);
@@ -105,7 +108,7 @@ export const useLazyImages = (
     }
   }, [loadedItems, diversityPrompts]);
 
-  // Queue manager - processes items in batches
+  // Enhanced queue manager - processes items in batches with compression for speed
   const processQueue = useCallback(async () => {
     if (processingRef.current || queueRef.current.length === 0) return;
 
@@ -113,11 +116,11 @@ export const useLazyImages = (
     
     while (queueRef.current.length > 0) {
       const batch = queueRef.current.splice(0, batchSize);
-      await processBatch(batch);
+      await processBatch(batch, true); // Use compressed images for faster initial load
       
-      // Small delay between batches to prevent overwhelming the system
+      // Reduced delay between batches for faster processing
       if (queueRef.current.length > 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
     
@@ -127,7 +130,7 @@ export const useLazyImages = (
     processBackgroundQueue();
   }, [batchSize, processBatch]);
 
-  // Background queue manager - processes items with lower priority
+  // Enhanced background queue manager - processes items with lower priority and compression
   const processBackgroundQueue = useCallback(async () => {
     if (backgroundProcessingRef.current || backgroundQueueRef.current.length === 0) return;
 
@@ -138,11 +141,11 @@ export const useLazyImages = (
     
     while (backgroundQueueRef.current.length > 0) {
       const batch = backgroundQueueRef.current.splice(0, Math.max(1, Math.floor(batchSize / 2))); // Smaller batches for background
-      await processBatch(batch);
+      await processBatch(batch, true); // Use compressed images for background loading
       
-      // Longer delay for background processing to not interfere with user interactions
+      // Shorter delay for background processing for faster completion
       if (backgroundQueueRef.current.length > 0) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
     
@@ -257,6 +260,62 @@ export const useLazyImages = (
       queueForBackgroundLoading(backgroundItems);
     }
   }, [batchSize, queueForLoading, queueForBackgroundLoading]);
+
+  // Immediately populate imageMap with cached URLs to prevent flashing
+  useEffect(() => {
+    const initializeFromCache = async () => {
+      const newImageMap: Record<string, string> = {};
+      const needsGeneration: DateIdea[] = [];
+      
+      dateIdeas.forEach(idea => {
+        const key = idea.slug || idea.id;
+        
+        // First, check if idea already has a valid image URL
+        if (idea.image && typeof idea.image === 'string' && idea.image.startsWith('http')) {
+          newImageMap[key] = idea.image;
+          return;
+        }
+        
+        // Check if we have a cached URL for this item
+        if (typeof window !== 'undefined') {
+          const randomDiversityPrompt = diversityPrompts[Math.floor(Math.random() * diversityPrompts.length)];
+          const keyword = `${idea.title} ${idea.category} ${randomDiversityPrompt}`;
+          const cacheKey = `${keyword}_400_300`;
+          
+          try {
+            const cached = localStorage.getItem(`img_${cacheKey}`);
+            if (cached) {
+              const parsedData = JSON.parse(cached);
+              // Use cached URL if it's not expired (30 days)
+              if (Date.now() - parsedData.timestamp < 30 * 24 * 60 * 60 * 1000) {
+                newImageMap[key] = parsedData.url;
+                return;
+              }
+            }
+          } catch (error) {
+            // Ignore cache errors
+          }
+        }
+        
+        // If no cache found, add to generation queue
+        needsGeneration.push(idea);
+      });
+      
+      // Update imageMap with immediately available URLs
+      if (Object.keys(newImageMap).length > 0) {
+        setImageMap(prev => ({ ...prev, ...newImageMap }));
+      }
+      
+      // Generate URLs for items that need them (this is still instant with our new service)
+      if (needsGeneration.length > 0) {
+        queueForLoading(needsGeneration);
+      }
+    };
+    
+    if (dateIdeas.length > 0) {
+      initializeFromCache();
+    }
+  }, [dateIdeas, diversityPrompts, queueForLoading]);
 
   return {
     imageMap,

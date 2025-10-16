@@ -8,6 +8,7 @@ import SaveButton from '../SaveButton';
 import Link from 'next/link';
 import CityPicker from '../CityPicker';
 import { useLazyImages } from '../../hooks/useLazyImages';
+// import { ImageSkeletonGrid } from '../ui/image-skeleton';
 
 interface DateIdea {
   id: string;
@@ -266,16 +267,40 @@ const AllDateIdeasSection = () => {
                   }}
                 >
                   <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={imageMap[idea.slug || idea.id] || idea.image || '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title)}
-                      alt={`${idea.title} - diverse couple date idea`}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title);
-                      }}
-                    />
+                    {/* Show skeleton only if no image URL is available AND we're still loading */}
+                    {!imageMap[idea.slug || idea.id] && !idea.image && (imagesLoading || backgroundLoading) ? (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 animate-pulse">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent animate-shimmer"></div>
+                        {/* Subtle pattern overlay */}
+                        <div className="absolute inset-0 opacity-20">
+                          <div className="w-full h-full bg-gradient-to-br from-rose-100 to-orange-100 dark:from-rose-900/30 dark:to-orange-900/30"></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        key={`${idea.slug || idea.id}-${imageMap[idea.slug || idea.id] ? 'loaded' : 'fallback'}`}
+                        src={imageMap[idea.slug || idea.id] || idea.image || '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title)}
+                        alt={`${idea.title} - diverse couple date idea`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
+                        loading="lazy"
+                        onLoad={(e) => {
+                          // Fade in smoothly when image loads
+                          const target = e.target as HTMLImageElement;
+                          target.style.opacity = '1';
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          // Only fallback to placeholder if the current src is not already a placeholder
+                          if (!target.src.includes('placeholder.svg')) {
+                            target.src = '/placeholder.svg?height=192&width=400&text=' + encodeURIComponent(idea.title);
+                          }
+                        }}
+                        style={{ 
+                          opacity: imageMap[idea.slug || idea.id] ? 1 : 0.8, 
+                          transition: 'opacity 0.3s ease-in-out' 
+                        }}
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                     {/* Category Badge
@@ -307,19 +332,6 @@ const AllDateIdeasSection = () => {
                 </div>
               ))}
             </div>
-
-            {/* Image Loading Progress */}
-            {(imagesLoading || backgroundLoading) && (
-              <div className="text-center py-4">
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-rose-500 border-t-transparent"></div>
-                  {imagesLoading ? 
-                    `Loading images... (${loadedCount}/${Math.min(totalCount, visibleIdeas)})` :
-                    `Loading in background... (${loadedCount}/${totalCount})`
-                  }
-                </div>
-              </div>
-            )}
 
             {/* Load More Button */}
             {filteredIdeas.length > visibleIdeas && (
