@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import Link from 'next/link';
 import ThemeSwitcher from '../ThemeSwitcher';
+import StripeModal from '../StripeModal';
 
 const Header = () => {
   const headerRef = useRef<HTMLElement>(null);
+  const [showStripeModal, setShowStripeModal] = useState(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -56,8 +58,14 @@ const Header = () => {
               Blog
             </Link>
             <ThemeSwitcher className="mr-4" />
+            <button
+              onClick={() => setShowStripeModal(true)}
+              className="bg-slate-700 text-white px-5 py-2 rounded-full hover:bg-slate-600 transition-colors whitespace-nowrap"
+            >
+              Get Notified ($8/month)
+            </button>
             <button className="bg-rose-600 text-white px-6 py-2 rounded-full hover:bg-rose-700 transition-colors">
-              Sign Up
+              Donate
             </button>
           </div>
 
@@ -74,6 +82,12 @@ const Header = () => {
           </div>
         </div>
       </nav>
+
+      <StripeModal
+        isOpen={showStripeModal}
+        onClose={() => setShowStripeModal(false)}
+        email=""
+      />
     </header>
   );
 };

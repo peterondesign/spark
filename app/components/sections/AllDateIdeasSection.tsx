@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Filter, X, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronRight, Heart, Smile, Zap, Sun, Moon, Home, TreePine, DollarSign, Coins, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
 import SaveButton from '../SaveButton';
-import Link from 'next/link';
 import CityPicker from '../CityPicker';
 // import { ImageSkeletonGrid } from '../ui/image-skeleton';
 
@@ -32,18 +31,39 @@ interface DateIdea {
 
 const AllDateIdeasSection = () => {
   const { theme } = useTheme();
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [selectedCity, setSelectedCity] = useState<string>("LISBON");
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [filteredIdeas, setFilteredIdeas] = useState<DateIdea[]>([]);
   const [loading, setLoading] = useState(true);
-  const [visibleIdeas, setVisibleIdeas] = useState(24); // Increased from 12 to show more initially
+  const [visibleIdeas, setVisibleIdeas] = useState(24);
+  const [headerVisible, setHeaderVisible] = useState(false);
 
   // Filter states
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<string>("");
-  const [selectedMoods, setSelectedMoods] = useState<string[]>([]); // Changed to array for multiselect
+  const [selectedMood, setSelectedMood] = useState<string>("");
   const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+
+  // Intersection observer for sticky header animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHeaderVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
 
   // Fetch date ideas from Supabase
   useEffect(() => {
@@ -145,20 +165,18 @@ const AllDateIdeasSection = () => {
       });
     }
 
-    if (selectedMoods.length > 0) {
+    if (selectedMood) {
       filtered = filtered.filter(idea => {
         if (typeof idea.mood === 'string') {
-          return selectedMoods.includes(idea.mood);
+          return idea.mood.toLowerCase() === selectedMood.toLowerCase();
         } else if (typeof idea.mood === 'object' && idea.mood !== null) {
           // Handle JSON mood objects from database like {"pace": "active", "vibe": "thrilling"}
           const moodObj = idea.mood as any;
           const pace = moodObj.pace;
           const vibe = moodObj.vibe;
 
-          return selectedMoods.some(selectedMood =>
-            selectedMood.toLowerCase() === pace?.toLowerCase() ||
-            selectedMood.toLowerCase() === vibe?.toLowerCase()
-          );
+          return selectedMood.toLowerCase() === pace?.toLowerCase() ||
+            selectedMood.toLowerCase() === vibe?.toLowerCase();
         }
         return false;
       });
@@ -170,59 +188,161 @@ const AllDateIdeasSection = () => {
 
     setFilteredIdeas(filtered);
     setVisibleIdeas(24); // Reset to show more ideas when filters change
-  }, [selectedTimeOfDay, selectedLocation, selectedMoods, selectedPriceLevel, dateIdeas]);
+  }, [selectedTimeOfDay, selectedLocation, selectedMood, selectedPriceLevel, dateIdeas]);
 
   const clearFilters = () => {
     setSelectedTimeOfDay("");
     setSelectedLocation("");
-    setSelectedMoods([]);
+    setSelectedMood("");
     setSelectedPriceLevel("");
   };
 
-  const hasActiveFilters = selectedTimeOfDay || selectedLocation || selectedMoods.length > 0 || selectedPriceLevel;
+  const activeFilterCount = [selectedMood, selectedTimeOfDay, selectedLocation, selectedPriceLevel].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <section
-      className={`py-16 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}
-      id="all-date-ideas"
-    >
-      <div className="container mx-auto px-6">
-        {/* Section Header with City Selector and Filters */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-12">
-          <div className='flex flex-col lg:flex-row lg:items-center gap-4'>
-            <h2 className={`text-3xl md:text-4xl font-bold font-heading ${theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}>
-              ALL DATE IDEAS IN
-            </h2>
-
-            <CityPicker
-              selectedCity={selectedCity}
-              onCityChange={handleCityChange}
-              loading={loading}
-            />
-          </div>
-
-          {/* Filter Button */}
-          <button
-            onClick={() => setShowFilters(true)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full border-2 transition-all duration-300 ${hasActiveFilters
-              ? 'bg-rose-500 text-white border-rose-500'
-              : theme === 'dark'
-                ? 'border-gray-600 text-white hover:border-rose-500'
-                : 'border-gray-300 text-gray-700 hover:border-rose-500'
-              }`}
-          >
-            <Filter className="w-5 h-5" />
-            Filters
+    <>
+      {/* Sticky Header - appears when section is in view */}
+      <div
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 transform ${
+          headerVisible
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 -translate-y-full pointer-events-none'
+        } top-[73px] ${theme === 'dark' ? 'bg-[#2a2a2a] border-b border-gray-700' : 'bg-white border-b border-gray-200'} shadow-lg`}
+      >
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            {/* Filter Count + Clear Button */}
             {hasActiveFilters && (
-              <span className="ml-1 bg-white text-rose-500 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                {[selectedTimeOfDay, selectedLocation, selectedMoods.length > 0 ? 'mood' : '', selectedPriceLevel].filter(Boolean).length}
-              </span>
+              <button
+                onClick={clearFilters}
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors ${
+                  theme === 'dark'
+                    ? 'hover:bg-gray-700 text-gray-300 hover:text-gray-100'
+                    : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <X className="w-4 h-4" />
+                <span className="text-xs font-semibold">{activeFilterCount}</span>
+              </button>
             )}
-          </button>
-        </div>
 
-        {/* Date Ideas Grid */}
+            {/* Inline Filters */}
+            <div className="flex flex-nowrap items-center gap-3 w-full lg:flex-wrap lg:overflow-visible overflow-x-auto lg:overflow-x-hidden pb-2 lg:pb-0">
+              {/* Mood Filter */}
+              <div className="flex gap-2 items-center shrink-0 lg:shrink">
+                {[
+                  { value: 'active', label: 'Active', icon: Zap },
+                  { value: 'leisurely', label: 'Chill', icon: Smile },
+                  { value: 'romantic', label: 'Romantic', icon: Heart }
+                ].map((mood) => (
+                  <button
+                    key={mood.value}
+                    onClick={() => setSelectedMood(selectedMood === mood.value ? '' : mood.value)}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      selectedMood === mood.value
+                        ? 'bg-rose-500 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    <mood.icon className="w-4 h-4" />
+                    <span>{mood.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className={`hidden lg:block w-px h-6 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`} />
+
+              {/* Time of Day Filter */}
+              <div className="flex gap-2 items-center shrink-0 lg:shrink">
+                {[
+                  { value: 'Daytime', label: 'Daytime', icon: Sun },
+                  { value: 'Nighttime', label: 'Night', icon: Moon }
+                ].map((time) => (
+                  <button
+                    key={time.value}
+                    onClick={() => setSelectedTimeOfDay(selectedTimeOfDay === time.value ? '' : time.value)}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      selectedTimeOfDay === time.value
+                        ? 'bg-rose-500 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    <time.icon className="w-4 h-4" />
+                    <span>{time.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className={`hidden lg:block w-px h-6 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`} />
+
+              {/* Setting/Location Filter */}
+              <div className="flex gap-2 items-center shrink-0 lg:shrink">
+                {[
+                  { value: 'outdoor', label: 'Outdoor', icon: TreePine },
+                  { value: 'indoor', label: 'Indoor', icon: Home }
+                ].map((location) => (
+                  <button
+                    key={location.value}
+                    onClick={() => setSelectedLocation(selectedLocation === location.value ? '' : location.value)}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      selectedLocation === location.value
+                        ? 'bg-rose-500 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    <location.icon className="w-4 h-4" />
+                    <span>{location.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className={`hidden lg:block w-px h-6 ${theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'}`} />
+
+              {/* Price Filter */}
+              <div className="flex gap-2 items-center shrink-0 lg:shrink">
+                {[
+                  { value: 'Affordable', label: 'Affordable', icon: DollarSign },
+                  { value: 'High', label: 'Expensive', icon: Coins }
+                ].map((price) => (
+                  <button
+                    key={price.value}
+                    onClick={() => setSelectedPriceLevel(selectedPriceLevel === price.value ? '' : price.value)}
+                    className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      selectedPriceLevel === price.value
+                        ? 'bg-rose-500 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    <price.icon className="w-4 h-4" />
+                    <span>{price.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Section */}
+      <section
+        ref={sectionRef}
+        className={`py-16 pt-44 lg:pt-40 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}
+        id="all-date-ideas"
+      >
+        {/* Section Header - Simplified since filters are in sticky header */}
+        <div className="container mx-auto px-6">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(24)].map((_, i) => (
@@ -304,156 +424,34 @@ const AllDateIdeasSection = () => {
             )}
           </>
         )}
-      </div>
+        </div>
+      </section>
 
-      {/* Filter Modal */}
-      {
-        showFilters && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className={`w-full max-w-md rounded-2xl shadow-2xl ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-white'
-              }`}>
-              {/* Modal Header */}
-              <div className="flex justify-between items-center p-6 border-b border-gray-200">
-                <h3 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'
-                  }`}>
-                  Filter Date Ideas
-                </h3>
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${theme === 'dark' ? 'hover:bg-gray-700 text-white' : 'text-gray-500'
-                    }`}
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6 space-y-6">
-                {/* Time of Day Filter - Simplified options */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
-                    }`}>
-                    Time of Day
-                  </label>
-                  <select
-                    value={selectedTimeOfDay}
-                    onChange={(e) => setSelectedTimeOfDay(e.target.value)}
-                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
-                      ? 'bg-[#333333] border-gray-600 text-white'
-                      : 'bg-white text-gray-900'
-                      }`}
-                  >
-                    <option value="">Any time</option>
-                    <option value="Daytime">Daytime</option>
-                    <option value="Nighttime">Nighttime</option>
-                  </select>
-                </div>
-
-                {/* Location Filter - Based on actual database values */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
-                    }`}>
-                    Location Type
-                  </label>
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
-                      ? 'bg-[#333333] border-gray-600 text-white'
-                      : 'bg-white text-gray-900'
-                      }`}
-                  >
-                    <option value="">Any location</option>
-                    <option value="indoor">Indoor</option>
-                    <option value="outdoor">Outdoor</option>
-                  </select>
-                </div>
-
-                {/* Mood Filter - Multiselect based on actual database valuess */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
-                    }`}>
-                    Mood (Select multiple)
-                  </label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {[
-                      { value: 'active', label: 'Active' },
-                      { value: 'leisurely', label: 'Leisurely' },
-                      { value: 'relaxed', label: 'Relaxed' },
-                      { value: 'varied', label: 'Varied' },
-                      { value: 'thrilling', label: 'Thrilling' },
-                      { value: 'cozy', label: 'Cozy' },
-                      { value: 'fun', label: 'Fun' },
-                      { value: 'romantic', label: 'Romantic' }
-                    ].map((mood) => (
-                      <label key={mood.value} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedMoods.includes(mood.value)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedMoods([...selectedMoods, mood.value]);
-                            } else {
-                              setSelectedMoods(selectedMoods.filter(m => m !== mood.value));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-rose-500 focus:ring-rose-500"
-                        />
-                        <span className={`text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-700'}`}>
-                          {mood.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Price Level Filter - Based on actual database values */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-gray-700'
-                    }`}>
-                    Price Level
-                  </label>
-                  <select
-                    value={selectedPriceLevel}
-                    onChange={(e) => setSelectedPriceLevel(e.target.value)}
-                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent ${theme === 'dark'
-                      ? 'bg-[#333333] border-gray-600 text-white'
-                      : 'bg-white text-gray-900'
-                      }`}
-                  >
-                    <option value="">Any price</option>
-                    <option value="Affordable">Affordable</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex gap-3 p-6 border-t border-gray-200">
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className={`flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors ${theme === 'dark'
-                      ? 'border-gray-600 text-white hover:bg-gray-700'
-                      : ''
-                      }`}
-                  >
-                    Clear All
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowFilters(false)}
-                  className="flex-1 py-3 px-4 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-colors"
-                >
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
-    </section >
+      {/* Sticky header for later reference - animation controlled by intersection observer */}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-100%);
+          }
+        }
+      `}</style>
+    </>
   );
 };
 
