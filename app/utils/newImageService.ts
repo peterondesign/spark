@@ -121,29 +121,29 @@ class ReplicateImageService {
     }
   }
 
-  // Generate image using Replicate API with Seedream-4
+  // Generate image using Replicate API with google/nano-banana-pro
   private async generateImage(prompt: string): Promise<string | null> {
     try {
-      console.log('Generating image with Seedream-4:', prompt);
+      console.log('Generating image with google/nano-banana-pro:', prompt);
       
       // Add diversity and inclusion to base prompt when it contains couple-related terms
       const includesDiverseTerms = /couple|romantic|date|partner/i.test(prompt);
-      const diversityAddition = includesDiverseTerms ? ', diverse representation, inclusive imagery' : '';
+      const diversityAddition = includesDiverseTerms ? ', diverse couple, natural representation' : '';
       
       const input = {
-        prompt: `High-quality, professional photo of ${prompt}, beautiful lighting, detailed, realistic${diversityAddition}, aesthetic photography`,
+        prompt: `Realistic candid photo of ${prompt}, natural daylight, soft even lighting, plain background, stock photo style${diversityAddition}, everyday moment, clean composition, professional yet natural`,
         aspect_ratio: "4:3"
       };
 
-      const output = await this.replicate.run("bytedance/seedream-4", { input });
+      const output = await this.replicate.run("google/nano-banana-pro", { input });
       
       if (output && Array.isArray(output) && output[0] && typeof output[0] === 'object' && output[0] !== null && 'url' in output[0]) {
         return (output[0] as any).url();
       }
 
-      throw new Error('No image generated from Seedream-4');
+      throw new Error('No image generated from google/nano-banana-pro');
     } catch (error) {
-      console.error('Replicate Seedream-4 API error:', error);
+      console.error('Replicate google/nano-banana-pro API error:', error);
       return null;
     }
   }

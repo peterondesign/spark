@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Heart, Smile, Zap, Sun, Moon, Home, TreePine, DollarSign, Coins, X } from 'lucide-react';
+import { ChevronRight, Heart, Smile, Zap, Sun, Moon, Home, TreePine, DollarSign, Coins, X, Shuffle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
 import SaveButton from '../SaveButton';
 import CityPicker from '../CityPicker';
+import VenueDrawer from '../VenueDrawer';
 // import { ImageSkeletonGrid } from '../ui/image-skeleton';
 
 interface DateIdea {
@@ -38,6 +39,10 @@ const AllDateIdeasSection = () => {
   const [loading, setLoading] = useState(true);
   const [visibleIdeas, setVisibleIdeas] = useState(24);
   const [headerVisible, setHeaderVisible] = useState(false);
+  
+  // Drawer states
+  const [selectedIdea, setSelectedIdea] = useState<DateIdea | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Filter states
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<string>("");
@@ -133,19 +138,10 @@ const AllDateIdeasSection = () => {
     let filtered = [...dateIdeas];
 
     if (selectedTimeOfDay) {
-      // Map user-friendly options to database values
-      if (selectedTimeOfDay === 'Daytime') {
-        filtered = filtered.filter(idea =>
-          idea.timeOfDay === 'Morning' ||
-          idea.timeOfDay === 'Afternoon' ||
-          idea.timeOfDay === 'Varies'
-        );
-      } else if (selectedTimeOfDay === 'Nighttime') {
-        filtered = filtered.filter(idea =>
-          idea.timeOfDay === 'Evening' ||
-          idea.timeOfDay === 'Night'
-        );
-      }
+      // Direct match to database values: 'Daytime' or 'Night'
+      filtered = filtered.filter(idea =>
+        idea.timeOfDay?.toLowerCase() === selectedTimeOfDay.toLowerCase()
+      );
     }
 
     if (selectedLocation) {
@@ -153,7 +149,7 @@ const AllDateIdeasSection = () => {
         if (typeof idea.location === 'string') {
           return idea.location.toLowerCase().includes(selectedLocation.toLowerCase());
         } else if (typeof idea.location === 'object' && idea.location !== null) {
-          // Handle JSON location objects like {"type": "indoor", "setting": "varied"}
+          // Handle JSON location objects like {type:indoor,setting:clinic}
           const locationObj = idea.location as any;
           const type = locationObj.type;
           const setting = locationObj.setting;
@@ -166,24 +162,43 @@ const AllDateIdeasSection = () => {
     }
 
     if (selectedMood) {
+      // Map UI mood values to database values and perform case-insensitive match
+      const moodMap: Record<string, string> = {
+        'active': 'active',
+        'leisurely': 'chill',
+        'romantic': 'romantic'
+      };
+      
+      const dbMood = moodMap[selectedMood] || selectedMood;
+      
       filtered = filtered.filter(idea => {
         if (typeof idea.mood === 'string') {
-          return idea.mood.toLowerCase() === selectedMood.toLowerCase();
+          return idea.mood.toLowerCase() === dbMood.toLowerCase();
         } else if (typeof idea.mood === 'object' && idea.mood !== null) {
           // Handle JSON mood objects from database like {"pace": "active", "vibe": "thrilling"}
           const moodObj = idea.mood as any;
           const pace = moodObj.pace;
           const vibe = moodObj.vibe;
 
-          return selectedMood.toLowerCase() === pace?.toLowerCase() ||
-            selectedMood.toLowerCase() === vibe?.toLowerCase();
+          return dbMood.toLowerCase() === pace?.toLowerCase() ||
+            dbMood.toLowerCase() === vibe?.toLowerCase();
         }
         return false;
       });
     }
 
     if (selectedPriceLevel) {
-      filtered = filtered.filter(idea => idea.priceLevel === selectedPriceLevel);
+      // Map UI price values to database values (case-insensitive)
+      const priceMap: Record<string, string> = {
+        'Affordable': 'affordable',
+        'High': 'expensive'
+      };
+      
+      const dbPrice = priceMap[selectedPriceLevel] || selectedPriceLevel.toLowerCase();
+      
+      filtered = filtered.filter(idea =>
+        idea.priceLevel?.toLowerCase() === dbPrice.toLowerCase()
+      );
     }
 
     setFilteredIdeas(filtered);
@@ -195,6 +210,16 @@ const AllDateIdeasSection = () => {
     setSelectedLocation("");
     setSelectedMood("");
     setSelectedPriceLevel("");
+  };
+
+  // Fisher-Yates shuffle algorithm
+  const shuffleIdeas = () => {
+    const shuffled = [...filteredIdeas];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setFilteredIdeas(shuffled);
   };
 
   const activeFilterCount = [selectedMood, selectedTimeOfDay, selectedLocation, selectedPriceLevel].filter(Boolean).length;
@@ -213,19 +238,34 @@ const AllDateIdeasSection = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             {/* Filter Count + Clear Button */}
-            {hasActiveFilters && (
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors ${
+                    theme === 'dark'
+                      ? 'hover:bg-gray-700 text-gray-300 hover:text-gray-100'
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X className="w-4 h-4" />
+                  <span className="text-xs font-semibold">{activeFilterCount}</span>
+                </button>
+              )}
+              
+              {/* Shuffle Button */}
               <button
-                onClick={clearFilters}
+                onClick={shuffleIdeas}
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 transition-colors ${
                   theme === 'dark'
                     ? 'hover:bg-gray-700 text-gray-300 hover:text-gray-100'
                     : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
                 }`}
+                title="Shuffle date ideas"
               >
-                <X className="w-4 h-4" />
-                <span className="text-xs font-semibold">{activeFilterCount}</span>
+                <Shuffle className="w-4 h-4" />
               </button>
-            )}
+            </div>
 
             {/* Inline Filters */}
             <div className="flex flex-nowrap items-center gap-3 w-full lg:flex-wrap lg:overflow-visible overflow-x-auto lg:overflow-x-hidden pb-2 lg:pb-0">
@@ -260,7 +300,7 @@ const AllDateIdeasSection = () => {
               <div className="flex gap-2 items-center shrink-0 lg:shrink">
                 {[
                   { value: 'Daytime', label: 'Daytime', icon: Sun },
-                  { value: 'Nighttime', label: 'Night', icon: Moon }
+                  { value: 'Night', label: 'Night', icon: Moon }
                 ].map((time) => (
                   <button
                     key={time.value}
@@ -364,10 +404,9 @@ const AllDateIdeasSection = () => {
                     : 'bg-white border border-gray-200'
                     }`}
                   onClick={() => {
-                    // Navigate to date idea page
-                    if (idea.slug) {
-                      window.location.href = `/date-idea/${idea.slug}`;
-                    }
+                    // Open venue drawer
+                    setSelectedIdea(idea);
+                    setIsDrawerOpen(true);
                   }}
                 >
                   <div className="relative h-48 overflow-hidden">
@@ -388,7 +427,7 @@ const AllDateIdeasSection = () => {
                     </div> */}
 
                     {/* Save Button */}
-                    {idea.slug && (
+                    {/* {idea.slug && (
                       <div className="absolute top-3 right-3">
                         <SaveButton
                           itemSlug={idea.slug}
@@ -396,7 +435,7 @@ const AllDateIdeasSection = () => {
                           className="opacity-90 hover:opacity-100"
                         />
                       </div>
-                    )}
+                    )} */}
                   </div>
 
                   <div className="p-4">
@@ -451,6 +490,16 @@ const AllDateIdeasSection = () => {
           }
         }
       `}</style>
+      
+      {/* Venue Drawer */}
+      {selectedIdea && (
+        <VenueDrawer
+          dateIdea={selectedIdea}
+          city={selectedCity}
+          isOpen={isDrawerOpen}
+          onOpenChange={setIsDrawerOpen}
+        />
+      )}
     </>
   );
 };

@@ -84,14 +84,14 @@ export default function GridView({
                   className="w-full h-48 object-cover"
                   loading="lazy"
                 />
-                <div className="absolute top-3 right-3 flex space-x-2">
+                {/* <div className="absolute top-3 right-3 flex space-x-2">
                   <SaveButton itemSlug={idea.slug} item={idea} className="" />
                   {onRemoveFavorite && (
                     <button onClick={() => onRemoveFavorite(idea.slug)} className="text-red-600 hover:text-red-800">
                       <X size={18} />
                     </button>
                   )}
-                </div>
+                </div> */}
               </div>
 
               <div className="p-4">
