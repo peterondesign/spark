@@ -18,7 +18,9 @@
     "postinstall": "patch-package",
     "postbuild": "next-sitemap --config next-sitemap.config.cjs",
     "generate-sitemap": "next-sitemap --config next-sitemap.config.cjs",
-    "update-csv": "node update-csv-simple.js"
+    "update-csv": "node update-csv-simple.js",
+    "fetch-google-images": "node scripts/fetch-google-images.mjs --write-csv",
+    "fetch-openai-images": "node scripts/fetch-google-images.mjs --write-csv"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.1",

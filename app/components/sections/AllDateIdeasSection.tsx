@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, Heart, Smile, Zap, Sun, Moon, Home, TreePine, DollarSign, Coins, X, Shuffle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { supabase } from '../../../utils/supabaseClient';
@@ -32,14 +32,12 @@ interface DateIdea {
 
 const AllDateIdeasSection = () => {
   const { theme } = useTheme();
-  const sectionRef = useRef<HTMLDivElement>(null);
   const [selectedCity, setSelectedCity] = useState<string>("LISBON");
   const [dateIdeas, setDateIdeas] = useState<DateIdea[]>([]);
   const [filteredIdeas, setFilteredIdeas] = useState<DateIdea[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleIdeas, setVisibleIdeas] = useState(24);
-  const [headerVisible, setHeaderVisible] = useState(false);
-  
+
   // Drawer states
   const [selectedIdea, setSelectedIdea] = useState<DateIdea | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -49,26 +47,6 @@ const AllDateIdeasSection = () => {
   const [selectedMood, setSelectedMood] = useState<string>("");
   const [selectedPriceLevel, setSelectedPriceLevel] = useState<string>("");
   const [selectedLocation, setSelectedLocation] = useState<string>("");
-
-  // Intersection observer for sticky header animation
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setHeaderVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
 
   // Fetch date ideas from Supabase
   useEffect(() => {
@@ -138,51 +116,39 @@ const AllDateIdeasSection = () => {
     let filtered = [...dateIdeas];
 
     if (selectedTimeOfDay) {
-      // Direct match to database values: 'Daytime' or 'Night'
-      filtered = filtered.filter(idea =>
-        idea.timeOfDay?.toLowerCase() === selectedTimeOfDay.toLowerCase()
-      );
+      const target = selectedTimeOfDay.toLowerCase();
+      filtered = filtered.filter(idea => {
+        const val = idea.timeOfDay;
+        if (Array.isArray(val)) return val.some((t: string) => t.toLowerCase() === target);
+        return typeof val === 'string' && val.toLowerCase() === target;
+      });
     }
 
     if (selectedLocation) {
+      const target = selectedLocation.toLowerCase();
       filtered = filtered.filter(idea => {
-        if (typeof idea.location === 'string') {
-          return idea.location.toLowerCase().includes(selectedLocation.toLowerCase());
-        } else if (typeof idea.location === 'object' && idea.location !== null) {
-          // Handle JSON location objects like {type:indoor,setting:clinic}
-          const locationObj = idea.location as any;
-          const type = locationObj.type;
-          const setting = locationObj.setting;
-
-          return selectedLocation.toLowerCase() === type?.toLowerCase() ||
-            setting?.toLowerCase().includes(selectedLocation.toLowerCase());
+        if (typeof idea.location === 'object' && idea.location !== null) {
+          const type = (idea.location as any).type;
+          if (Array.isArray(type)) return type.some((t: string) => t.toLowerCase() === target);
+          return typeof type === 'string' && type.toLowerCase() === target;
         }
+        if (typeof idea.location === 'string') return idea.location.toLowerCase().includes(target);
         return false;
       });
     }
 
     if (selectedMood) {
-      // Map UI mood values to database values and perform case-insensitive match
       const moodMap: Record<string, string> = {
         'active': 'active',
         'leisurely': 'chill',
         'romantic': 'romantic'
       };
-      
-      const dbMood = moodMap[selectedMood] || selectedMood;
-      
-      filtered = filtered.filter(idea => {
-        if (typeof idea.mood === 'string') {
-          return idea.mood.toLowerCase() === dbMood.toLowerCase();
-        } else if (typeof idea.mood === 'object' && idea.mood !== null) {
-          // Handle JSON mood objects from database like {"pace": "active", "vibe": "thrilling"}
-          const moodObj = idea.mood as any;
-          const pace = moodObj.pace;
-          const vibe = moodObj.vibe;
+      const dbMood = (moodMap[selectedMood] || selectedMood).toLowerCase();
 
-          return dbMood.toLowerCase() === pace?.toLowerCase() ||
-            dbMood.toLowerCase() === vibe?.toLowerCase();
-        }
+      filtered = filtered.filter(idea => {
+        const val = idea.mood;
+        if (Array.isArray(val)) return val.some((m: string) => m.toLowerCase() === dbMood);
+        if (typeof val === 'string') return val.toLowerCase() === dbMood;
         return false;
       });
     }
@@ -227,14 +193,17 @@ const AllDateIdeasSection = () => {
 
   return (
     <>
-      {/* Sticky Header - appears when section is in view */}
-      <div
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 transform ${
-          headerVisible
-            ? 'opacity-100 translate-y-0'
-            : 'opacity-0 -translate-y-full pointer-events-none'
-        } top-[73px] ${theme === 'dark' ? 'bg-[#2a2a2a] border-b border-gray-700' : 'bg-white border-b border-gray-200'} shadow-lg`}
+      {/* Main Section */}
+      <section
+        className={`${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}
+        id="all-date-ideas"
       >
+        {/* Sticky filter bar — pure CSS, no JS */}
+        <div
+          className={`sticky top-[73px] z-40 border-b ${
+            theme === 'dark' ? 'bg-[#2a2a2a] border-gray-700' : 'bg-white border-gray-200'
+          } shadow-sm`}
+        >
         <div className="container mx-auto px-6 py-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             {/* Filter Count + Clear Button */}
@@ -373,16 +342,9 @@ const AllDateIdeasSection = () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* Main Section */}
-      <section
-        ref={sectionRef}
-        className={`py-16 pt-44 lg:pt-40 ${theme === 'dark' ? 'bg-[#2a2a2a]' : 'bg-gray-50'}`}
-        id="all-date-ideas"
-      >
-        {/* Section Header - Simplified since filters are in sticky header */}
-        <div className="container mx-auto px-6">
+        <div className="container mx-auto px-6 py-10">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(24)].map((_, i) => (
@@ -404,7 +366,6 @@ const AllDateIdeasSection = () => {
                     : 'bg-white border border-gray-200'
                     }`}
                   onClick={() => {
-                    // Open venue drawer
                     setSelectedIdea(idea);
                     setIsDrawerOpen(true);
                   }}
@@ -416,7 +377,6 @@ const AllDateIdeasSection = () => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-all duration-300"
                       loading="lazy"
                     />
-                    Peter
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
                     {/* Category Badge
@@ -439,11 +399,10 @@ const AllDateIdeasSection = () => {
                   </div>
 
                   <div className="p-4">
-                    <h3 className={`text-lg font-semibold mb-2 group-hover:text-rose-400 transition-colors line-clamp-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    <h3 className={`text-lg font-semibold group-hover:text-rose-400 transition-colors line-clamp-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'
                       }`}>
                       {String(idea.title || '')}
                     </h3>
-
                   </div>
                 </div>
               ))}
@@ -466,31 +425,6 @@ const AllDateIdeasSection = () => {
         </div>
       </section>
 
-      {/* Sticky header for later reference - animation controlled by intersection observer */}
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-100%);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          to {
-            opacity: 0;
-            transform: translateY(-100%);
-          }
-        }
-      `}</style>
-      
       {/* Venue Drawer */}
       {selectedIdea && (
         <VenueDrawer

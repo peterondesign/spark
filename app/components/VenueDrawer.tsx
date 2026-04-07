@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { X, MapPin, ChevronDown, ExternalLink } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
 } from '@/components/ui/drawer';
-import { CITIES } from '../utils/cities';
+import CityPicker from './CityPicker';
 
 interface DateIdea {
   id: string;
@@ -53,7 +53,6 @@ const VenueDrawer = ({
   const [progress, setProgress] = useState(0);
   const [isDesktop, setIsDesktop] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -71,7 +70,14 @@ const VenueDrawer = ({
     }
   }, [city, dateIdea.id]);
 
-  // Fetch venues when drawer opens or city changes
+  useEffect(() => {
+    if (!isOpen) {
+      setVenues([]);
+      setError(null);
+    }
+  }, [isOpen]);
+
+  // Fetch venues whenever the drawer opens or city/idea changes
   useEffect(() => {
     if (isOpen) {
       fetchVenues();
@@ -176,7 +182,6 @@ const VenueDrawer = ({
 
   const handleCityChange = (newCity: string) => {
     setSelectedCity(newCity);
-    setShowCityDropdown(false);
   };
 
   const PanelBody = () => (
@@ -215,51 +220,12 @@ const VenueDrawer = ({
         </div>
 
         {/* City Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setShowCityDropdown(!showCityDropdown)}
-            className={`w-full px-4 py-2 rounded-lg border flex items-center justify-between ${
-              theme === 'dark'
-                ? 'bg-[#2a2a2a] border-gray-700 text-white hover:border-gray-600'
-                : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              <span>{selectedCity}</span>
-            </div>
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${
-                showCityDropdown ? 'rotate-180' : ''
-              }`}
-            />
-          </button>
-
-          {showCityDropdown && (
-            <div
-              className={`absolute top-full left-0 right-0 mt-2 rounded-lg border shadow-lg z-20 max-h-48 overflow-y-auto ${
-                theme === 'dark'
-                  ? 'bg-[#2a2a2a] border-gray-700'
-                  : 'bg-white border-gray-300'
-              }`}
-            >
-              {CITIES.map((cityOption: { name: string; code: string }) => (
-                <button
-                  key={cityOption.code}
-                  onClick={() => handleCityChange(cityOption.name)}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    selectedCity === cityOption.name
-                      ? 'bg-rose-500 text-white'
-                      : theme === 'dark'
-                      ? 'text-white'
-                      : 'text-gray-900'
-                  }`}
-                >
-                  {cityOption.name}
-                </button>
-              ))}
-            </div>
-          )}
+        <div>
+          <CityPicker
+            selectedCity={selectedCity}
+            onCityChange={handleCityChange}
+            loading={loading}
+          />
 
           {loading && (
             <div className="mt-3">

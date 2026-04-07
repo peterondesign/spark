@@ -4,12 +4,12 @@ import { useState } from 'react';
 import PriorityVenueList from '@/app/components/PriorityVenueList';
 import Header from '@/app/components/sections/Header';
 import Footer from '@/app/components/sections/Footer';
+import CityPicker from '@/app/components/CityPicker';
 
 export default function GetYourGuideTestPage() {
-  const [selectedCity, setSelectedCity] = useState('Lisbon');
+  const [selectedCity, setSelectedCity] = useState('LISBON');
   const [selectedActivity, setSelectedActivity] = useState('Food Tour');
 
-  const cities = ['Lisbon', 'Porto', 'Madrid', 'Barcelona', 'Paris', 'London', 'Rome', 'Amsterdam'];
   const activities = ['Food Tour', 'City Tour', 'Museum Visit', 'Boat Trip', 'Walking Tour', 'Cultural Experience'];
 
   return (
@@ -36,15 +36,7 @@ export default function GetYourGuideTestPage() {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Select City
                   </label>
-                  <select
-                    value={selectedCity}
-                    onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full p-3 border border-border rounded-lg bg-background text-foreground"
-                  >
-                    {cities.map(city => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
+                  <CityPicker selectedCity={selectedCity} onCityChange={setSelectedCity} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">

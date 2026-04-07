@@ -348,10 +348,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch venues (with OpenAI if API key available, otherwise fallback)
-    const venues = process.env.OPENAI_API_KEY
-      ? await fetchVenuesWithOpenAI(dateIdea, city)
-      : getFallbackVenues(dateIdea, city);
+    // Always use deterministic fallback venues.
+    const venues = getFallbackVenues(dateIdea, city);
 
     return NextResponse.json({
       results: venues,

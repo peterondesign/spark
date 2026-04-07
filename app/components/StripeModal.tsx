@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { X, Lock } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
-import { stripePromise } from '../../lib/stripe';
+import type { Stripe } from '@stripe/stripe-js';
 import StripeCheckoutForm from './StripeCheckoutForm';
 
 interface StripeModalProps {
@@ -15,10 +15,18 @@ interface StripeModalProps {
 
 const StripeModal = ({ isOpen, onClose, email: initialEmail }: StripeModalProps) => {
   const { theme } = useTheme();
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [clientSecret, setClientSecret] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState(initialEmail);
   const [emailError, setEmailError] = useState('');
+
+  // Load Stripe only on the client to avoid SSR document.location errors
+  useEffect(() => {
+    import('@stripe/stripe-js/pure').then(({ loadStripe }) => {
+      setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!));
+    });
+  }, []);
 
   useEffect(() => {
     setEmail(initialEmail);
