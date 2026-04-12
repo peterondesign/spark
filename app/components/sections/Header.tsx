@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
+import { Info } from 'lucide-react';
 import Link from 'next/link';
 import ThemeSwitcher from '../ThemeSwitcher';
-import StripeModal from '../StripeModal';
 
 const Header = () => {
   const headerRef = useRef<HTMLElement>(null);
-  const [showStripeModal, setShowStripeModal] = useState(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -58,12 +57,22 @@ const Header = () => {
               Blog
             </Link>
             <ThemeSwitcher className="mr-4" />
-            <button
-              onClick={() => setShowStripeModal(true)}
-              className="bg-slate-700 text-white px-5 py-2 rounded-full hover:bg-slate-600 transition-colors whitespace-nowrap"
-            >
-              Get Notified ($8/month)
-            </button>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://buy.stripe.com/fZufZieg95wF3yFfgi9Zm0d"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-slate-700 text-white px-5 py-2 rounded-full hover:bg-slate-600 transition-colors whitespace-nowrap"
+              >
+                Get Email Notifications ($8/month)
+              </a>
+              <div className="relative group">
+                <Info className="w-4 h-4 text-gray-400 hover:text-white cursor-pointer transition-colors" />
+                <div className="absolute right-0 top-6 w-64 bg-gray-900 text-gray-200 text-xs rounded-lg p-3 shadow-lg border border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  Receive email notifications for date ideas in your city and cool things that are happening based on your interest
+                </div>
+              </div>
+            </div>
             <button className="bg-rose-600 text-white px-6 py-2 rounded-full hover:bg-rose-700 transition-colors">
               Donate
             </button>
@@ -83,11 +92,6 @@ const Header = () => {
         </div>
       </nav>
 
-      <StripeModal
-        isOpen={showStripeModal}
-        onClose={() => setShowStripeModal(false)}
-        email=""
-      />
     </header>
   );
 };
